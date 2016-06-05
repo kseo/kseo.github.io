@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskell for Pragmatic Programmers - Learn Haskell to be a better programmer</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Haskell for Pragmatic Programmers</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Learn Haskell to be a better programmer</h1>
+
+            <article>
+  <div class="info">
+      Posted on June  1, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/category%20theory.html">category theory</a>, <a href="../tags/composition.html">composition</a>
+      
+  </div>
+
+<p>Haskell is notorious for being hard to learn. Pure functions, lazy evaluation, Haskell type system are just start.</p>
+<p>To use Haskell effectively, it is necessary to learn the abstract concepts borrowed from the category theory such as Functor, Applicative Functor and Monad. You need to understand these concepts throughly because most of Haskell code is written using these abstract non-sense.</p>
+<p>Of course, it is still possible to write IO code and use <code>Maybe</code>, <code>Either</code> and <code>List</code> types without understanding Monad. But then why do you want to learn Haskell anyway? If you avoid learning these concpets, you can’t learn much from Haskell. It would be much beneficial to learn other more practical languages.</p>
+<p>Before explaining why you should learn Haskell, let’s ask a question. What’s the essence of programming?</p>
+<p>Programming is basically instructing the computer to some labor. For example, “Load the value at memory x into the register, add 1 to it, and store the value back to the memory” is a program.</p>
+<p>But a program is not just a sequence of instructions. It is a solution to our real problem. What makes programming interesting is that the problems we solve as a programmer is much bigger in size than simply loading a value from the memory and doing some arithmetic.</p>
+<p>So programming is to divide a big problem that can’t be solved at once into many small problems, solve them independently, and compose the resulting small programs into a program that solves the original problem. In other words, the essence of programming is recomposition after decomposition. See Bartosz Milewski’s <a href="https://bartoszmilewski.com/2014/11/04/category-the-essence-of-composition/">Category: The Essence of Composition</a>.</p>
+<p>Here comes the most important property of programming, which is called <em>composability</em>. We need to solve many complex problems which are similar but not exactly same. If we can compose small reusable programs into a new program which solves the new problem, the productivity of a programmer will be dramatically increased.</p>
+<p>The changes of programming paradigm in the history can be explained as our continous endeavor to enhance the composability. For example, the shift from assembly programming with goto to structure programming emphasizing subroutine and loop was necessary as the problem size increases. We desparately needed a better way to compose programs.</p>
+<p>But as the complexity of problem drastically increased again in 80-90s, we needed a new programming paradigm called object-oriented programming. Classes and objects, encapsulation and information hiding were another endeavor to imporve the composability of programs.</p>
+<p>Now in 2010s, functional programming is gaining attention. The complexity of problems we have today is enormous and we need new tools and concepts to cope with ever increasing complexity. Classes are not enough. We need more composability.</p>
+<p>Haskell provides new tools and concepts which can help organize code better. Concepts like Functor, Applicative Functor, Monad, Arrow and Lense all provide new means to compose programs. See Gabriel Gonzalez’s <a href="http://www.haskellforall.com/2012/08/the-category-design-pattern.html">The category design pattern</a>.</p>
+<p>In fact, you already know some of these concepts. For example, ES6’s Promise, C#’s null propagation operator, Python’s list comprehension all share the same monadic structure. But you probably never noticed the common structure lying behind these different language features. After you learn Haskell, you will begin to see the common structure you’ve never imagined before.</p>
+<p>In summary, the essence of programming is <em>composition</em>. Haskell provides new tools and concepts to compose programs. Learning Haskell improves your code organizational skills and make you prepared to handle more complex problems. <a href="http://learnyouahaskell.com/chapters">Learn you a Haskell for great good!</a></p>
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskell for Pragmatic Programmers - Parsing arithmetic expressions with Parsec</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Haskell for Pragmatic Programmers</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Parsing arithmetic expressions with Parsec</h1>
+
+            <article>
+  <div class="info">
+      Posted on January  7, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/Parsec.html">Parsec</a>
+      
+  </div>
+
+<p><a href="http://hackage.haskell.org/package/parsec">Parsec</a> provides <a href="http://hackage.haskell.org/package/parsec-3.1.4/docs/Text-Parsec-Expr.html">Text.Parsec.Expr</a> module to parse <em>expressions</em>. <code>buildExpressionParser</code> creates an expression parser from the given operator table.</p>
+<p>For example, let’s assume that we want to parse a simple arithmetic expression such as <code>1+2*3-4/2</code>. Here <code>*</code> and <code>/</code> has higher precedence than <code>+</code>, <code>-</code> and all operators are left-associative. We can represent the grammar in <a href="http://bnfc.digitalgrammars.com/">BNF Converter</a> notation.</p>
+<pre><code>EAdd. Exp ::= Exp &quot;+&quot; Exp1 ;
+ESub. Exp ::= Exp &quot;-&quot; Exp1 ;
+EMul. Exp1 ::= Exp1 &quot;*&quot; Exp2 ;
+EDiv. Exp1 ::= Exp1 &quot;/&quot; Exp2 ;
+EInt. Exp2 ::= Integer ;
+
+coercions Exp 2 ;</code></pre>
+<p>Here’s our AST for the arithmetic expression.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Exp</span> <span class="fu">=</span> <span class="dt">EAdd</span> <span class="dt">Exp</span> <span class="dt">Exp</span>
+         <span class="fu">|</span> <span class="dt">ESub</span> <span class="dt">Exp</span> <span class="dt">Exp</span>
+         <span class="fu">|</span> <span class="dt">EMul</span> <span class="dt">Exp</span> <span class="dt">Exp</span>
+         <span class="fu">|</span> <span class="dt">EDiv</span> <span class="dt">Exp</span> <span class="dt">Exp</span>
+         <span class="fu">|</span> <span class="dt">EInt</span> <span class="dt">Integer</span></code></pre></div>
+<p>We can build an expression parser, <code>expr</code> as in the following. We specify operators with their precedences and associativities in the operator table. Operators with higher precedence come first in the operator table. So <code>*</code> and <code>/</code> has higher precedence than <code>+</code> and <code>-</code> in this example.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">term <span class="fu">=</span>  parens expr
+    <span class="fu">&lt;|&gt;</span> <span class="dt">EInt</span> <span class="fu">&lt;$&gt;</span> natural
+
+table <span class="fu">=</span> [ [binary <span class="st">&quot;*&quot;</span> <span class="dt">EMul</span> <span class="dt">AssocLeft</span>, binary <span class="st">&quot;/&quot;</span> <span class="dt">EDiv</span> <span class="dt">AssocLeft</span> ]
+        , [binary <span class="st">&quot;+&quot;</span> <span class="dt">EAdd</span> <span class="dt">AssocLeft</span>, binary <span class="st">&quot;-&quot;</span> <span class="dt">ESub</span> <span class="dt">AssocLeft</span> ]
+        ]
+
+binary  name fun assoc <span class="fu">=</span> <span class="dt">Infix</span>   (<span class="kw">do</span> { reservedOp name; return fun }) assoc
+
+<span class="ot">expr ::</span> <span class="dt">Parser</span> <span class="dt">Exp</span>
+expr <span class="fu">=</span> buildExpressionParser table term</code></pre></div>
+<p><code>Text.Parsec.Expr</code> can handle prefix and postfix operators too. We can use the following helper functions to specify these operators.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">prefix  name fun       <span class="fu">=</span> <span class="dt">Prefix</span> (<span class="kw">do</span> { reservedOp name; return fun })
+postfix name fun       <span class="fu">=</span> <span class="dt">Postfix</span> (<span class="kw">do</span> { reservedOp name; return fun })</code></pre></div>
+<p>See <a href="https://github.com/kseo/calc">the calculator example</a> for the complete code.</p>
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>

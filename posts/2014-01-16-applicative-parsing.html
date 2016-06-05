@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskell for Pragmatic Programmers - Applicative parsing</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Haskell for Pragmatic Programmers</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Applicative parsing</h1>
+
+            <article>
+  <div class="info">
+      Posted on January 16, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/applicative%20functor.html">applicative functor</a>, <a href="../tags/applicative%20parsing.html">applicative parsing</a>
+      
+  </div>
+
+<p>While implementing a parser for a toy imperative language, I used a parser combinator library <a href="https://hackage.haskell.org/package/parsec">Parsec</a>, which supports both applicative parsing and monadic parsing. I first wrote the parser in monadic style and then changed it to applicative style because it gave me a more succinct parser.</p>
+<p>This article explains the difference between these two styles and discusses the benefits of applicative parsing over monadic parsing.</p>
+<p>Here a simple C like program fragment:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">int max(int a, b)
+{
+    <span class="kw">if</span> (a <span class="fu">&gt;</span> b)
+        return a;
+    <span class="kw">else</span>
+        return b;
+}</code></pre></div>
+<p>The following is a snippet of the AST.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Def</span> <span class="fu">=</span> <span class="dt">DFun</span> <span class="dt">Type</span> <span class="dt">Id</span> [<span class="dt">Arg</span>] [<span class="dt">Stm</span>]
+
+<span class="kw">data</span> <span class="dt">Stm</span> <span class="fu">=</span>
+    <span class="fu">...</span>
+    <span class="fu">|</span> <span class="dt">SIfElse</span> <span class="dt">Exp</span> <span class="dt">Stm</span> <span class="dt">Stm</span></code></pre></div>
+<p>The parser for function definitions is compact. <code>DFun</code> is a pure function which takes 4 arguments. For each argument, we need to perform an effectful computation, which is parsing. So I used <code>($)</code> to lift a pure value to the effectful world and applied effectful arguments using <code>(*)</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">def ::</span> <span class="dt">Parser</span> <span class="dt">Def</span>
+def <span class="fu">=</span> <span class="dt">DFun</span> <span class="fu">&lt;$&gt;</span> typ <span class="fu">&lt;*&gt;</span> ident <span class="fu">&lt;*&gt;</span> parens (commaSep arg) <span class="fu">&lt;*&gt;</span> braces (many stm)</code></pre></div>
+<p>The same parser can be written in monadic style as in the following. You can see that we need to create more bindings to name intermediate results.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">def ::</span> <span class="dt">Parser</span> <span class="dt">Def</span>
+def <span class="fu">=</span> <span class="kw">do</span>
+    t <span class="ot">&lt;-</span> typ
+    id <span class="ot">&lt;-</span> ident
+    args <span class="ot">&lt;-</span> parens (commaSep arg)
+    stms <span class="ot">&lt;-</span> braces (many stm)
+    return <span class="fu">$</span> <span class="dt">Dfun</span> t id args stms</code></pre></div>
+<p>Let’s look at another example. <code>ifElseStm</code> is a parser which parses an if-else statement into a <code>STM</code> instance with <code>SIfElse</code> data constructor. Here <code>(*&gt;)</code> is used to sequencing actions, discarding the result of the first operand because we don’t need to store “if” and “else” keywords in the AST.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">ifElseStm ::</span> <span class="dt">Parser</span> <span class="dt">Stm</span>
+ifElseStm <span class="fu">=</span>  <span class="dt">SIfElse</span> <span class="fu">&lt;$&gt;</span> (reserved <span class="st">&quot;if&quot;</span> <span class="fu">*&gt;</span> parens exp) <span class="fu">&lt;*&gt;</span> stm <span class="fu">&lt;*&gt;</span> (reserved <span class="st">&quot;else&quot;</span> <span class="fu">*&gt;</span> stm)</code></pre></div>
+<p>The same parser also can be written in monadic style.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">ifElseStm ::</span> <span class="dt">Parser</span> <span class="dt">Stm</span>
+ifElseStm <span class="fu">=</span>  <span class="kw">do</span>
+    reserved <span class="st">&quot;if&quot;</span>
+    condExp <span class="ot">&lt;-</span> exp
+    thenStm <span class="ot">&lt;-</span> stm
+    reserved <span class="st">&quot;else&quot;</span>
+    elseStm <span class="ot">&lt;-</span> stm
+    return <span class="fu">$</span> <span class="dt">SIfElse</span> condExp thenStm elseStm</code></pre></div>
+<p>In monadic parsing, <code>(&gt;&gt;)</code> is used to discard the result of an effectful computation. This parser also creates a lot of bindings to name intermediate results.</p>
+<p>From these two examples, we can see the stylistic difference between applicative parsing and monadic parsing. Applicative parsing is more succinct in this particular example. This is not always true, so I usually try both options to find the better one.</p>
+<p>However, the difference is not just on the style. The real difference is in how sequential composition is handled. Monad is more powerful than applicative functor, but that’s the exact reason why we can reason about monad less than applicative functor. This difference in turn gives applicative parsing better performance optimization chances. <a href="http://stackoverflow.com/questions/7861903/what-are-the-benefits-of-applicative-parsing-over-monadic-parsing">What are the benefits of applicative parsing over monadic parsing?</a> explains this point well.</p>
+<p>For more in-depth understanding of applicative programming, refer to <a href="http://strictlypositive.org/IdiomLite.pdf">FUNCTIONAL PEARL: Applicative programming with eﬀects</a>.</p>
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
