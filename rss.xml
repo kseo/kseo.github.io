@@ -7,8 +7,40 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Wed, 01 Jun 2016 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Tue, 14 Jun 2016 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Objects versus Abstract Data Types</title>
+    <link>http://kseo.github.io//posts/2016-06-14-objects-vs-abstract-data-types.html</link>
+    <description><![CDATA[<article>
+  <div class="info">
+      Posted on June 14, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/objects.html">objects</a>, <a href="/tags/abstract%20data%20types.html">abstract data types</a>
+      
+  </div>
+
+<p>William R. Cook’s essay titled <a href="http://www.cs.utexas.edu/~wcook/Drafts/2009/essay.pdf">On Understanding Data Abstraction, Revisited</a> explains the differences between two forms of data abstraction, <em>objects</em> and <em>abstract data types</em>. His another paper, <a href="https://www.cs.utexas.edu/users/wcook/papers/OOPvsADT/CookOOPvsADT90.pdf">Object-Oriented Programming Versus Abstract Data Types</a> shows why distinguishing these two data abstractions are important:</p>
+<blockquote>
+<p>Object-oriented programming and abstract data types can also be viewed as complementary implementation techniques: objects are centered around the constructors of a data abstraction, while abstract data types are organized around the operations. These differences have consequences relating to extensibility, efficiency, typing, and verification; in many cases the strengths of one paradigm are the weaknesses of the other. Most object-oriented programming languages support aspects of both techniques, not a unification of them, so an understanding of their relative merits is useful in designing programs.</p>
+</blockquote>
+<p>Haskell type classes are also discussed in Cook’s essay. He described Haskell type classes as a powerful mechanism for parameterization and extensibility because type classes are unique in that they have properties of both objects and abstract data types:</p>
+<ul>
+<li>Type classes do not allow different instances to interoperate, but they allow multiple type class instances within a single program.</li>
+<li>Type classes are similar to object interfaces in allowing a method to operate on any value that has the necessary operations.</li>
+<li>Type classes are based on algebraic signatures as in abstract data types, but they do not enforce any hiding of representations.</li>
+</ul>
+</article>
+]]></description>
+    <pubDate>Tue, 14 Jun 2016 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2016-06-14-objects-vs-abstract-data-types.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Learn Haskell to be a better programmer</title>
     <link>http://kseo.github.io//posts/2016-06-01-learn-haskell-to-be-a-better-programmer.html</link>
     <description><![CDATA[<article>
@@ -433,41 +465,6 @@ unite uf p q <span class="fu">=</span> <span class="kw">do</span>
 ]]></description>
     <pubDate>Sun, 26 Jan 2014 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2014-01-26-swtiching-from-monads-to-applicative-functors.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Type Checking with Phantom Type</title>
-    <link>http://kseo.github.io//posts/2014-01-20-type-checking-with-phantom-type.html</link>
-    <description><![CDATA[<article>
-  <div class="info">
-      Posted on January 20, 2014
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/phantom%20type.html">phantom type</a>, <a href="/tags/empty%20type.html">empty type</a>
-      
-  </div>
-
-<p>In a toy programming language compiler I’ve written recently, the AST for <code>Program</code> has a type variable <code>a</code> which is not used on the right-hand side of its definition.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Program</span> a <span class="fu">=</span>
-    <span class="dt">PDefs</span> [<span class="dt">Def</span>]
-    <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)</code></pre></div>
-<p>Here <code>Program</code> is a <a href="http://www.haskell.org/haskellwiki/Phantom_type">phantom type</a> because the type parameter <code>a</code> does not appear after the <code>=</code> sign.</p>
-<p>But why do we need a type variable if it won’t be used anyway? You can see the hint from the type signature of the type checker:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">check ::</span> (<span class="dt">Program</span> <span class="dt">NoTypeAnnotation</span>) <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">TypeError</span> (<span class="dt">Program</span> <span class="dt">TypeAnnotation</span>)</code></pre></div>
-<p>Once a program passes type checking, its type changes from <code>Program NoTypeAnnotation</code> to <code>Program TypeAnnotation</code>. A type variable <code>a</code> is used to differentiate a program with and without type annotations.</p>
-<p>Later compiler phases explicitly require its argument type to be <code>Program TypeAnnotation</code>, so I can’t accidentally pass a program which hasn’t been type-checked yet. For example, <code>desugarProgram</code> requires its argument to be of type <code>Program TypeAnnotation</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">desugarProgram ::</span> <span class="dt">Program</span> <span class="dt">TypeAnnotation</span> <span class="ot">-&gt;</span> <span class="dt">ProgramC</span></code></pre></div>
-<p><code>NoTypeAnnotation</code> and <code>TypeAnnotation</code> are declared as <a href="https://wiki.haskell.org/Empty_type">empty type</a>s because their values are never needed. <a href="https://prime.haskell.org/wiki/EmptyDataDecls">EmptyDataDecls</a> language extension allows us to not specify any constructors as in the following:</p>
-<pre><code>data NoTypeAnnotation
-data TypeAnnotation</code></pre>
-</article>
-]]></description>
-    <pubDate>Mon, 20 Jan 2014 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2014-01-20-type-checking-with-phantom-type.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
