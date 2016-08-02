@@ -403,9 +403,9 @@ multiline <span class="fu">=</span> [r<span class="fu">|&lt;</span><span class="
 ]]></summary>
 </entry>
 <entry>
-    <title>Data.Typeable and Data.Dynamic in Haskell</title>
-    <link href="http://kseo.github.io//posts/2014-02-03-data-typeable-and-data-dynamic-in-haskell.html" />
-    <id>http://kseo.github.io//posts/2014-02-03-data-typeable-and-data-dynamic-in-haskell.html</id>
+    <title>Top 30 Haskell packages with most reverse dependencies</title>
+    <link href="http://kseo.github.io//posts/2014-02-03-top-30-haskell-packages-with-most-reverse-dependencies.html" />
+    <id>http://kseo.github.io//posts/2014-02-03-top-30-haskell-packages-with-most-reverse-dependencies.html</id>
     <published>2014-02-03T00:00:00Z</published>
     <updated>2014-02-03T00:00:00Z</updated>
     <summary type="html"><![CDATA[<article>
@@ -417,40 +417,44 @@ multiline <span class="fu">=</span> [r<span class="fu">|&lt;</span><span class="
   </div>
   <div class="info">
       
-      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/Data.Typeable.html">Data.Typeable</a>, <a href="/tags/Data.Dynamic.html">Data.Dynamic</a>, <a href="/tags/dynamic%20typing.html">dynamic typing</a>
+      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/package.html">package</a>, <a href="/tags/reverse%20dependencies.html">reverse dependencies</a>
       
   </div>
 
-<p><a href="http://hackage.haskell.org/package/base-4.6.0.1/docs/Data-Typeable.html">Data.Typeable</a> is a way to implement dynamic (delayed) type checking in Haskell using a <a href="http://www.haskell.org/haskellwiki/Heterogenous_collections#A_Universal_type">universal type</a>.</p>
-<p>For example, you can implement a heterogenous list in Haskell. <code>toDyn</code> converts any <code>Typeable</code> instance into <code>Dynamic</code> which is similar to Java <code>Object</code> type. Any type that is an instance of <code>Typeable</code> class can be wrapped with <code>Dynamic</code> type.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Dynamic</span>
-<span class="kw">import </span><span class="dt">Data.Maybe</span>
- 
-<span class="ot">hlist ::</span> [<span class="dt">Dynamic</span>]
-hlist <span class="fu">=</span> [ toDyn <span class="st">&quot;string&quot;</span>
-        , toDyn (<span class="dv">7</span><span class="ot"> ::</span> <span class="dt">Int</span>)
-        , toDyn (pi<span class="ot"> ::</span> <span class="dt">Double</span>)
-        , toDyn <span class="ch">&#39;x&#39;</span>
-        , toDyn ((), <span class="dt">Just</span> <span class="st">&quot;foo&quot;</span>)
-        ]
- 
-<span class="ot">dyn ::</span> <span class="dt">Dynamic</span>
-dyn <span class="fu">=</span> hlist <span class="fu">!!</span> <span class="dv">1</span></code></pre></div>
-<p>To be precise, <code>hlist</code> is not actually a heterogenous list from the point of Haskell type system. It is just a homogenous list of <code>Dynamic</code>. The chapter 20, “Untyped Means Uni-Typed” of Harper’s textbook also emphasizes this observation: dynamic types (with typeable representations) are statically typed languages with only one type.</p>
-<p>You can convert a <code>Dynamic</code> object back into an ordinary Haskell value using <code>fromDynamic</code>. Type checking is dynamic because it is delayed to runtime.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">v ::</span> <span class="dt">Int</span>
-v <span class="fu">=</span> <span class="kw">case</span> fromDynamic dyn <span class="kw">of</span>
-        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Type mismatch&quot;</span>
-        <span class="dt">Just</span> x  <span class="ot">-&gt;</span> x</code></pre></div>
-<p>You can make any type <code>Typeable</code> by adding <code>deriving Data.Typeable</code>. In GHC, you need to turn on <code>-XDeriveDataTypeable</code> option to make GHC automatically derive the instance for you.</p>
-<p>The <code>Data.Typeable</code> class is used primarily for generic programming in the “Scrap Your Boilerplate (SYB)” style. I will write more on this later.</p>
-<h2 id="references">References</h2>
-<ul>
-<li>Martín Abadi, Luca Cardelli, Benjamin Pierce and Gordon Plotkin, “<a href="http://www.hpl.hp.com/techreports/Compaq-DEC/SRC-RR-47.pdf">Dynamic Typing in a Statically Typed Language</a>”, ACM Transactions on Programming Languages and Systems (TOPLAS), 1991.</li>
-<li>James Cheney and Ralf Hinze, “<a href="https://www.cs.ox.ac.uk/people/ralf.hinze/publications/HW02.pdf">A lightweight implementation of generics and dynamics</a>”, Haskell ’02: Proceedings of the 2002 ACM SIGPLAN Workshop on Haskell, 2002.</li>
-<li>Lammel, Ralf and Jones, Simon Peyton, “<a href="http://research.microsoft.com/en-us/um/people/simonpj/papers/hmap/hmap.ps">Scrap your boilerplate: a practical design pattern for generic programming</a>”, TLDI ’03: Proceedings of the 2003 ACM SIGPLAN International Workshop on Types in Languages Design and Implementation, 2003</li>
-<li>Harper, 2011, Practical Foundations for Programming Languages.</li>
-</ul>
+<p><a href="http://packdeps.haskellers.com/reverse">Reverse Dependencies</a> shows the reverse dependencies of each Haskell package (those packages that depend upon it). I <a href="https://docs.google.com/spreadsheets/d/1-wbCAyoloUaTXV-WOzwdhyMQV6AiwUwTgphCODMau4k/pub?output=html">sorted the list</a> to check the packages with most reverse dependencies. Here are top 30 Haskell packages among 2348 packages.</p>
+<ol style="list-style-type: decimal">
+<li>base 5961</li>
+<li>containers 2110</li>
+<li>bytestring 2018</li>
+<li>mtl 1664</li>
+<li>directory 1068</li>
+<li>text 979</li>
+<li>transformers 971</li>
+<li>filepath 934</li>
+<li>time 723</li>
+<li>array 696</li>
+<li>process 628</li>
+<li>QuickCheck 621</li>
+<li>network 581</li>
+<li>parsec 577</li>
+<li>random 537</li>
+<li>HUnit 491</li>
+<li>template-haskell 488</li>
+<li>vector 429</li>
+<li>binary 399</li>
+<li>test-framework 379</li>
+<li>utf8-string 334</li>
+<li>unix 331</li>
+<li>old-locale 325</li>
+<li>deepseq 323</li>
+<li>pretty 288</li>
+<li>stm 274</li>
+<li>test-framework-quickcheck2 270</li>
+<li>test-framework-hunit 264</li>
+<li>attoparsec 263</li>
+<li>aeson 254</li>
+</ol>
+<p>Though the list does not show the importance of each package, there is high chance that you need to use at least one of these packages when you write your own package. So to become a seasoned Haskell programmer, you need to get accustomed to these packages.</p>
 </article>
 ]]></summary>
 </entry>
