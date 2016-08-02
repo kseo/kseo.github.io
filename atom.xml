@@ -179,6 +179,40 @@ console<span class="fu">.</span>log(<span class="ch">&#39;Server running at http
 ]]></summary>
 </entry>
 <entry>
+    <title>Learning Agda to be a better Haskell programmer</title>
+    <link href="http://kseo.github.io//posts/2014-02-21-learning-agda-to-be-a-better-haskell-programmer.html" />
+    <id>http://kseo.github.io//posts/2014-02-21-learning-agda-to-be-a-better-haskell-programmer.html</id>
+    <published>2014-02-21T00:00:00Z</published>
+    <updated>2014-02-21T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article>
+  <div class="info">
+      Posted on February 21, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/Agda.html">Agda</a>, <a href="/tags/dependent%20type.html">dependent type</a>
+      
+  </div>
+
+<p>In my previous post <a href="http://kseo.github.io/posts/2014-02-17-learning-prolog-to-be-a-better-haskell-programmer.html">Learning Prolog to be a better Haskell programmer</a>, I advocated learning Prolog is quite helpful to get more intuitions on Haskell type-level programming.</p>
+<p>I think a good next step is to learn a dependent typed programming language such as <a href="http://wiki.portal.chalmers.se/agda/pmwiki.php">Agda</a> or <a href="https://code.google.com/archive/p/epigram/">Epigram</a>. As learning Haskell is a good way to develop oneself as a better Java programmer, learning a dependent typed programming language is a good way to develop oneself as a better Haskell programmer.</p>
+<p>Among many dependent typed programming languages, I recommend Agda simply because its surface syntax is quite similar to that of Haskell. Because dependent typed programming languages in general are not mature enough to perform day-to-day programming task and most of them are more or less equivalent in powers, choosing a syntactically familiar language helps you understand more advanced type system behind the syntax.</p>
+<p>As the name “dependent type” implies, the biggest difference lies in the type system. While Haskell’s type system strictly splits values and types, Agda blurs the distinction between types and values. Type level programming in Haskell with type families or functional dependencies is esoteric at best, but type level programming in Agda is a norm.</p>
+<p>For example, it is possible to define a type of lists of a certain length. In this setting, it is a type error to pass an empty list to head.</p>
+<div class="sourceCode"><pre class="sourceCode agda"><code class="sourceCode agda"><span class="kw">data</span> Vec <span class="ot">(</span>A <span class="ot">:</span> <span class="dt">Set</span><span class="ot">)</span> <span class="ot">:</span> Nat <span class="ot">-&gt;</span> <span class="dt">Set</span> <span class="kw">where</span>
+     [] <span class="ot">:</span> Vec A zero
+     <span class="ot">_</span>::<span class="ot">_</span> <span class="ot">:</span> <span class="ot">{</span>n <span class="ot">:</span> Nat<span class="ot">}</span> <span class="ot">-&gt;</span> A <span class="ot">-&gt;</span> Vec A n <span class="ot">-&gt;</span> Vec A <span class="ot">(</span>suc n<span class="ot">)</span>
+ 
+head <span class="ot">:</span> <span class="ot">{</span>A <span class="ot">:</span> <span class="dt">Set</span><span class="ot">}{</span>n <span class="ot">:</span> Nat<span class="ot">}</span> <span class="ot">-&gt;</span> Vec A <span class="ot">(</span>suc n<span class="ot">)</span> <span class="ot">-&gt;</span> A
+head <span class="ot">(</span>x :: xs<span class="ot">)</span> <span class="ot">=</span> x</code></pre></div>
+<p>Please refer to <a href="http://www.cse.chalmers.se/~ulfn/darcs/AFP08/LectureNotes/AgdaIntro.pdf">Dependently Typed Programming in Agda</a> and <a href="https://www.youtube.com/playlist?p=B7F836675DCE009C">Daniel Peebles’s introduction on Agda</a> for more information on Agda.</p>
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Learning Prolog to be a better Haskell programmer</title>
     <link href="http://kseo.github.io//posts/2014-02-17-learning-prolog-to-be-a-better-haskell-programmer.html" />
     <id>http://kseo.github.io//posts/2014-02-17-learning-prolog-to-be-a-better-haskell-programmer.html</id>
@@ -399,62 +433,6 @@ multiline <span class="fu">=</span> [r<span class="fu">|&lt;</span><span class="
 []
 <span class="dt">Prelude</span> <span class="dt">Data.Default</span><span class="fu">&gt;</span><span class="ot"> def ::</span> <span class="dt">Double</span>
 <span class="fl">0.0</span></code></pre></div>
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Top 30 Haskell packages with most reverse dependencies</title>
-    <link href="http://kseo.github.io//posts/2014-02-03-top-30-haskell-packages-with-most-reverse-dependencies.html" />
-    <id>http://kseo.github.io//posts/2014-02-03-top-30-haskell-packages-with-most-reverse-dependencies.html</id>
-    <published>2014-02-03T00:00:00Z</published>
-    <updated>2014-02-03T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article>
-  <div class="info">
-      Posted on February  3, 2014
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/package.html">package</a>, <a href="/tags/reverse%20dependencies.html">reverse dependencies</a>
-      
-  </div>
-
-<p><a href="http://packdeps.haskellers.com/reverse">Reverse Dependencies</a> shows the reverse dependencies of each Haskell package (those packages that depend upon it). I <a href="https://docs.google.com/spreadsheets/d/1-wbCAyoloUaTXV-WOzwdhyMQV6AiwUwTgphCODMau4k/pub?output=html">sorted the list</a> to check the packages with most reverse dependencies. Here are top 30 Haskell packages among 2348 packages.</p>
-<ol style="list-style-type: decimal">
-<li>base 5961</li>
-<li>containers 2110</li>
-<li>bytestring 2018</li>
-<li>mtl 1664</li>
-<li>directory 1068</li>
-<li>text 979</li>
-<li>transformers 971</li>
-<li>filepath 934</li>
-<li>time 723</li>
-<li>array 696</li>
-<li>process 628</li>
-<li>QuickCheck 621</li>
-<li>network 581</li>
-<li>parsec 577</li>
-<li>random 537</li>
-<li>HUnit 491</li>
-<li>template-haskell 488</li>
-<li>vector 429</li>
-<li>binary 399</li>
-<li>test-framework 379</li>
-<li>utf8-string 334</li>
-<li>unix 331</li>
-<li>old-locale 325</li>
-<li>deepseq 323</li>
-<li>pretty 288</li>
-<li>stm 274</li>
-<li>test-framework-quickcheck2 270</li>
-<li>test-framework-hunit 264</li>
-<li>attoparsec 263</li>
-<li>aeson 254</li>
-</ol>
-<p>Though the list does not show the importance of each package, there is high chance that you need to use at least one of these packages when you write your own package. So to become a seasoned Haskell programmer, you need to get accustomed to these packages.</p>
 </article>
 ]]></summary>
 </entry>
