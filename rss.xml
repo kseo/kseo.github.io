@@ -147,6 +147,37 @@ console<span class="fu">.</span>log(<span class="ch">&#39;Server running at http
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 <item>
+    <title>Evaluation Strategy: Haskell vs Scala</title>
+    <link>http://kseo.github.io//posts/2014-03-02-evaluation-strategy-haskell-vs-scala.html</link>
+    <description><![CDATA[<article>
+  <div class="info">
+      Posted on March  2, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/Scala.html">Scala</a>, <a href="/tags/evaluation%20strategy.html">evaluation strategy</a>
+      
+  </div>
+
+<p>Haskell is a non-strict language, and GHC uses a strategy called laziness which combines non-strictness and sharing for efficiency.</p>
+<p>Thus, you can easily implement <a href="http://hackage.haskell.org/package/base-4.6.0.1/docs/Prelude.html#v:const">const</a> which never uses the second argument.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">const x y <span class="fu">=</span> x</code></pre></div>
+<p>With this definition, it is okay to pass <code>undefined</code> as the second argument of <code>const</code> because <code>y</code> is not never evaluated. But in Haskell, you can also make an argument strict using the <a href="https://ocharles.org.uk/blog/posts/2014-12-05-bang-patterns.html">BangPatterns GHC extension</a>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">const x <span class="fu">!</span>y <span class="fu">=</span> x</code></pre></div>
+<p>Interestingly, the situation is reversed in Scala whose default evaluation strategy is strict.</p>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala"><span class="kw">def</span> <span class="fu">const</span>(x: Int, y:Int) = x</code></pre></div>
+<p>You can make an argument non-strict by putting the <code>=&gt;</code> symbol between the variable name and the type.</p>
+<div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala"><span class="kw">def</span> <span class="fu">const</span>(x: Int, y: =&gt; Int) = x</code></pre></div>
+</article>
+]]></description>
+    <pubDate>Sun, 02 Mar 2014 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2014-03-02-evaluation-strategy-haskell-vs-scala.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Learning Prolog to be a better Haskell programmer</title>
     <link>http://kseo.github.io//posts/2014-02-17-learning-prolog-to-be-a-better-haskell-programmer.html</link>
     <description><![CDATA[<article>
@@ -420,78 +451,6 @@ v <span class="fu">=</span> <span class="kw">case</span> fromDynamic dyn <span c
 ]]></description>
     <pubDate>Mon, 03 Feb 2014 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2014-02-03-data-typeable-and-data-dynamic-in-haskell.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Implementing Union-Find algorithms in Haskell</title>
-    <link>http://kseo.github.io//posts/2014-01-30-implementing-union-find-in-haskell.html</link>
-    <description><![CDATA[<article>
-  <div class="info">
-      Posted on January 30, 2014
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/ST%20monad.html">ST monad</a>, <a href="/tags/union%20find.html">union find</a>
-      
-  </div>
-
-<p>The union/find algorithm makes critical use of updatable states. Its efficiency relies on the set representations being simplified each time the structure is examined. Purely functional languages, which lack updatable states seem inherently inefficient to implement the algorithm.</p>
-<p>Fortunately, we can implement the algorithm efficiently in Haskell with the help of <code>ST</code> monad which provides support for strict state threads. It is described in the PLDI ’94 paper by John Launchbury and Simon Peyton Jones <a href="http://research.microsoft.com/~simonpj/Papers/lazy-functional-state-threads.ps.Z">Lazy Functional State Threads</a>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">UnionFind</span> s <span class="fu">=</span> <span class="dt">UnionFind</span> {
-<span class="ot">    ids::</span> <span class="dt">STUArray</span> s <span class="dt">Int</span> <span class="dt">Int</span>
-  ,<span class="ot"> szs::</span> <span class="dt">STUArray</span> s <span class="dt">Int</span> <span class="dt">Int</span>
-  }
- 
-<span class="ot">newUnionFind ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s (<span class="dt">UnionFind</span> s)
-newUnionFind n <span class="fu">=</span> liftM2 <span class="dt">UnionFind</span> (newListArray (<span class="dv">0</span>, n<span class="fu">-</span><span class="dv">1</span>) [<span class="dv">0</span><span class="fu">..</span>n<span class="fu">-</span><span class="dv">1</span>]) (newArray (<span class="dv">0</span>, n<span class="fu">-</span><span class="dv">1</span>) <span class="dv">1</span>)
- 
-<span class="ot">find ::</span> (<span class="dt">UnionFind</span> s) <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Bool</span>
-find uf p q <span class="fu">=</span> liftM2 (<span class="fu">==</span>) (root uf p) (root uf q)
- 
-<span class="ot">root ::</span> (<span class="dt">UnionFind</span> s) <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s <span class="dt">Int</span>
-root uf i <span class="fu">=</span> <span class="kw">do</span>
-    id <span class="ot">&lt;-</span> readArray (ids uf) i
-    <span class="kw">if</span> (id <span class="fu">/=</span> i)
-        <span class="kw">then</span> <span class="kw">do</span>
-            gpid <span class="ot">&lt;-</span> readArray (ids uf) id
-            writeArray (ids uf) i gpid
-            root uf id
-        <span class="kw">else</span> return i
- 
-<span class="ot">unite ::</span> (<span class="dt">UnionFind</span> s) <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">ST</span> s ()
-unite uf p q <span class="fu">=</span> <span class="kw">do</span>
-    i <span class="ot">&lt;-</span> root uf p
-    j <span class="ot">&lt;-</span> root uf q
-    szi <span class="ot">&lt;-</span> readArray (szs uf) i
-    szj <span class="ot">&lt;-</span> readArray (szs uf) j
-    <span class="kw">if</span> (szi <span class="fu">&lt;</span> szj)
-        <span class="kw">then</span> <span class="kw">do</span>
-            writeArray (ids uf) i j
-            writeArray (szs uf) j (szi <span class="fu">+</span> szj)
-        <span class="kw">else</span> <span class="kw">do</span>
-            writeArray (ids uf) j i
-            writeArray (szs uf) i (szj <span class="fu">+</span> szi)</code></pre></div>
-<p>The code above implements the weighted quick-union with path compression specified in <a href="http://www.cs.princeton.edu/~rs/AlgsDS07/01UnionFind.pdf">Union-Find Algorithms</a>. You can see that the code is almost the same to the Java code. Because <a href="http://www.haskell.org/haskellwiki/Monad/ST">ST monad</a> uses mutable memory internally, the behavior is also the same to that of imperative languages.</p>
-<p>You can run the code with <code>runST</code> function.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">main <span class="fu">=</span> print <span class="fu">$</span> runST <span class="fu">$</span> <span class="kw">do</span>
-    uf <span class="ot">&lt;-</span> newUnionFind <span class="dv">10</span>
-    unite uf <span class="dv">3</span> <span class="dv">4</span> <span class="co">-- 0, 1, 2, {3, 4}, 5, 6, 7, 8, 9</span>
-    unite uf <span class="dv">4</span> <span class="dv">9</span> <span class="co">-- 0, 1, 2, {3, 4, 9}, 5, 6, 7, 8</span>
-    unite uf <span class="dv">8</span> <span class="dv">0</span> <span class="co">-- {0, 8}, 1, 2, {3, 4, 9}, 5, 6, 7, 8</span>
-    unite uf <span class="dv">2</span> <span class="dv">3</span> <span class="co">-- {0, 8}, 1, {2, 3, 4, 9}, 5, 6, 7</span>
-    unite uf <span class="dv">5</span> <span class="dv">6</span> <span class="co">-- {0, 8}, 1, {2, 3, 4, 9}, {5, 6}, 7</span>
-    unite uf <span class="dv">5</span> <span class="dv">9</span> <span class="co">-- {0, 8}, 1, {2, 3, 4, 5, 6, 9}, 7</span>
-    unite uf <span class="dv">7</span> <span class="dv">3</span> <span class="co">-- {0, 8}, 1, {2, 3, 4, 5, 6, 7, 9}</span>
-    unite uf <span class="dv">4</span> <span class="dv">8</span> <span class="co">-- 1, {0, 2, 3, 4, 5, 6, 7, 8, 9}</span>
-    find uf <span class="dv">1</span> <span class="dv">2</span> <span class="co">-- False</span></code></pre></div>
-<p>The complete source code is <a href="https://gist.github.com/kseo/8693028">here</a>.</p>
-</article>
-]]></description>
-    <pubDate>Thu, 30 Jan 2014 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2014-01-30-implementing-union-find-in-haskell.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
