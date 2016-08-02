@@ -68,6 +68,27 @@
 <p>and “and” combinator <code>(assoc xys x) + (assoic xys2 x)</code> can be written</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">[y1 <span class="fu">+</span> y2 <span class="fu">|</span> [y1 <span class="ot">&lt;-</span> assoic xys1 x, y2 <span class="ot">&lt;-</span> assoc xys2 x]</code></pre></div>
 <p>Backtracking usually requires special language features such as coroutines or generators because evaluation of an expression needs to be <em>suspended</em> after it has returned one value, and then may be <em>resumed</em> later if more values are needed. Lazy evaluation provides this property without any additional language features. That is, evaluation of a list is already performed only when more elements are needed.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 
         </div>

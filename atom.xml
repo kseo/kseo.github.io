@@ -38,6 +38,27 @@
 <li>Type classes are similar to object interfaces in allowing a method to operate on any value that has the necessary operations.</li>
 <li>Type classes are based on algebraic signatures as in abstract data types, but they do not enforce any hiding of representations.</li>
 </ul>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -74,6 +95,27 @@
 <p>Haskell provides new tools and concepts which can help organize code better. Concepts like Functor, Applicative Functor, Monad, Arrow and Lense all provide new means to compose programs. See Gabriel Gonzalez’s <a href="http://www.haskellforall.com/2012/08/the-category-design-pattern.html">The category design pattern</a>.</p>
 <p>In fact, you already know some of these concepts. For example, ES6’s Promise, C#’s null propagation operator, Python’s list comprehension all share the same monadic structure. But you probably never noticed the common structure lying behind these different language features. After you learn Haskell, you will begin to see the common structure you’ve never imagined before.</p>
 <p>In summary, the essence of programming is <em>composition</em>. Haskell provides new tools and concepts to compose programs. Learning Haskell improves your code organizational skills and make you prepared to handle more complex problems. <a href="http://learnyouahaskell.com/chapters">Learn you a Haskell for great good!</a></p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -144,6 +186,27 @@ http<span class="fu">.</span>createServer(function (req, res) {
   res<span class="fu">.</span>end(<span class="ch">&#39;Hello World\n&#39;</span>);
 })<span class="fu">.</span>listen(<span class="dv">1337</span>, <span class="ch">&#39;127.0.0.1&#39;</span>);
 console<span class="fu">.</span>log(<span class="ch">&#39;Server running at http://127.0.0.1:1337/&#39;</span>);</code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -175,6 +238,27 @@ console<span class="fu">.</span>log(<span class="ch">&#39;Server running at http
 <div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala"><span class="kw">def</span> <span class="fu">const</span>(x: Int, y:Int) = x</code></pre></div>
 <p>You can make an argument non-strict by putting the <code>=&gt;</code> symbol between the variable name and the type.</p>
 <div class="sourceCode"><pre class="sourceCode scala"><code class="sourceCode scala"><span class="kw">def</span> <span class="fu">const</span>(x: Int, y: =&gt; Int) = x</code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -208,6 +292,27 @@ console<span class="fu">.</span>log(<span class="ch">&#39;Server running at http
 <li>F2 &lt;-&gt; P2</li>
 </ul>
 <p>BTW, there are a few technical errors in the talk. Please refer to <a href="http://wadler.blogspot.kr/2007/04/google-tech-talk-parametric.html">Wadler’s comment</a> on the talk.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -242,6 +347,27 @@ console<span class="fu">.</span>log(<span class="ch">&#39;Server running at http
 head <span class="ot">:</span> <span class="ot">{</span>A <span class="ot">:</span> <span class="dt">Set</span><span class="ot">}{</span>n <span class="ot">:</span> Nat<span class="ot">}</span> <span class="ot">-&gt;</span> Vec A <span class="ot">(</span>suc n<span class="ot">)</span> <span class="ot">-&gt;</span> A
 head <span class="ot">(</span>x :: xs<span class="ot">)</span> <span class="ot">=</span> x</code></pre></div>
 <p>Please refer to <a href="http://www.cse.chalmers.se/~ulfn/darcs/AFP08/LectureNotes/AgdaIntro.pdf">Dependently Typed Programming in Agda</a> and <a href="https://www.youtube.com/playlist?p=B7F836675DCE009C">Daniel Peebles’s introduction on Agda</a> for more information on Agda.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -270,6 +396,27 @@ head <span class="ot">(</span>x :: xs<span class="ot">)</span> <span class="ot">
 <p>Lesson: Learn Prolog to be a better Haskell programmer!</p>
 <h2 id="references">References</h2>
 <p>There is <a href="https://mail.haskell.org/pipermail/haskell-cafe/2010-June/079412.html">a discussion</a> on the Haskell-cafe.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -304,6 +451,27 @@ head <span class="ot">(</span>x :: xs<span class="ot">)</span> <span class="ot">
 <li>D.R. Morrison, “/PATRICIA — Practical Algorithm To Retrieve Information Coded In Alphanumeric/”, Journal of the ACM, 15(4), October 1968, pages 514-534.</li>
 </ul>
 <p>The author of <code>Data.IntMap</code> mentions that insertions and deletions of <code>Data.IntMap</code> when compared to a generic size-balanced map implementation are also much faster. This observation suggests that we should use <code>Data.IntMap</code> whenever possible whether or not we need union or intersection of twp maps.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -374,6 +542,27 @@ f (<span class="dt">C</span> {a <span class="fu">=</span> <span class="dv">1</sp
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Binary</span> (<span class="dt">Class</span> <span class="dt">File</span>) <span class="kw">where</span>
   put (<span class="dt">Class</span> {magic<span class="fu">=</span>magic, minorVersion<span class="fu">=</span>minorVersion, majorVersion<span class="fu">=</span>majorVersion, constsPool<span class="fu">=</span>constsPool, accessFlags<span class="fu">=</span>accessFlags, thisCla    ss<span class="fu">=</span>thisClass, superClass<span class="fu">=</span>superClass, interfacesCount<span class="fu">=</span>interfacesCount, interfaces<span class="fu">=</span>interfaces, classFieldsCount<span class="fu">=</span>classFieldsCount, classFie    lds<span class="fu">=</span>classFields, classMethodsCount<span class="fu">=</span>classMethodsCount, classMethods<span class="fu">=</span>classMethods, classAttributesCount<span class="fu">=</span>classAttributesCount, classAttributes<span class="fu">=</span>classAttributes}) <span class="fu">=</span> <span class="kw">do</span>
  <span class="fu">...</span></code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
@@ -426,6 +615,27 @@ multiline <span class="fu">=</span> [r<span class="fu">|&lt;</span><span class="
 <span class="fu">&lt;</span><span class="dt">P</span><span class="fu">&gt;</span> <span class="fu">&lt;/</span><span class="dt">P</span><span class="fu">&gt;</span>
 <span class="fu">&lt;</span><span class="dt">PRE</span><span class="fu">&gt;|</span>]</code></pre></div>
 <p>There are other quasi-quote packages such as <a href="http://hackage.haskell.org/package/interpolatedstring-qq">string-qq</a>, <a href="http://hackage.haskell.org/package/string-quote">string-quote</a> and <a href="http://hackage.haskell.org/package/interpolatedstring-qq">interpolatedstring-qq</a>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
 </article>
 ]]></summary>
 </entry>
