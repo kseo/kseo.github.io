@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title>Haskell for Pragmatic Programmers - Fay + Node.js</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Haskell for Pragmatic Programmers</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Fay + Node.js</h1>
+
+            <article>
+  <div class="info">
+      Posted on March 11, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Fay.html">Fay</a>, <a href="../tags/node.js.html">node.js</a>
+      
+  </div>
+
+<p><a href="https://github.com/faylang/fay">Fay</a> is a proper subset of Haskell that compiles to JavaScript. Thus it is by definition a statically typed lazy pure functional language. If you want a more thorough introduction to Fay, please read Paul Callaghan’s <a href="https://pragprog.com/magazines/2012-12/web-programming-in-haskell">Web Programming in Haskell</a> and <a href="https://ocharles.org.uk/blog/posts/2013-12-23-24-days-of-hackage-fay.html">Oliver Charles’s 24 Days of Hackage: fay</a>.</p>
+<p>The original intention of Fay is to use Haskell on the client side. If you use a Haskell web framework such as Yesod or Snap, using Fay you can use the same language on both client and server sides and some code can actually be shared.</p>
+<p>However, because Fay is simply a subset of Haskell that compiles to JavaScript with no dependencies on the client side, you can use it on the server side too in combination with Node.js. I am not saying it is actually a good idea to write server code in Fay, but it is at least fun to investigate the feasibility. Here is <a href="https://gist.github.com/kseo/9477930">a web server example</a> written in Fay.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE EmptyDataDecls #-}</span>
+<span class="kw">module</span> <span class="dt">Hello</span> <span class="kw">where</span></code></pre></div>
+<p><code>EmptyDataDecls</code> is required because JavaScript types are represented by empty data declarations in Fay.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">FFI</span></code></pre></div>
+<p>FFI module provides a foreign function interface.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Http</span>
+<span class="kw">data</span> <span class="dt">HttpServer</span>
+<span class="kw">data</span> <span class="dt">Request</span>
+<span class="kw">data</span> <span class="dt">Response</span></code></pre></div>
+<p><code>Http</code>, <code>HttpServer</code>, <code>Request</code> and <code>Response</code> are JavaScript types we use in this example. They are represented by empty data declarations.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">requireHttp ::</span> <span class="dt">Fay</span> <span class="dt">Http</span>
+requireHttp <span class="fu">=</span> ffi <span class="st">&quot;require('http')&quot;</span></code></pre></div>
+<p>This is a simple example of a FFI declaration. It returns the result of <code>require('http')</code> as a <code>Http</code> instance. Fay is a monad which is similar to IO monad. Because a FFI function often has side effects, Fay monad is used to represent this.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">createServer ::</span> <span class="dt">Http</span> <span class="ot">-&gt;</span> (<span class="dt">Request</span> <span class="ot">-&gt;</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()) <span class="ot">-&gt;</span> <span class="dt">Fay</span> <span class="dt">HttpServer</span>
+createServer <span class="fu">=</span> ffi <span class="st">&quot;%1.createServer(%2)&quot;</span>
+ 
+<span class="ot">consoleLog ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
+consoleLog <span class="fu">=</span> ffi <span class="st">&quot;console.log(%1)&quot;</span>
+ 
+<span class="ot">listen ::</span> <span class="dt">HttpServer</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
+listen <span class="fu">=</span> ffi <span class="st">&quot;%1.listen(%2, %3)&quot;</span>
+  
+<span class="ot">writeHead ::</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
+writeHead <span class="fu">=</span> ffi <span class="st">&quot;%1.writeHead(%2, %3)&quot;</span>
+  
+<span class="ot">end ::</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
+end <span class="fu">=</span> ffi <span class="st">&quot;%1.end(%2)&quot;</span></code></pre></div>
+<p>These FFI declarations use <code>%1</code>, <code>%2</code> that corresponds to the arguments we specify in the type. Most Fay types are automatically serialized and deserialized. Note that we can only use point free style in FFI functions.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">Fay</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  http <span class="ot">&lt;-</span> requireHttp
+  server <span class="ot">&lt;-</span> createServer http (\req res <span class="ot">-&gt;</span> <span class="kw">do</span>
+    writeHead res <span class="dv">200</span> <span class="st">&quot;{ 'Content-Type': 'text/plain' }&quot;</span>
+    end res <span class="st">&quot;Hello World\n&quot;</span>
+    )
+  listen server <span class="dv">1337</span> <span class="st">&quot;127.0.0.1&quot;</span>
+  consoleLog <span class="st">&quot;Server running at http://127.0.0.1:1337/&quot;</span></code></pre></div>
+<p><code>main</code> is the entry point to our web server example. Its return type is <code>Fay ()</code> because a Fay program can’t do anything without interacting with the world outside. Because we already wrapped all the Node.js APIs we use, we can program as if we write a normal Haskell program.</p>
+<p>Compare our Fay web server program with the original Node.js program. Except for the FFI bindings, the main code is almost the same as before. However, our version is much more type-safe!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">var http <span class="fu">=</span> require(<span class="ch">'http'</span>);
+http<span class="fu">.</span>createServer(function (req, res) {
+  res<span class="fu">.</span>writeHead(<span class="dv">200</span>, {<span class="ch">'Content-Type'</span><span class="fu">:</span> <span class="ch">'text/plain'</span>});
+  res<span class="fu">.</span>end(<span class="ch">'Hello World\n'</span>);
+})<span class="fu">.</span>listen(<span class="dv">1337</span>, <span class="ch">'127.0.0.1'</span>);
+console<span class="fu">.</span>log(<span class="ch">'Server running at http://127.0.0.1:1337/'</span>);</code></pre></div>
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>

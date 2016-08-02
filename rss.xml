@@ -77,6 +77,76 @@
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 <item>
+    <title>Fay + Node.js</title>
+    <link>http://kseo.github.io//posts/2014-03-11-fay-with-nodejs.html</link>
+    <description><![CDATA[<article>
+  <div class="info">
+      Posted on March 11, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/Fay.html">Fay</a>, <a href="/tags/node.js.html">node.js</a>
+      
+  </div>
+
+<p><a href="https://github.com/faylang/fay">Fay</a> is a proper subset of Haskell that compiles to JavaScript. Thus it is by definition a statically typed lazy pure functional language. If you want a more thorough introduction to Fay, please read Paul Callaghan’s <a href="https://pragprog.com/magazines/2012-12/web-programming-in-haskell">Web Programming in Haskell</a> and <a href="https://ocharles.org.uk/blog/posts/2013-12-23-24-days-of-hackage-fay.html">Oliver Charles’s 24 Days of Hackage: fay</a>.</p>
+<p>The original intention of Fay is to use Haskell on the client side. If you use a Haskell web framework such as Yesod or Snap, using Fay you can use the same language on both client and server sides and some code can actually be shared.</p>
+<p>However, because Fay is simply a subset of Haskell that compiles to JavaScript with no dependencies on the client side, you can use it on the server side too in combination with Node.js. I am not saying it is actually a good idea to write server code in Fay, but it is at least fun to investigate the feasibility. Here is <a href="https://gist.github.com/kseo/9477930">a web server example</a> written in Fay.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE EmptyDataDecls #-}</span>
+<span class="kw">module</span> <span class="dt">Hello</span> <span class="kw">where</span></code></pre></div>
+<p><code>EmptyDataDecls</code> is required because JavaScript types are represented by empty data declarations in Fay.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">FFI</span></code></pre></div>
+<p>FFI module provides a foreign function interface.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Http</span>
+<span class="kw">data</span> <span class="dt">HttpServer</span>
+<span class="kw">data</span> <span class="dt">Request</span>
+<span class="kw">data</span> <span class="dt">Response</span></code></pre></div>
+<p><code>Http</code>, <code>HttpServer</code>, <code>Request</code> and <code>Response</code> are JavaScript types we use in this example. They are represented by empty data declarations.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">requireHttp ::</span> <span class="dt">Fay</span> <span class="dt">Http</span>
+requireHttp <span class="fu">=</span> ffi <span class="st">&quot;require(&#39;http&#39;)&quot;</span></code></pre></div>
+<p>This is a simple example of a FFI declaration. It returns the result of <code>require('http')</code> as a <code>Http</code> instance. Fay is a monad which is similar to IO monad. Because a FFI function often has side effects, Fay monad is used to represent this.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">createServer ::</span> <span class="dt">Http</span> <span class="ot">-&gt;</span> (<span class="dt">Request</span> <span class="ot">-&gt;</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()) <span class="ot">-&gt;</span> <span class="dt">Fay</span> <span class="dt">HttpServer</span>
+createServer <span class="fu">=</span> ffi <span class="st">&quot;%1.createServer(%2)&quot;</span>
+ 
+<span class="ot">consoleLog ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
+consoleLog <span class="fu">=</span> ffi <span class="st">&quot;console.log(%1)&quot;</span>
+ 
+<span class="ot">listen ::</span> <span class="dt">HttpServer</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
+listen <span class="fu">=</span> ffi <span class="st">&quot;%1.listen(%2, %3)&quot;</span>
+  
+<span class="ot">writeHead ::</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
+writeHead <span class="fu">=</span> ffi <span class="st">&quot;%1.writeHead(%2, %3)&quot;</span>
+  
+<span class="ot">end ::</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
+end <span class="fu">=</span> ffi <span class="st">&quot;%1.end(%2)&quot;</span></code></pre></div>
+<p>These FFI declarations use <code>%1</code>, <code>%2</code> that corresponds to the arguments we specify in the type. Most Fay types are automatically serialized and deserialized. Note that we can only use point free style in FFI functions.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">Fay</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  http <span class="ot">&lt;-</span> requireHttp
+  server <span class="ot">&lt;-</span> createServer http (\req res <span class="ot">-&gt;</span> <span class="kw">do</span>
+    writeHead res <span class="dv">200</span> <span class="st">&quot;{ &#39;Content-Type&#39;: &#39;text/plain&#39; }&quot;</span>
+    end res <span class="st">&quot;Hello World\n&quot;</span>
+    )
+  listen server <span class="dv">1337</span> <span class="st">&quot;127.0.0.1&quot;</span>
+  consoleLog <span class="st">&quot;Server running at http://127.0.0.1:1337/&quot;</span></code></pre></div>
+<p><code>main</code> is the entry point to our web server example. Its return type is <code>Fay ()</code> because a Fay program can’t do anything without interacting with the world outside. Because we already wrapped all the Node.js APIs we use, we can program as if we write a normal Haskell program.</p>
+<p>Compare our Fay web server program with the original Node.js program. Except for the FFI bindings, the main code is almost the same as before. However, our version is much more type-safe!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">var http <span class="fu">=</span> require(<span class="ch">&#39;http&#39;</span>);
+http<span class="fu">.</span>createServer(function (req, res) {
+  res<span class="fu">.</span>writeHead(<span class="dv">200</span>, {<span class="ch">&#39;Content-Type&#39;</span><span class="fu">:</span> <span class="ch">&#39;text/plain&#39;</span>});
+  res<span class="fu">.</span>end(<span class="ch">&#39;Hello World\n&#39;</span>);
+})<span class="fu">.</span>listen(<span class="dv">1337</span>, <span class="ch">&#39;127.0.0.1&#39;</span>);
+console<span class="fu">.</span>log(<span class="ch">&#39;Server running at http://127.0.0.1:1337/&#39;</span>);</code></pre></div>
+</article>
+]]></description>
+    <pubDate>Tue, 11 Mar 2014 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2014-03-11-fay-with-nodejs.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Learning Prolog to be a better Haskell programmer</title>
     <link>http://kseo.github.io//posts/2014-02-17-learning-prolog-to-be-a-better-haskell-programmer.html</link>
     <description><![CDATA[<article>
@@ -422,49 +492,6 @@ unite uf p q <span class="fu">=</span> <span class="kw">do</span>
 ]]></description>
     <pubDate>Thu, 30 Jan 2014 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2014-01-30-implementing-union-find-in-haskell.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Switching from monads to applicative functors</title>
-    <link>http://kseo.github.io//posts/2014-01-26-swtiching-from-monads-to-applicative-functors.html</link>
-    <description><![CDATA[<article>
-  <div class="info">
-      Posted on January 26, 2014
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/monad.html">monad</a>, <a href="/tags/applicative%20functor.html">applicative functor</a>
-      
-  </div>
-
-<p>Many applications of monads actually do not require monads but only applicative functors. Monads allow us to run actions depending on the results of earlier actions, but not all applications of monads need this extended functionality.</p>
-<p>It is better to use applicative functors where possible because there are some advantages of applicative functors. <a href="http://www.haskell.org/haskellwiki/Applicative_functor#Some_advantages_of_applicative_functors">Applicative functor on the Haskell Wiki</a> mentions two:</p>
-<ul>
-<li><p>Code that uses only on the <code>Applicative</code> interface are more general than ones uses the <code>Monad</code> interface, because there are more applicative functors than monads. The <code>ZipList</code> is an applicative functor on lists, where <code>liftA2</code> is implemented by <code>zipWith</code>. It is a typical example of an applicative functor that is not a monad.</p></li>
-<li><p>Programming with <code>Applicative</code> has a more applicative/functional feel. Especially for newbies, it may encourage functional style even when programming with effects. <code>Monad</code> programming with do notation encourages a more sequential &amp; imperative style.</p></li>
-</ul>
-<p>There is another advantage. Applicative functors do not need special transformers because they can be combined in a generic way.</p>
-<p>But there is a problem. It is usually not easy to decide if we need monads or applicative functors up front. You ambitiously start with applicative functors and find later that you actually needed monads. Sad!</p>
-<p>Here is my tip. I start with monads but use only <code>return</code>, <code>ap</code>, <code>liftM</code>, <code>liftM2</code>, … instead of <code>do</code>, <code>&gt;&gt;=</code>. The most common pattern is</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">do</span> x <span class="ot">&lt;-</span> fx
-   y <span class="ot">&lt;-</span> fy
-   return (g x y)</code></pre></div>
-<p>This can be rewritten as <code>liftM2 g fx fy</code>. Once you are sure that you need only those monad methods, you can mechanically switch from monads to applicative functors using the following translation table:</p>
-<ul>
-<li><code>import Control.Monad</code> -&gt; <code>import Control.Applicative</code></li>
-<li><code>return</code> -&gt; <code>pure</code></li>
-<li><code>ap</code> -&gt; -&gt; <code>(&lt;*&gt;)</code></li>
-<li><code>liftM</code> -&gt; <code>liftA</code> or <code>(&lt;$&gt;)</code></li>
-<li><code>liftM2</code> -&gt; <code>liftA2</code></li>
-<li><code>(Monad m =&gt;)</code> -&gt; <code>(Applicative f =&gt;)</code></li>
-</ul>
-</article>
-]]></description>
-    <pubDate>Sun, 26 Jan 2014 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2014-01-26-swtiching-from-monads-to-applicative-functors.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
