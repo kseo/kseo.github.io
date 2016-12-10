@@ -28,7 +28,7 @@
       
   </div>
 
-<p>This is an attempt to understand various encodings used to represent the idea of lens.</p>
+<p>There are variety of libraries offering lens on the hackage. These include <a href="https://hackage.haskell.org/package/data-accessor">data-accessor</a>, <a href="https://hackage.haskell.org/package/fclabels">fclabels</a>, <a href="https://hackage.haskell.org/package/lenses">lenses</a>, <a href="https://hackage.haskell.org/package/data-lens">data-lens</a> and <a href="https://www.stackage.org/haddock/lts-7.12/lens-4.14/Control-Lens.html">lens</a>. Though they represent the same idea, their encodings of lens is not compatible. This article is an attempt to understand various encodings used to represent the idea of lens.</p>
 <h1 id="lens-as-a-getter-and-a-setter">Lens as a getter and a setter</h1>
 <p>The most intuitive way to encode lens is to represent it as a collection of a <em>getter</em> and a <em>setter</em>. <code>Lens s a</code> represents a <em>focus</em> to an <code>a</code> inside an <code>s</code> structure.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Lens</span> s a <span class="fu">=</span> <span class="dt">Lens</span>
