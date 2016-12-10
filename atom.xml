@@ -136,7 +136,7 @@ compose r s <span class="fu">=</span> s <span class="fu">.</span> r</code></pre>
 <p>So we can simply use the <code>(.)</code> to compose two lenses instead of custom <code>compose</code> function.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> update (fstL <span class="fu">.</span> sndL) (<span class="fu">*</span><span class="dv">2</span>) ((<span class="dv">3</span>,<span class="dv">4</span>),<span class="dv">5</span>)
 ((<span class="dv">3</span>,<span class="dv">8</span>),<span class="dv">5</span>)</code></pre></div>
-<p>However, the order of composition is reversed due to the nature of CPS based encoding. This is a bit confusing at first, but it makes sense when we think of it as a field update in an imperative language.</p>
+<p>However, the order of composition is reversed due to the nature of CPS based encoding. This is a bit confusing at first, but it makes sense when we think of it as a property referencing in an OO language.</p>
 <pre><code>pair.(fstL.sndL) *= 2</code></pre>
 <p>This style of composition is also possible with previous two encodings if we use Haskell’s type classes to overload <code>(.)</code> and <code>id</code> as described in <a href="http://www.twanvl.nl/blog/haskell/overloading-functional-references">Overloading functional references</a>. But van Laarhoven lens is still simpler as we don’t need to hide the <code>(.)</code> operator of the <code>Prelude</code>.</p>
 <h1 id="isomorphism-lens">Isomorphism lens</h1>
