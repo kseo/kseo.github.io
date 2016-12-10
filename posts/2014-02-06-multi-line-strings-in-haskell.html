@@ -49,22 +49,22 @@
 <p>The <a href="http://hackage.haskell.org/package/raw-strings-qq">raw-strings-qq</a> package provides a quasiquoter for raw string literals. In addition to supporting multi-line string, it does not recognize escape sequences. So we don’t need to add <code>\</code> as in multi-line string literals. <code>{-# LANGUAGE QuasiQuotes #-}</code> is required to use this feature.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE QuasiQuotes #-}</span>
 <span class="kw">import </span><span class="dt">Text.RawString.QQ</span>
-multi <span class="fu">=</span> [r<span class="fu">|</span>line1
+multi <span class="fu">=</span> [r|line1
 line2
-line3<span class="fu">|</span>]</code></pre></div>
+line3|]</code></pre></div>
 <p>I prefer quasiquotation because I use multi-line string literals for HTML/XML fragments and it is laborious to escape all special characters such as quotes.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE QuasiQuotes #-}</span>
 <span class="kw">import </span><span class="dt">Text.RawString.QQ</span>
  
 <span class="ot">multiline ::</span> <span class="dt">String</span>
-multiline <span class="fu">=</span> [r<span class="fu">|&lt;</span><span class="dt">HTML</span><span class="fu">&gt;</span>
-<span class="fu">&lt;</span><span class="dt">HEAD</span><span class="fu">&gt;</span>
-<span class="fu">&lt;</span><span class="dt">TITLE</span><span class="fu">&gt;</span><span class="dt">Auto</span><span class="fu">-</span>generated html formated source<span class="fu">&lt;/</span><span class="dt">TITLE</span><span class="fu">&gt;</span>
-<span class="fu">&lt;</span><span class="dt">META</span> <span class="dt">HTTP</span><span class="fu">-</span><span class="dt">EQUIV</span><span class="fu">=</span><span class="st">&quot;Content-Type&quot;</span> <span class="dt">CONTENT</span><span class="fu">=</span><span class="st">&quot;text/html; charset=windows-1252&quot;</span><span class="fu">&gt;</span>
-<span class="fu">&lt;/</span><span class="dt">HEAD</span><span class="fu">&gt;</span>
-<span class="fu">&lt;</span><span class="dt">BODY</span> <span class="dt">LINK</span><span class="fu">=</span><span class="st">&quot;800080&quot;</span> <span class="dt">BGCOLOR</span><span class="fu">=</span><span class="st">&quot;#ffffff&quot;</span><span class="fu">&gt;</span>
-<span class="fu">&lt;</span><span class="dt">P</span><span class="fu">&gt;</span> <span class="fu">&lt;/</span><span class="dt">P</span><span class="fu">&gt;</span>
-<span class="fu">&lt;</span><span class="dt">PRE</span><span class="fu">&gt;|</span>]</code></pre></div>
+multiline <span class="fu">=</span> [r|&lt;HTML&gt;
+&lt;HEAD&gt;
+&lt;TITLE&gt;Auto-generated html formated source&lt;/TITLE&gt;
+&lt;META HTTP-EQUIV=&quot;Content-Type&quot; CONTENT=&quot;text/html; charset=windows-1252&quot;&gt;
+&lt;/HEAD&gt;
+&lt;BODY LINK=&quot;800080&quot; BGCOLOR=&quot;#ffffff&quot;&gt;
+&lt;P&gt; &lt;/P&gt;
+&lt;PRE&gt;|]</code></pre></div>
 <p>There are other quasi-quote packages such as <a href="http://hackage.haskell.org/package/interpolatedstring-qq">string-qq</a>, <a href="http://hackage.haskell.org/package/string-quote">string-quote</a> and <a href="http://hackage.haskell.org/package/interpolatedstring-qq">interpolatedstring-qq</a>.</p>
 <div id="disqus_thread"></div>
 <script>
