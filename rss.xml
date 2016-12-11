@@ -7,8 +7,130 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Sat, 10 Dec 2016 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sun, 11 Dec 2016 00:00:00 UT</lastBuildDate>
         <item>
+    <title>How to read arrow combinators</title>
+    <link>http://kseo.github.io//posts/2016-12-11-how-to-read-arrow-combinators.html</link>
+    <description><![CDATA[<article>
+  <div class="info">
+      Posted on December 11, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/Arrow.html">Arrow</a>
+      
+  </div>
+
+<p>Arrows, like monads and applicative functors, express computations that happen within a context. In Haskell, arrows are represented with a type constructor <code>Arrow</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Arrow</span> a <span class="kw">where</span>
+<span class="ot">  arr ::</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> a b c
+  <span class="co">-- Each function may be treated as a computation.</span>
+
+<span class="ot">  (&gt;&gt;&gt;) ::</span> a b c <span class="ot">-&gt;</span> a c d <span class="ot">-&gt;</span> a b d
+  <span class="co">-- Computations may be composed, by connecting the output of the first to the input of the second.</span>
+
+<span class="ot">  first ::</span> a b c <span class="ot">-&gt;</span> a (b,d) (c,d)
+  <span class="co">-- A computation may be applied to part of the input, with the rest copied through to the output.</span>
+  <span class="fu">...</span></code></pre></div>
+<p>As usual, it takes some time to comprehend what arrow is and why and how it is useful. If you are looking for a good arrow tutorial, I strongly recommend John Hughes’s <a href="http://www.cse.chalmers.se/~rjmh/afp-arrows.pdf">Programming with Arrows</a>.</p>
+<p>However, it is not necessary to understand arrow just to read some code written with arrow combinators because arrows are often used even when there is no compelling reason to do so. <code>(-&gt;)</code> is an instance of <code>Arrow</code> and some Haskell programmers just prefer arrow style even though combinators of <code>Data.Bifunctor</code> are often more readable.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Arrow</span> (<span class="ot">-&gt;</span>) <span class="kw">where</span>
+    arr f <span class="fu">=</span> f
+    (<span class="fu">***</span>) f g <span class="fu">~</span>(x,y) <span class="fu">=</span> (f x, g y)</code></pre></div>
+<p>So here is my tip. If you encounter code written with arrow combinators in the context of <code>(-&gt;)</code>, use the following translation table to decode what the code means.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Combinator</th>
+<th>Meaning</th>
+<th>Alternatives</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>(&gt;&gt;&gt;)</td>
+<td>flip (.)</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>first</td>
+<td>(x, y) -&gt; (f x, y)</td>
+<td>first (Data.Bifunctor)</td>
+</tr>
+<tr class="odd">
+<td>second</td>
+<td>(x, y) -&gt; (x, f y)</td>
+<td>second (Data.Bifunctor)</td>
+</tr>
+<tr class="even">
+<td>(***)</td>
+<td>g (x, y) -&gt; (f x, g y)</td>
+<td>bimap (Data.Bifunctor)</td>
+</tr>
+<tr class="odd">
+<td>(&amp;&amp;&amp;)</td>
+<td>g x -&gt; (f x, g x)</td>
+<td>liftA2 (,) (Control.Applicative)</td>
+</tr>
+<tr class="even">
+<td>left</td>
+<td>Maps over Left case</td>
+<td>first (Data.Bifunctor)</td>
+</tr>
+<tr class="odd">
+<td>right</td>
+<td>Maps over Right case</td>
+<td>second (Data.Bifunctor)</td>
+</tr>
+<tr class="even">
+<td>(+++)</td>
+<td>Maps over both cases</td>
+<td>bimap (Data.Bifunctor)</td>
+</tr>
+<tr class="odd">
+<td>(|||)</td>
+<td>Eliminates Either</td>
+<td>either (Data.Either)</td>
+</tr>
+<tr class="even">
+<td>app</td>
+<td>(f, x) -&gt; f x</td>
+<td>uncurry ($)</td>
+</tr>
+</tbody>
+</table>
+<p>In case of <code>second</code> and <code>right</code>, we can also use <code>fmap</code> because both <code>(,)</code> and <code>Either</code> is functorial on the second type. But I personally don’t recommend <code>fmap</code> in this case because these types arbitrarily map the second type instead of the first one.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Sun, 11 Dec 2016 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2016-12-11-how-to-read-arrow-combinators.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Encodings of lens</title>
     <link>http://kseo.github.io//posts/2016-12-10-encodings-of-lense.html</link>
     <description><![CDATA[<article>
@@ -659,97 +781,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Wed, 12 Feb 2014 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2014-02-12-data-map-vs-data-intmap.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Record wildcards</title>
-    <link>http://kseo.github.io//posts/2014-02-10-record-wildcards.html</link>
-    <description><![CDATA[<article>
-  <div class="info">
-      Posted on February 10, 2014
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/record%20wildcards.html">record wildcards</a>, <a href="/tags/language%20extension.html">language extension</a>
-      
-  </div>
-
-<p>Haskell record syntax is a bit verbose. For records with many fields, it is tiresome to write each field individually in a record pattern, as in</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">C</span> <span class="fu">=</span> <span class="dt">C</span> {<span class="ot">a ::</span> <span class="dt">Int</span>,<span class="ot"> b ::</span> <span class="dt">Int</span>,<span class="ot"> c ::</span> <span class="dt">Int</span>,<span class="ot"> d ::</span> <span class="dt">Int</span>}
-
-f (<span class="dt">C</span> {a <span class="fu">=</span> <span class="dv">1</span>, b <span class="fu">=</span> b, c <span class="fu">=</span> c, d <span class="fu">=</span> d}) <span class="fu">=</span> b <span class="fu">+</span> c <span class="fu">+</span> d</code></pre></div>
-<p><a href="https://ocharles.org.uk/blog/posts/2014-12-04-record-wildcards.html">Record wildcard syntax</a> lets us use <code>..</code> in a record pattern, which simplifies pattern <code>f=f</code> to <code>f</code>. The above pattern can be rewritten with record wildcards syntax</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f (<span class="dt">C</span> {a <span class="fu">=</span> <span class="dv">1</span>, <span class="fu">..</span>}) <span class="fu">=</span> b <span class="fu">+</span> c <span class="fu">+</span> d</code></pre></div>
-<p>This simple example does not show the merit of record wildcards vividly. Let’s see a real world example. <a href="http://hackage.haskell.org/package/hs-java">hs-java</a> is a package written by Ilya V. Portnov, which provides data types for Java .class files format and functions to assemble/disassemble Java bytecode.</p>
-<p>The datatype for a JVM class file is <code>Class</code>, which has many fields as in</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Class</span> stage <span class="fu">=</span> <span class="dt">Class</span> {
-<span class="ot">  magic ::</span> <span class="dt">Word32</span>,                         <span class="co">-- ^ Magic value: 0xCAFEBABE</span>
-<span class="ot">  minorVersion ::</span> <span class="dt">Word16</span>,
-<span class="ot">  majorVersion ::</span> <span class="dt">Word16</span>,
-<span class="ot">  constsPoolSize ::</span> <span class="dt">Word16</span>,                <span class="co">-- ^ Number of items in constants pool</span>
-<span class="ot">  constsPool ::</span> <span class="dt">Pool</span> stage,                <span class="co">-- ^ Constants pool itself</span>
-<span class="ot">  accessFlags ::</span> <span class="dt">AccessFlags</span> stage,        <span class="co">-- ^ See @JVM.Types.AccessFlag@</span>
-<span class="ot">  thisClass ::</span> <span class="dt">Link</span> stage <span class="dt">B.ByteString</span>,    <span class="co">-- ^ Constants pool item index for this class</span>
-<span class="ot">  superClass ::</span> <span class="dt">Link</span> stage <span class="dt">B.ByteString</span>,   <span class="co">-- ^ --/-- for super class, zero for java.lang.Object</span>
-<span class="ot">  interfacesCount ::</span> <span class="dt">Word16</span>,               <span class="co">-- ^ Number of implemented interfaces</span>
-<span class="ot">  interfaces ::</span> [<span class="dt">Link</span> stage <span class="dt">B.ByteString</span>], <span class="co">-- ^ Constants pool item indexes for implemented interfaces</span>
-<span class="ot">  classFieldsCount ::</span> <span class="dt">Word16</span>,              <span class="co">-- ^ Number of class fileds</span>
-<span class="ot">  classFields ::</span> [<span class="dt">Field</span> stage],            <span class="co">-- ^ Class fields</span>
-<span class="ot">  classMethodsCount ::</span> <span class="dt">Word16</span>,             <span class="co">-- ^ Number of class methods</span>
-<span class="ot">  classMethods ::</span> [<span class="dt">Method</span> stage],          <span class="co">-- ^ Class methods</span>
-<span class="ot">  classAttributesCount ::</span> <span class="dt">Word16</span>,          <span class="co">-- ^ Number of class attributes</span>
-<span class="ot">  classAttributes ::</span> <span class="dt">Attributes</span> stage      <span class="co">-- ^ Class attributes</span>
-  }</code></pre></div>
-<p>It is declared as an instance of <a href="http://hackage.haskell.org/package/binary-0.7.1.0/docs/Data-Binary.html">Binary</a> class for serialization. Its put method uses the record wildcards syntax not to repeat field names as in the following:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Binary</span> (<span class="dt">Class</span> <span class="dt">File</span>) <span class="kw">where</span>
-  put (<span class="dt">Class</span> {<span class="fu">..</span>}) <span class="fu">=</span> <span class="kw">do</span>
-    put magic
-    put minorVersion
-    put majorVersion
-    putPool constsPool
-    put accessFlags
-    put thisClass
-    put superClass
-    put interfacesCount
-    forM_ interfaces put
-    put classFieldsCount
-    forM_ classFields put
-    put classMethodsCount
-    forM_ classMethods put
-    put classAttributesCount
-    forM_ (attributesList classAttributes) put</code></pre></div>
-<p>You can see the real difference by comparing this with a more verbose version which does not use record wildcards.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Binary</span> (<span class="dt">Class</span> <span class="dt">File</span>) <span class="kw">where</span>
-  put (<span class="dt">Class</span> {magic<span class="fu">=</span>magic, minorVersion<span class="fu">=</span>minorVersion, majorVersion<span class="fu">=</span>majorVersion, constsPool<span class="fu">=</span>constsPool, accessFlags<span class="fu">=</span>accessFlags, thisCla    ss<span class="fu">=</span>thisClass, superClass<span class="fu">=</span>superClass, interfacesCount<span class="fu">=</span>interfacesCount, interfaces<span class="fu">=</span>interfaces, classFieldsCount<span class="fu">=</span>classFieldsCount, classFie    lds<span class="fu">=</span>classFields, classMethodsCount<span class="fu">=</span>classMethodsCount, classMethods<span class="fu">=</span>classMethods, classAttributesCount<span class="fu">=</span>classAttributesCount, classAttributes<span class="fu">=</span>classAttributes}) <span class="fu">=</span> <span class="kw">do</span>
- <span class="fu">...</span></code></pre></div>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Mon, 10 Feb 2014 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2014-02-10-record-wildcards.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
