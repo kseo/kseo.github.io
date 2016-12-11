@@ -28,7 +28,7 @@
       
   </div>
 
-<p>Arrows, like monads and applicative functors, express computations that happen within a context. In Haskell, arrows are represented with a type constructor <code>Arrow</code>:</p>
+<p>Arrows, like monads and applicative functors, express computations that happen within a context. In Haskell, arrows are represented with a constructor class <code>Arrow</code>:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Arrow</span> a <span class="kw">where</span>
 <span class="ot">  arr ::</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> a b c
   <span class="co">-- Each function may be treated as a computation.</span>
