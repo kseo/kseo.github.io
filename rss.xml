@@ -40,7 +40,7 @@
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Arrow</span> (<span class="ot">-&gt;</span>) <span class="kw">where</span>
     arr f <span class="fu">=</span> f
     (<span class="fu">***</span>) f g <span class="fu">~</span>(x,y) <span class="fu">=</span> (f x, g y)</code></pre></div>
-<p>So here is my tip. If you encounter code written with arrow combinators in the context of <code>(-&gt;)</code>, use the following translation table to decode what the code means.</p>
+<p>So here is my tip. If you encounter code written with arrow combinators in the context of <code>(-&gt;)</code>, use the following <a href="https://en.wikibooks.org/wiki/Haskell/Understanding_arrows#Arrow_combinators_crop_up_in_unexpected_places">translation table</a> to decode what the code means.</p>
 <table>
 <thead>
 <tr class="header">
