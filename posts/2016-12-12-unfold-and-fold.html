@@ -46,7 +46,7 @@
 <p>Another simple use of <code>unfoldr</code>:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> unfoldr (\b <span class="ot">-&gt;</span> <span class="kw">if</span> b <span class="fu">==</span> <span class="dv">0</span> <span class="kw">then</span> <span class="dt">Nothing</span> <span class="kw">else</span> <span class="dt">Just</span> (b, b<span class="fu">-</span><span class="dv">1</span>)) <span class="dv">10</span>
 [<span class="dv">10</span>,<span class="dv">9</span>,<span class="dv">8</span>,<span class="dv">7</span>,<span class="dv">6</span>,<span class="dv">5</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>]</code></pre></div>
-<p>As the name suggests, <em>unfold</em> is the categorical dual of <em>fold</em>. (It should be cofold instead of unfold?) It means we can get the signature of <code>foldr</code> by reversing the arrows of <code>unfoldr</code>, and vice versa.</p>
+<p>As the name suggests, <em>unfold</em> is the categorical dual of <em>fold</em>. (Maybe it should be <em>cofold</em> instead of <em>unfold</em>.) It means we can get the signature of <code>foldr</code> by reversing the arrows of <code>unfoldr</code>, and vice versa.</p>
 <p>Let’s try this.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])
 foldr<span class="ot">   ::</span> (<span class="dt">Maybe</span> (a, b) <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> ([a] <span class="ot">-&gt;</span> b)</code></pre></div>
@@ -75,7 +75,7 @@ foldr<span class="ot">   ::</span> (<span class="dt">Maybe</span> (a, b) <span c
 <p>by Either a () ~= Maybe a</p>
 </blockquote>
 <pre><code>(Maybe (a, b) -&gt; b) → ([a] → b)</code></pre>
-<p>Now we can clearly see that <em>unfold</em> is the dual of <em>fold</em>. If you want to see more on the relationship between fold and unfold, see Conal Elliott’s <a href="http://conal.net/talks/folds-and-unfolds.pdf">Folds and unfolds all around us</a>.</p>
+<p>Now we can clearly see that <em>unfold</em> is the dual of <em>fold</em>. If you want to learn more on the relationship between <em>fold</em> and <em>unfold</em>, see Conal Elliott’s <a href="http://conal.net/talks/folds-and-unfolds.pdf">Folds and unfolds all around us</a>.</p>
 <h1 id="implementation">Implementation</h1>
 <p>Here’s an implementation of <code>unfoldr</code>.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])
