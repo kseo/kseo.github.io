@@ -25,7 +25,7 @@
   </div>
 
 <h1 id="unfold">unfold</h1>
-<p>Every functional programmer loves <em>fold</em>. fold is <a href="http://www.cs.nott.ac.uk/~pszgmh/fold.pdf">universal and expressive</a>. But <em>fold</em> has a secret twin brother named <em>unfold</em> which undoes what <em>fold</em> does. In this post, we will see what <em>unfold</em> is and how it is related to <em>unfold</em>.</p>
+<p>Every functional programmer loves <em>fold</em>. fold is <a href="http://www.cs.nott.ac.uk/~pszgmh/fold.pdf">universal and expressive</a>. But <em>fold</em> has a secret twin brother named <em>unfold</em> which undoes what <em>fold</em> does. In this post, we will see what <em>unfold</em> is and how it is related to <em>fold</em>.</p>
 <p><code>unfoldr</code> builds a list from a seed value while <code>foldr</code> reduces a list to a summary value.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a]</code></pre></div>
 <p><code>unfoldr</code> takes the element and returns <code>Nothing</code> if it is done producing the list or returns <code>Just (a, b)</code>, in which case, <code>a</code> is a prepended to the list and <code>b</code> is used as the next element in a recursive call.</p>
