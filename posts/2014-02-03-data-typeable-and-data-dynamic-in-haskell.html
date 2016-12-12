@@ -36,30 +36,29 @@
       
   </div>
 
+<p>This article is written in literal Haskell.</p>
 <p><a href="http://hackage.haskell.org/package/base-4.6.0.1/docs/Data-Typeable.html">Data.Typeable</a> is a way to implement dynamic (delayed) type checking in Haskell using a <a href="http://www.haskell.org/haskellwiki/Heterogenous_collections#A_Universal_type">universal type</a>.</p>
 <p>For example, you can implement a heterogenous list in Haskell. <code>toDyn</code> converts any <code>Typeable</code> instance into <code>Dynamic</code> which is similar to Java <code>Object</code> type. Any type that is an instance of <code>Typeable</code> class can be wrapped with <code>Dynamic</code> type.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Dynamic</span>
-<span class="kw">import </span><span class="dt">Data.Maybe</span>
- 
-<span class="ot">hlist ::</span> [<span class="dt">Dynamic</span>]
-hlist <span class="fu">=</span> [ toDyn <span class="st">&quot;string&quot;</span>
-        , toDyn (<span class="dv">7</span><span class="ot"> ::</span> <span class="dt">Int</span>)
-        , toDyn (pi<span class="ot"> ::</span> <span class="dt">Double</span>)
-        , toDyn <span class="ch">'x'</span>
-        , toDyn ((), <span class="dt">Just</span> <span class="st">&quot;foo&quot;</span>)
-        ]
- 
-<span class="ot">dyn ::</span> <span class="dt">Dynamic</span>
-dyn <span class="fu">=</span> hlist <span class="fu">!!</span> <span class="dv">1</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Dynamic</span>
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Maybe</span></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; hlist ::</span> [<span class="dt">Dynamic</span>]
+<span class="ot">&gt;</span> hlist <span class="fu">=</span> [ toDyn (<span class="st">&quot;string&quot;</span><span class="ot"> ::</span> <span class="dt">String</span>)
+<span class="ot">&gt;</span>         , toDyn (<span class="dv">7</span><span class="ot"> ::</span> <span class="dt">Int</span>)
+<span class="ot">&gt;</span>         , toDyn (pi<span class="ot"> ::</span> <span class="dt">Double</span>)
+<span class="ot">&gt;</span>         , toDyn <span class="ch">'x'</span>
+<span class="ot">&gt;</span>         , toDyn (((), <span class="dt">Just</span> <span class="st">&quot;foo&quot;</span>)<span class="ot"> ::</span> ((), <span class="dt">Maybe</span> <span class="dt">String</span>))
+<span class="ot">&gt;</span>         ]</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; dyn ::</span> <span class="dt">Dynamic</span>
+<span class="ot">&gt;</span> dyn <span class="fu">=</span> hlist <span class="fu">!!</span> <span class="dv">1</span></code></pre></div>
 <p>To be precise, <code>hlist</code> is not actually a heterogenous list from the point of Haskell type system. It is just a homogenous list of <code>Dynamic</code>. The chapter 20, “Untyped Means Uni-Typed” of Harper’s textbook also emphasizes this observation: dynamic types (with typeable representations) are statically typed languages with only one type.</p>
 <p>You can convert a <code>Dynamic</code> object back into an ordinary Haskell value using <code>fromDynamic</code>. Type checking is dynamic because it is delayed to runtime.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">v ::</span> <span class="dt">Int</span>
-v <span class="fu">=</span> <span class="kw">case</span> fromDynamic dyn <span class="kw">of</span>
-        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Type mismatch&quot;</span>
-        <span class="dt">Just</span> x  <span class="ot">-&gt;</span> x</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; v ::</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> v <span class="fu">=</span> <span class="kw">case</span> fromDynamic dyn <span class="kw">of</span>
+<span class="ot">&gt;</span>         <span class="dt">Nothing</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Type mismatch&quot;</span>
+<span class="ot">&gt;</span>         <span class="dt">Just</span> x  <span class="ot">-&gt;</span> x</code></pre></div>
 <p>You can make any type <code>Typeable</code> by adding <code>deriving Data.Typeable</code>. In GHC, you need to turn on <code>-XDeriveDataTypeable</code> option to make GHC automatically derive the instance for you.</p>
 <p>The <code>Data.Typeable</code> class is used primarily for generic programming in the “Scrap Your Boilerplate (SYB)” style. I will write more on this later.</p>
-<h2 id="references">References</h2>
+<h1 id="references">References</h1>
 <ul>
 <li>Martín Abadi, Luca Cardelli, Benjamin Pierce and Gordon Plotkin, “<a href="http://www.hpl.hp.com/techreports/Compaq-DEC/SRC-RR-47.pdf">Dynamic Typing in a Statically Typed Language</a>”, ACM Transactions on Programming Languages and Systems (TOPLAS), 1991.</li>
 <li>James Cheney and Ralf Hinze, “<a href="https://www.cs.ox.ac.uk/people/ralf.hinze/publications/HW02.pdf">A lightweight implementation of generics and dynamics</a>”, Haskell ’02: Proceedings of the 2002 ACM SIGPLAN Workshop on Haskell, 2002.</li>
