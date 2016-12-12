@@ -36,7 +36,7 @@
       
   </div>
 
-<p>This article is written in literal Haskell.</p>
+<p>This article is written in literate Haskell.</p>
 <p><a href="http://hackage.haskell.org/package/base-4.6.0.1/docs/Data-Typeable.html">Data.Typeable</a> is a way to implement dynamic (delayed) type checking in Haskell using a <a href="http://www.haskell.org/haskellwiki/Heterogenous_collections#A_Universal_type">universal type</a>.</p>
 <p>For example, you can implement a heterogenous list in Haskell. <code>toDyn</code> converts any <code>Typeable</code> instance into <code>Dynamic</code> which is similar to Java <code>Object</code> type. Any type that is an instance of <code>Typeable</code> class can be wrapped with <code>Dynamic</code> type.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Dynamic</span>
