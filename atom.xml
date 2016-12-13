@@ -518,6 +518,67 @@ var disqus_config = function () {
 ]]></summary>
 </entry>
 <entry>
+    <title>Summary of Philip Walder’s "Proofs are Programs"</title>
+    <link href="http://kseo.github.io//posts/2015-06-19-proofs-are-programs.html" />
+    <id>http://kseo.github.io//posts/2015-06-19-proofs-are-programs.html</id>
+    <published>2015-06-19T00:00:00Z</published>
+    <updated>2015-06-19T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<article>
+  <div class="info">
+      Posted on June 19, 2015
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/Curry-Howard%20Isomorphism.html">Curry-Howard Isomorphism</a>, <a href="/tags/lambda%20calculus.html">lambda calculus</a>, <a href="/tags/logic.html">logic</a>, <a href="/tags/natural%20deduction.html">natural deduction</a>, <a href="/tags/program.html">program</a>, <a href="/tags/proof.html">proof</a>, <a href="/tags/type%20system.html">type system</a>
+      
+  </div>
+
+<p>This is my short summary of Philip Wadler’s <a href="http://homepages.inf.ed.ac.uk/wadler/papers/frege/frege.pdf">Proofs are Programs: 19th Century Logic and 21st Century Computing</a>.</p>
+<p>Proofs and programs are the same thing. But it took a century of efforts to recognize the relationship.</p>
+<ul>
+<li>Modern logic began with Gottlob Frege’s Begriffschrift in 1879.</li>
+<li>Gerhard Gentzen introduced natural deduction in 1934.</li>
+<li>Alonzo Church introduced lambda calculus in 1932. He also introduced a typed version of lambda calculus in 1940.</li>
+<li>Dag Prawitz showed how to simplify natural deduction proofs directly in 1956.</li>
+<li>Haskell Curry noted a correspondence between the types of the combinators and the laws of logic as formulated by Hilbert in 1956.</li>
+<li>W. A. Howard put together the results of Curry and Prawitz, and wrote down the correspondence between natural deduction and lambda calculus in 1969.</li>
+<li>Howard’s work was published in 1980.</li>
+</ul>
+<p>So it took more than 30 years to recognize the correspondence between Gentzen’s natural deduction and Church’s typed lambda calculus. They are the same thing! Proofs and programs. This correspondence is called Curry-Howard Isomorphism.</p>
+<p>Logicians and computer scientists have discovered exactly the same type systems!</p>
+<ul>
+<li>Hindley-Milner type system: Hindley (1969), Milner (1978).</li>
+<li>Girard-Reynolds system: Girard (1972), Reynolds (1974).</li>
+<li>.. still being discovered</li>
+</ul>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Fay + Node.js</title>
     <link href="http://kseo.github.io//posts/2014-03-11-fay-with-nodejs.html" />
     <id>http://kseo.github.io//posts/2014-03-11-fay-with-nodejs.html</id>
@@ -745,55 +806,6 @@ var disqus_config = function () {
 head <span class="ot">:</span> <span class="ot">{</span>A <span class="ot">:</span> <span class="dt">Set</span><span class="ot">}{</span>n <span class="ot">:</span> Nat<span class="ot">}</span> <span class="ot">-&gt;</span> Vec A <span class="ot">(</span>suc n<span class="ot">)</span> <span class="ot">-&gt;</span> A
 head <span class="ot">(</span>x :: xs<span class="ot">)</span> <span class="ot">=</span> x</code></pre></div>
 <p>Please refer to <a href="http://www.cse.chalmers.se/~ulfn/darcs/AFP08/LectureNotes/AgdaIntro.pdf">Dependently Typed Programming in Agda</a> and <a href="https://www.youtube.com/playlist?p=B7F836675DCE009C">Daniel Peebles’s introduction on Agda</a> for more information on Agda.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Learning Prolog to be a better Haskell programmer</title>
-    <link href="http://kseo.github.io//posts/2014-02-17-learning-prolog-to-be-a-better-haskell-programmer.html" />
-    <id>http://kseo.github.io//posts/2014-02-17-learning-prolog-to-be-a-better-haskell-programmer.html</id>
-    <published>2014-02-17T00:00:00Z</published>
-    <updated>2014-02-17T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<article>
-  <div class="info">
-      Posted on February 17, 2014
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Haskell.html">Haskell</a>, <a href="/tags/prolog.html">prolog</a>, <a href="/tags/type-level%20programming.html">type-level programming</a>, <a href="/tags/functional%20dependencies.html">functional dependencies</a>, <a href="/tags/type%20families.html">type families</a>
-      
-  </div>
-
-<p>While learning some advanced topics of the Haskell type system, I found type level programming is reminiscent of logic programming.</p>
-<p>For example, <a href="http://www.cse.chalmers.se/~hallgren/Papers/wm01.html">Fun with Functional Dependencies</a> shows how to implement insertion sort using functional dependencies in a programming style similar to Prolog. <a href="https://wiki.haskell.org/Simonpj/Talk:FunWithTypeFuns">Fun with Type Functions</a> also shows a similar example using type families.</p>
-<p>This similarity is not a coincidence because of the correspondence between a logic system and a type system, which is known as <a href="https://en.wikipedia.org/wiki/Curry%E2%80%93Howard_correspondence">Curry-Howard isomorphism</a>.</p>
-<p>Lesson: Learn Prolog to be a better Haskell programmer!</p>
-<h2 id="references">References</h2>
-<p>There is <a href="https://mail.haskell.org/pipermail/haskell-cafe/2010-June/079412.html">a discussion</a> on the Haskell-cafe.</p>
 <div id="disqus_thread"></div>
 <script>
 
