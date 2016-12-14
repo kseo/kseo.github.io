@@ -10,9 +10,9 @@
     </author>
     <updated>2016-12-14T00:00:00Z</updated>
     <entry>
-    <title>How to generate random functions in QuickCheck</title>
-    <link href="http://kseo.github.io//posts/2016-12-14-how-to-generate-random-functions.html" />
-    <id>http://kseo.github.io//posts/2016-12-14-how-to-generate-random-functions.html</id>
+    <title>How QuickCheck generates random functions</title>
+    <link href="http://kseo.github.io//posts/2016-12-14-how-quick-check-generate-random-functions.html" />
+    <id>http://kseo.github.io//posts/2016-12-14-how-quick-check-generate-random-functions.html</id>
     <published>2016-12-14T00:00:00Z</published>
     <updated>2016-12-14T00:00:00Z</updated>
     <summary type="html"><![CDATA[<article>
@@ -32,7 +32,7 @@
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Arbitrary</span> a <span class="kw">where</span>
 <span class="ot">  arbitrary   ::</span> <span class="dt">Gen</span> a
   <span class="fu">...</span></code></pre></div>
-<p>We can define instances of <code>Arbitrary</code> using the combinators provided by QuickCheck. For example, the instances of <code>Bool</code> and <code>Ordering</code> are defined using <code>choose</code> and <code>elements</code> respectively. <code>choose</code> generates a random element in the given inclusive range and <code>elements xs</code> generates an arbitrary element of the list <code>xs</code>.</p>
+<p>We can define instances of <code>Arbitrary</code> using the combinators provided by <em>QuickCheck</em>. For example, the instances of <code>Bool</code> and <code>Ordering</code> are defined using <code>choose</code> and <code>elements</code> respectively. <code>choose</code> generates a random element in the given inclusive range and <code>elements xs</code> generates an arbitrary element of the list <code>xs</code>.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Arbitrary</span> <span class="dt">Bool</span> <span class="kw">where</span>
   arbitrary <span class="fu">=</span> choose (<span class="dt">False</span>,<span class="dt">True</span>)
   shrink <span class="dt">True</span> <span class="fu">=</span> [<span class="dt">False</span>]
@@ -77,7 +77,7 @@
 <li><code>promote</code> has type <code>(a -&gt; Gen b) -&gt; Gen (a-&gt;b)</code></li>
 <li>So, the entire expression has type <code>Gen (a-&gt;b)</code></li>
 </ol>
-<p>The current implementation of QuickCheck is a bit different as it is generalized to <code>Monad</code>, but When <code>m</code> is the function instance of <code>Monad</code>, <code>promote</code> is the same as we derived here.</p>
+<p>The current implementation of <em>QuickCheck</em> is a bit different as it is generalized to <code>Monad</code>, but When <code>m</code> is the function instance of <code>Monad</code>, <code>promote</code> is the same as we derived here.</p>
 <pre><code>promote :: Monad m =&gt; m (Gen a) -&gt; Gen (m a)</code></pre>
 <h1 id="references">References</h1>
 <ul>
