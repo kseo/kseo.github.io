@@ -150,7 +150,7 @@ var disqus_config = function () {
 <h1 id="peano-numbers">Peano numbers</h1>
 <p><code>NumS</code> is the simplest recursive data type which represents Peano numbers.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">NumS</span> <span class="fu">=</span> <span class="dt">NumS</span> {<span class="ot"> unnumS ::</span> forall r<span class="fu">.</span> (<span class="dt">NumS</span> <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> r }</code></pre></div>
-<p><code>NumS</code> has two constructors. <code>zeorS</code> is the non recursive constructor that represents the value zero. <code>succS</code> is the recursive constructor which yields the successor of such a Peano number.</p>
+<p><code>NumS</code> has two constructors. <code>zeroS</code> is the non recursive constructor that represents the value zero. <code>succS</code> is the recursive constructor which yields the successor of such a Peano number.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; zeroS ::</span> <span class="dt">NumS</span>
 <span class="ot">&gt;</span> zeroS <span class="fu">=</span> <span class="dt">NumS</span> (\s z <span class="ot">-&gt;</span> z)
 <span class="ot">&gt;</span> 
