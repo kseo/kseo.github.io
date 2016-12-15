@@ -32,7 +32,7 @@
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">run ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> <span class="dt">String</span></code></pre></div>
 <p>For testing, we would like to check if this function works correctly for various input scripts. To enumerate a few test scenarios:</p>
 <ul>
-<li>`.x’ evaluates to itself because there is no reduction in the term.</li>
+<li><code>\x.x</code> evaluates to itself because there is no reduction in the term.</li>
 <li><code>(\x.x)(\x.x)</code> evaluates to <code>(\x.x)</code> by substitution.</li>
 <li><code>\x.y</code> throws an error because <code>y</code> is an unbound variable.</li>
 </ul>
