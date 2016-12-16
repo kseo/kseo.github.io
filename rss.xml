@@ -7,8 +7,116 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Thu, 15 Dec 2016 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Fri, 16 Dec 2016 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Datatype-generic programming with bifunctors</title>
+    <link>http://kseo.github.io//posts/2016-12-16-datatype-generic-programming-with-bifunctors.html</link>
+    <description><![CDATA[<article>
+  <div class="info">
+      Posted on December 16, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/datatype-generic.html">datatype-generic</a>, <a href="/tags/bifunctors.html">bifunctors</a>
+      
+  </div>
+
+<p>In the <em>origami</em> style of programming, higher-order recursion operators such as <em>map</em>, <em>fold</em> and <em>unfold</em> captures the structure of programs. These operators have two aspects: <em>mapping</em> and <em>accumulating</em>.</p>
+<p><a href="https://www.cs.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf">The Essence of the Iterator Pattern</a> by Jeremy Gibbons and Bruno C. d. S. Oliveira show that <em>applicative functors</em> and the corresponding <code>traverse</code> operator capture the essence of the <em>ITERATOR</em> pattern providing both mapping and accumulating. This explains why Haskell’s <code>Applicative</code> and <code>Traversable</code> work so well for many data types!</p>
+<p>But in this post, instead of reiterating the paper, we are going to review one of the earlier approach which provides recursion operators in datatype-generic way. Surprisingly, what we need is only <a href="https://hackage.haskell.org/package/bifunctors">bifunctors</a>.</p>
+<p>This post is in literate Haskell, so let’s start with a list of GHC extensions and imports:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="ot">{-# LANGUAGE DeriveFunctor #-}</span>
+<span class="ot">&gt;</span> <span class="ot">{-# LANGUAGE TemplateHaskell #-}</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Bifunctor</span>
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Bifunctor.TH</span></code></pre></div>
+<p><code>Data.Bifunctor.TH</code> provides a <code>TemplateHaskell</code> macro, <code>deriveBifunctor</code> which automatically derives the <code>Bifunctor</code> instance for the given data type. Here’s our favorite list data type.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ListF</span> a r <span class="fu">=</span> <span class="dt">Nil</span> <span class="fu">|</span> <span class="dt">Cons</span> a r <span class="kw">deriving</span> <span class="dt">Functor</span>
+<span class="ot">&gt;</span> deriveBifunctor <span class="ch">&#39;&#39;</span><span class="dt">ListF</span></code></pre></div>
+<p><code>Fix</code> is the fixed point of a <code>Bifunctor</code>.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">Fix</span> s a <span class="fu">=</span> <span class="dt">In</span> {<span class="ot"> out ::</span> s a (<span class="dt">Fix</span> s a) }</code></pre></div>
+<p>Then we define <code>List</code> as a fixed point of <code>ListF</code>.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">List</span> <span class="fu">=</span> <span class="dt">Fix</span> <span class="dt">ListF</span></code></pre></div>
+<p>To map over an arbitrary data type defined by <code>Fix</code>, we should be able to define a <code>Functor</code> instance of <code>Fix s</code>. It seems like a hard problem at first, but with enough patience and time it is actually possible to define <code>fmap</code> in terms of <code>bimap</code> as follows:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Bifunctor</span> s <span class="ot">=&gt;</span> <span class="dt">Functor</span> (<span class="dt">Fix</span> s) <span class="kw">where</span>
+<span class="ot">&gt;</span>   fmap f <span class="fu">=</span> <span class="dt">In</span> <span class="fu">.</span> bimap f (fmap f) <span class="fu">.</span> out</code></pre></div>
+<p>This looks magical, but we can comprehend the definition by inspecting the types of its components.</p>
+<ul>
+<li>out :: Fix s a -&gt; s a (Fix s a)</li>
+<li>In :: s a (Fix s a) -&gt; Fix s a</li>
+<li>fmap :: (a -&gt; b) -&gt; Fix s a -&gt; Fix s b</li>
+<li>bimap :: (a -&gt; b) -&gt; (c -&gt; d) -&gt; s a c -&gt; s b d</li>
+</ul>
+<p>The type of <code>fmap f</code> is <code>Fix s a -&gt; Fix s b</code>, so the type of <code>bimap f (fmap f)</code> is <code>s a (Fix s a) -&gt; s b (Fix s b)</code>. Now we can compose these:</p>
+<ul>
+<li>out :: Fix s a -&gt; s a (Fix s a)</li>
+<li>bimap f (fmap f) :: s a -&gt; s a (Fix s a) -&gt; s b (Fix s b)</li>
+<li>In :: s b (Fix s b) -&gt; Fix s b</li>
+</ul>
+<p>Thus,</p>
+<ul>
+<li>In . bitmap f (fmap f) . out :: Fix s a -&gt; Fix s b</li>
+</ul>
+<p><code>fold</code> and <code>unfold</code> can be defined similiarly:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; fold ::</span> <span class="dt">Bifunctor</span> s <span class="ot">=&gt;</span> (s a b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Fix</span> s a <span class="ot">-&gt;</span> b
+<span class="ot">&gt;</span> fold f <span class="fu">=</span> f <span class="fu">.</span> bimap id (fold f) <span class="fu">.</span> out
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; unfold ::</span> <span class="dt">Bifunctor</span> s <span class="ot">=&gt;</span> (b <span class="ot">-&gt;</span> s a b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> <span class="dt">Fix</span> s a
+<span class="ot">&gt;</span> unfold f <span class="fu">=</span> <span class="dt">In</span> <span class="fu">.</span> bimap id (unfold f) <span class="fu">.</span> f</code></pre></div>
+<p>Here’s how we use <code>fmap</code> on <code>List</code>:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; nil ::</span> <span class="dt">List</span> a
+<span class="ot">&gt;</span> nil <span class="fu">=</span> <span class="dt">In</span> <span class="dt">Nil</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; cons ::</span> a <span class="ot">-&gt;</span> <span class="dt">List</span> a <span class="ot">-&gt;</span> <span class="dt">List</span> a
+<span class="ot">&gt;</span> cons x xs <span class="fu">=</span> <span class="dt">In</span> (<span class="dt">Cons</span> x xs)
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; l ::</span> <span class="dt">List</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> l <span class="fu">=</span> fmap (<span class="fu">+</span><span class="dv">1</span>) (cons <span class="dv">3</span> (cons <span class="dv">4</span> nil))</code></pre></div>
+<p>Tada! These recursive operators are indeed datatype-generic because the defintion of <code>fmap</code>, <code>fold</code> and <code>unfold</code> never use the specific data type we defined. They use only <code>bimap</code>. It means we can reuse these functions for other data types without reimplementing them for each type. For example, here’s a definition of <code>Tree</code>:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">TreeF</span> a r <span class="fu">=</span> <span class="dt">Leaf</span> <span class="fu">|</span> <span class="dt">Branch</span> a r r <span class="kw">deriving</span> <span class="dt">Functor</span>
+<span class="ot">&gt;</span> deriveBifunctor <span class="ch">&#39;&#39;</span><span class="dt">TreeF</span>
+<span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">Tree</span> <span class="fu">=</span> <span class="dt">Fix</span> <span class="dt">TreeF</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; leaf ::</span> <span class="dt">Tree</span> a
+<span class="ot">&gt;</span> leaf <span class="fu">=</span> <span class="dt">In</span> <span class="dt">Leaf</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; branch ::</span> a <span class="ot">-&gt;</span> <span class="dt">Tree</span> a <span class="ot">-&gt;</span> <span class="dt">Tree</span> a <span class="ot">-&gt;</span> <span class="dt">Tree</span> a
+<span class="ot">&gt;</span> branch x l r<span class="fu">=</span> <span class="dt">In</span> (<span class="dt">Branch</span> x l r)</code></pre></div>
+<p>To map over a tree, we can just use the same <code>fmap</code> function we defined above!</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; t ::</span> <span class="dt">Tree</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> t <span class="fu">=</span> fmap (<span class="fu">+</span><span class="dv">1</span>) (branch <span class="dv">3</span> leaf (branch <span class="dv">4</span> leaf leaf))</code></pre></div>
+<p>This technique of using <em>bifunctors</em> to implement datatype-generic recursive functions is mostly superseded by <code>Applicative</code> and <code>Traversable</code> in Haskell, but I think it is still a good example which shows the real power of <em>bifunctors</em>!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Fri, 16 Dec 2016 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2016-12-16-datatype-generic-programming-with-bifunctors.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Golden tests are tasty</title>
     <link>http://kseo.github.io//posts/2016-12-15-golden-tests-are-tasty.html</link>
     <description><![CDATA[<article>
@@ -893,97 +1001,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Fri, 19 Jun 2015 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2015-06-19-proofs-are-programs.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Fay + Node.js</title>
-    <link>http://kseo.github.io//posts/2014-03-11-fay-with-nodejs.html</link>
-    <description><![CDATA[<article>
-  <div class="info">
-      Posted on March 11, 2014
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Fay.html">Fay</a>, <a href="/tags/node.js.html">node.js</a>
-      
-  </div>
-
-<p><a href="https://github.com/faylang/fay">Fay</a> is a proper subset of Haskell that compiles to JavaScript. Thus it is by definition a statically typed lazy pure functional language. If you want a more thorough introduction to Fay, please read Paul Callaghan’s <a href="https://pragprog.com/magazines/2012-12/web-programming-in-haskell">Web Programming in Haskell</a> and <a href="https://ocharles.org.uk/blog/posts/2013-12-23-24-days-of-hackage-fay.html">Oliver Charles’s 24 Days of Hackage: fay</a>.</p>
-<p>The original intention of Fay is to use Haskell on the client side. If you use a Haskell web framework such as Yesod or Snap, using Fay you can use the same language on both client and server sides and some code can actually be shared.</p>
-<p>However, because Fay is simply a subset of Haskell that compiles to JavaScript with no dependencies on the client side, you can use it on the server side too in combination with Node.js. I am not saying it is actually a good idea to write server code in Fay, but it is at least fun to investigate the feasibility. Here is <a href="https://gist.github.com/kseo/9477930">a web server example</a> written in Fay.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE EmptyDataDecls #-}</span>
-<span class="kw">module</span> <span class="dt">Hello</span> <span class="kw">where</span></code></pre></div>
-<p><code>EmptyDataDecls</code> is required because JavaScript types are represented by empty data declarations in Fay.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">FFI</span></code></pre></div>
-<p>FFI module provides a foreign function interface.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Http</span>
-<span class="kw">data</span> <span class="dt">HttpServer</span>
-<span class="kw">data</span> <span class="dt">Request</span>
-<span class="kw">data</span> <span class="dt">Response</span></code></pre></div>
-<p><code>Http</code>, <code>HttpServer</code>, <code>Request</code> and <code>Response</code> are JavaScript types we use in this example. They are represented by empty data declarations.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">requireHttp ::</span> <span class="dt">Fay</span> <span class="dt">Http</span>
-requireHttp <span class="fu">=</span> ffi <span class="st">&quot;require(&#39;http&#39;)&quot;</span></code></pre></div>
-<p>This is a simple example of a FFI declaration. It returns the result of <code>require('http')</code> as a <code>Http</code> instance. Fay is a monad which is similar to IO monad. Because a FFI function often has side effects, Fay monad is used to represent this.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">createServer ::</span> <span class="dt">Http</span> <span class="ot">-&gt;</span> (<span class="dt">Request</span> <span class="ot">-&gt;</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()) <span class="ot">-&gt;</span> <span class="dt">Fay</span> <span class="dt">HttpServer</span>
-createServer <span class="fu">=</span> ffi <span class="st">&quot;%1.createServer(%2)&quot;</span>
- 
-<span class="ot">consoleLog ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
-consoleLog <span class="fu">=</span> ffi <span class="st">&quot;console.log(%1)&quot;</span>
- 
-<span class="ot">listen ::</span> <span class="dt">HttpServer</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
-listen <span class="fu">=</span> ffi <span class="st">&quot;%1.listen(%2, %3)&quot;</span>
-  
-<span class="ot">writeHead ::</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
-writeHead <span class="fu">=</span> ffi <span class="st">&quot;%1.writeHead(%2, %3)&quot;</span>
-  
-<span class="ot">end ::</span> <span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Fay</span> ()
-end <span class="fu">=</span> ffi <span class="st">&quot;%1.end(%2)&quot;</span></code></pre></div>
-<p>These FFI declarations use <code>%1</code>, <code>%2</code> that corresponds to the arguments we specify in the type. Most Fay types are automatically serialized and deserialized. Note that we can only use point free style in FFI functions.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">Fay</span> ()
-main <span class="fu">=</span> <span class="kw">do</span>
-  http <span class="ot">&lt;-</span> requireHttp
-  server <span class="ot">&lt;-</span> createServer http (\req res <span class="ot">-&gt;</span> <span class="kw">do</span>
-    writeHead res <span class="dv">200</span> <span class="st">&quot;{ &#39;Content-Type&#39;: &#39;text/plain&#39; }&quot;</span>
-    end res <span class="st">&quot;Hello World\n&quot;</span>
-    )
-  listen server <span class="dv">1337</span> <span class="st">&quot;127.0.0.1&quot;</span>
-  consoleLog <span class="st">&quot;Server running at http://127.0.0.1:1337/&quot;</span></code></pre></div>
-<p><code>main</code> is the entry point to our web server example. Its return type is <code>Fay ()</code> because a Fay program can’t do anything without interacting with the world outside. Because we already wrapped all the Node.js APIs we use, we can program as if we write a normal Haskell program.</p>
-<p>Compare our Fay web server program with the original Node.js program. Except for the FFI bindings, the main code is almost the same as before. However, our version is much more type-safe!</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">var http <span class="fu">=</span> require(<span class="ch">&#39;http&#39;</span>);
-http<span class="fu">.</span>createServer(function (req, res) {
-  res<span class="fu">.</span>writeHead(<span class="dv">200</span>, {<span class="ch">&#39;Content-Type&#39;</span><span class="fu">:</span> <span class="ch">&#39;text/plain&#39;</span>});
-  res<span class="fu">.</span>end(<span class="ch">&#39;Hello World\n&#39;</span>);
-})<span class="fu">.</span>listen(<span class="dv">1337</span>, <span class="ch">&#39;127.0.0.1&#39;</span>);
-console<span class="fu">.</span>log(<span class="ch">&#39;Server running at http://127.0.0.1:1337/&#39;</span>);</code></pre></div>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Tue, 11 Mar 2014 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2014-03-11-fay-with-nodejs.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
