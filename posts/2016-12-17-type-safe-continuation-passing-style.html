@@ -59,7 +59,7 @@
     <span class="dt">IO</span> <span class="dt">ResponseReceived</span></code></pre></div>
 <p>This signature of <code>Application</code> looks similar to <code>bracket</code> function. Wai uses continuation passing style to handle resource management in an exception-safe manner.</p>
 <p>There is a bonus here. A valid function of <code>Application</code> must return a <code>ResponseReceived</code>, but we can’t create one by ourselves because there is no constructor available. The only way to acquire an <code>ResponseReceived</code> value is to invoke the callback. Thus if you accidentally forget to invoke callback, it automatically becomes a type error.</p>
-<p>The code snippet below returns <code>responseReceived</code> returned from <code>respond</code> to make <code>application</code> type-check. Otherwise, GHC complains about the return type mismatch.</p>
+<p>The code snippet below returns <code>responseReceived</code> returned from <code>respond</code> to make <code>application</code> type-check. Otherwise, GHC will complain about the type mismatch.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 <span class="kw">import           </span><span class="dt">Blaze.ByteString.Builder</span> (fromByteString)
 <span class="kw">import           </span><span class="dt">Network.HTTP.Types</span>       (status200)
