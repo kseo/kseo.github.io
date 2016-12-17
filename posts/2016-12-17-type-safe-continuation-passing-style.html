@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Type safe continuation passing style</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Type safe continuation passing style</h1>
+
+            <article>
+  <div class="info">
+      Posted on December 17, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/continuation%20passing%20style.html">continuation passing style</a>, <a href="../tags/type%20safe.html">type safe</a>
+      
+  </div>
+
+<p>One common mistake in JavaScript programming is to forget to invoke callback in continuation passing style code. For example, the code below may never complete:</p>
+<div class="sourceCode"><pre class="sourceCode javascript"><code class="sourceCode javascript"><span class="va">async</span>.<span class="at">series</span>([
+       <span class="kw">function</span> (callback) <span class="op">{</span>
+           <span class="cf">if</span> (..)
+              <span class="va">console</span>.<span class="at">log</span>(<span class="st">&quot;invalid input&quot;</span>)<span class="op">;</span> <span class="co">// BUG: NO callback!</span>
+           <span class="cf">else</span>
+              <span class="at">callback</span>(<span class="kw">null</span><span class="op">,</span> <span class="st">'ok'</span>)<span class="op">;</span>
+       <span class="op">},</span>
+       <span class="kw">function</span> (callback) <span class="op">{</span>
+           ...
+       <span class="op">}</span>
+  ]<span class="op">,</span>
+  <span class="kw">function</span> (err<span class="op">,</span> result) <span class="op">{</span> <span class="at">handleErrorOrResult</span>(err<span class="op">,</span> result)<span class="op">;}</span> <span class="co">// Might not be reached</span>
+)<span class="op">;</span></code></pre></div>
+<p>Unfortunately, there is no systematic way to prevent this kind of bug in JavaScript. We can write tests, but it is not practical to write tests which cover all control paths.</p>
+<p>But in Haskell, thanks to the powerful type system, we can turn these bugs into type errors! Let’s take a look at the definition of <code>Application</code> from <a href="http://www.yesodweb.com/book/web-application-interface">Web Application Interface</a>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Application</span> <span class="fu">=</span>
+    <span class="dt">Request</span> <span class="ot">-&gt;</span>
+    (<span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">ResponseReceived</span>) <span class="ot">-&gt;</span>
+    <span class="dt">IO</span> <span class="dt">ResponseReceived</span></code></pre></div>
+<p>This signature of <code>Application</code> looks similar to <code>bracket</code> function. Wai uses continuation passing style to handle resource management in an exception-safe manner.</p>
+<p>There is a bonus here. A valid function of <code>Application</code> must return a <code>ResponseReceived</code>, but we can’t create one by ourselves because there is no constructor available. The only way to acquire an <code>ResponseReceived</code> value is to invoke the callback. Thus if you accidentally forget to invoke callback, it automatically becomes a type error.</p>
+<p>The code snippet below returns <code>responseReceived</code> returned from <code>respond</code> to make <code>application</code> type-check. Otherwise, GHC complains about the return type mismatch.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">import           </span><span class="dt">Blaze.ByteString.Builder</span> (fromByteString)
+<span class="kw">import           </span><span class="dt">Network.HTTP.Types</span>       (status200)
+<span class="kw">import           </span><span class="dt">Network.Wai</span>
+<span class="kw">import           </span><span class="dt">Network.Wai.Handler.Warp</span> (run)
+
+application _ respond <span class="fu">=</span> <span class="kw">do</span>
+  msg <span class="fu">=</span> fromByteString <span class="st">&quot;Hello world!&quot;</span>
+  responseReceived <span class="ot">&lt;-</span> respond <span class="fu">$</span> responseBuilder
+    status200
+    [(<span class="st">&quot;Content-Type&quot;</span>, <span class="st">&quot;text/plain&quot;</span>)]
+    msg
+  return responseReceived
+
+main <span class="fu">=</span> run <span class="dv">3000</span> application</code></pre></div>
+<p>NOTE: We could define <code>Application</code> using <code>RankNTypes</code> GHC extension instead of <code>ResponseReceived</code> type. An old version of <code>Wai</code> actually used this definition of <code>Application</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Application</span> <span class="fu">=</span> <span class="dt">Request</span> <span class="ot">-&gt;</span> (forall b<span class="fu">.</span> (<span class="dt">Response</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> b) <span class="ot">-&gt;</span> <span class="dt">IO</span> b)</code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            Site proudly generated by
+            <a href="http://jaspervdj.be/hakyll">Hakyll</a>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
