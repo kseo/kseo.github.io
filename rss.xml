@@ -49,7 +49,7 @@
 
 from a b <span class="fu">=</span> build (from&#39; a b )</code></pre></div>
 <p>Here <code>build</code> is a dual of <code>foldr</code> which produces a list.</p>
-<p>The key idea of the <em>short cut fusion</em> is that <code>build</code> and <code>foldr</code> cancels each other. To put it another way, if we produce a list that will be consumed immediately, we can fuse them together.</p>
+<p>The key idea of the <em>short cut fusion</em> is that <code>build</code> and <code>foldr</code> cancel each other. To put it another way, when we produce a list that will be consumed immediately, we can fuse them together.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr k z (build g) <span class="fu">=</span> g k z</code></pre></div>
 <p>We now can see that the evaluation of <code>foldr (+) 0 [1..10]</code> does not produce an intermediate list.</p>
 <pre><code>foldr (+) 0 (from 1 10)
