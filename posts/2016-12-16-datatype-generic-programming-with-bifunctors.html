@@ -48,7 +48,7 @@
 <span class="ot">&gt;</span> 
 <span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Bifunctor</span>
 <span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Bifunctor.TH</span></code></pre></div>
-<p><code>Data.Bifunctor.TH</code> provides a <code>TemplateHaskell</code> macro, <code>deriveBifunctor</code> which automatically derives the <code>Bifunctor</code> instance for the given data type. Here’s our favorite list data type.</p>
+<p><code>Data.Bifunctor.TH</code> provides a <code>TemplateHaskell</code> macro <code>deriveBifunctor</code>, which automatically derives the <code>Bifunctor</code> instance. This is possible because all sum-of-product data types induce bifunctors. Here’s our favorite list data type.</p>
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ListF</span> a r <span class="fu">=</span> <span class="dt">Nil</span> <span class="fu">|</span> <span class="dt">Cons</span> a r <span class="kw">deriving</span> <span class="dt">Functor</span>
 <span class="ot">&gt;</span> deriveBifunctor <span class="ch">''</span><span class="dt">ListF</span></code></pre></div>
 <p><code>Fix</code> is the fixed point of a <code>Bifunctor</code>.</p>
