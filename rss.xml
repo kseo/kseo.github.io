@@ -132,9 +132,9 @@ from a b <span class="fu">=</span> build (from&#39; a b )</code></pre></div>
 <pre><code>foldr (+) 0 (from 1 10)
 =&gt; foldr (+) 0 (build (from&#39; 1 10))
 =&gt; from&#39; 1 10 (+) 0
-=&gt; \c n -&gt; if 1 &gt; 10
-           then n
-           else c 1 (from&#39; 2 10 c n)
+=&gt; \c n -&gt; (if 1 &gt; 10
+            then n
+            else c 1 (from&#39; 2 10 c n)) (+) 0
 =&gt; if 1 &gt; 10
    then 0
    else 1 + (from&#39; 2 10 (+) 0)
