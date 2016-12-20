@@ -7,8 +7,67 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Mon, 19 Dec 2016 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Tue, 20 Dec 2016 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Non empty list</title>
+    <link>http://kseo.github.io//posts/2016-12-20-non-empty-list.html</link>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 20, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/non%20empty%20list.html">non empty list</a>, <a href="/tags/prelude.html">prelude</a>
+      
+  </div>
+
+<p>Haskell is well know for its safety. A well-typed Haskell program never goes wrong. Is it true? Unfortunately, no. The type system of Haskell is great and it does catch many bugs at compile time, but Haskell’s <code>Prelude</code> is full of partial functions.</p>
+<p>For example, <code>head</code> and <code>tail</code> functions of <code>Data.List</code> throws an error when an empty list is given as an argument.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">λ<span class="fu">&gt;</span> head []
+<span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> Prelude.head<span class="fu">:</span> empty list</code></pre></div>
+<p>That’s why we have a separate <a href="https://hackage.haskell.org/package/safe">safe</a> package which provides alternative safe functions such as <a href="https://www.stackage.org/haddock/lts-7.12/safe-0.3.10/Safe.html#v:headMay">headMay</a> and <a href="https://www.stackage.org/haddock/lts-7.12/safe-0.3.10/Safe.html#v:tailMay">tailMay</a>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">λ<span class="fu">&gt;</span> headMay []
+<span class="dt">Nothing</span>
+<span class="ot">it ::</span> <span class="dt">Maybe</span> a</code></pre></div>
+<p>What if you know that your list is never empty? Checking the return value of <code>headMay</code> or <code>tailMay</code> soon becomes cumbersome.</p>
+<p>Fortunately, Haskell <code>Prelude</code> provides <a href="https://www.stackage.org/haddock/lts-7.12/base-4.9.0.0/Data-List-NonEmpty.html">NonEmpty</a> data type which guarantees that the list is not empty. You can use <code>head</code> and <code>tail</code> functions without worrying about the partiality. It also provides many list functions such as <code>map</code>, <code>reverse</code> and <code>length</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">infixr</span> <span class="dv">5</span> <span class="fu">:|</span>, <span class="fu">&lt;|</span>
+<span class="kw">data</span> <span class="dt">NonEmpty</span> a <span class="fu">=</span> a <span class="fu">:|</span> [a]
+
+head<span class="ot"> ::</span> <span class="dt">NonEmpty</span> a <span class="ot">-&gt;</span> a</code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Tue, 20 Dec 2016 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2016-12-20-non-empty-list.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Encoding existentials</title>
     <link>http://kseo.github.io//posts/2016-12-19-encoding-existentials.html</link>
     <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
@@ -900,195 +959,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Sun, 11 Dec 2016 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2016-12-11-how-to-read-arrow-combinators.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Encodings of lens</title>
-    <link>http://kseo.github.io//posts/2016-12-10-encodings-of-lense.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 10, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Lens.html">Lens</a>
-      
-  </div>
-
-<p>There are variety of libraries offering lens on the hackage. These include <a href="https://hackage.haskell.org/package/data-accessor">data-accessor</a>, <a href="https://hackage.haskell.org/package/fclabels">fclabels</a>, <a href="https://hackage.haskell.org/package/lenses">lenses</a>, <a href="https://hackage.haskell.org/package/data-lens">data-lens</a> and <a href="https://www.stackage.org/haddock/lts-7.12/lens-4.14/Control-Lens.html">lens</a>. Though they represent the same idea, their encodings of lens are not compatible. This article is an attempt to understand various encodings used to represent the idea of lens.</p>
-<h1 id="lens-as-a-getter-and-a-setter">Lens as a getter and a setter</h1>
-<p>The most intuitive way to encode lens is to represent it as a collection of a <em>getter</em> and a <em>setter</em>. <code>Lens s a</code> represents a <em>focus</em> to an <code>a</code> inside an <code>s</code> structure.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Lens</span> s a <span class="fu">=</span> <span class="dt">Lens</span>
-  {<span class="ot"> get ::</span> s <span class="ot">-&gt;</span> a
-  ,<span class="ot"> set ::</span> a <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-  }</code></pre></div>
-<p>We can define a lens to the first element of a pair as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fstL ::</span> <span class="dt">Lens</span> (a,b) a
-fstL <span class="fu">=</span> <span class="dt">Lens</span> {
-    get <span class="fu">=</span> \(x,y) <span class="ot">-&gt;</span> x
-  , set <span class="fu">=</span> \x (_,y) <span class="ot">-&gt;</span> (x,y)
-  }</code></pre></div>
-<p>Similarly, we can define <code>snd</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">sndL ::</span> <span class="dt">Lens</span> (a,b) b
-sndL <span class="fu">=</span> <span class="dt">Lens</span> {
-    get <span class="fu">=</span> \(x,y) <span class="ot">-&gt;</span> y
-  , set <span class="fu">=</span> \y (x,_) <span class="ot">-&gt;</span> (x,y)
-  }</code></pre></div>
-<p>Having defined this, it is easy to access and modify a pair:</p>
-<pre><code>&gt; get fstL (1,2)
-1
-&gt; set fstL 3 (1,2)
-(3,2)</code></pre>
-<p>We can also implement <code>update</code> in terms of <code>get</code> and <code>set</code> by getting the value, applying a function and setting it again.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">update ::</span> <span class="dt">Lens</span> s a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-update l f s <span class="fu">=</span> set l (f (get l s)) s</code></pre></div>
-<p>This <code>update</code> function works fine for a small data structure such as pairs, but becomes expensive for large data structures as it needs to visit all the way down to the <em>focus</em> twice every time it updates.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> update fstL (<span class="fu">+</span><span class="dv">1</span>) (<span class="dv">1</span>,<span class="dv">2</span>)
-(<span class="dv">2</span>,<span class="dv">2</span>)</code></pre></div>
-<p>Lenses are composable with <code>compose</code> function:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">compose ::</span> <span class="dt">Lens</span> b c <span class="ot">-&gt;</span> <span class="dt">Lens</span> a b <span class="ot">-&gt;</span> <span class="dt">Lens</span> a c
-compose bc ab <span class="fu">=</span> <span class="dt">Lens</span>
-  { get <span class="fu">=</span> get bc <span class="fu">.</span> get ab
-  , set <span class="fu">=</span> update ab <span class="fu">.</span> set bc
-  }</code></pre></div>
-<p>We can now modify nested pairs:</p>
-<pre><code>&gt; update (sndL `compose` fstL) (*2) ((3,4),5)
-((3,8),5)</code></pre>
-<h1 id="lens-as-a-getter-and-an-updater">Lens as a getter and an updater</h1>
-<p>A slight variation to the previous lens encoding is to represent a lens with a <em>getter</em> and an <em>updater</em> instead of a <em>getter</em> and a <em>setter</em>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Lens</span> s a <span class="fu">=</span> <span class="dt">Lens</span>
-  {<span class="ot"> get ::</span> s <span class="ot">-&gt;</span> a
-  ,<span class="ot"> update ::</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-  }</code></pre></div>
-<p>The performance of this encoding is better than the previous one because we no longer need to visit the <em>focus</em> twice for an single update. <code>fstL</code> and <code>sndL</code> directly implement <code>update</code> as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fstL ::</span> <span class="dt">Lens</span> (a,b) a
-fstL <span class="fu">=</span> <span class="dt">Lens</span> {
-    get <span class="fu">=</span> \(x,y) <span class="ot">-&gt;</span> x
-  , update <span class="fu">=</span> \f (x,y) <span class="ot">-&gt;</span> (f x,y)
-  }
-
-<span class="ot">sndL ::</span> <span class="dt">Lens</span> (a,b) b
-sndL <span class="fu">=</span> <span class="dt">Lens</span> {
-    get <span class="fu">=</span> \(x,y) <span class="ot">-&gt;</span> y
-  , update <span class="fu">=</span> \f (x,y) <span class="ot">-&gt;</span> (x, f y)
-  }</code></pre></div>
-<p>But what about <code>set</code>? We can easily define <code>set</code> in terms of <code>update</code> using <code>const</code> function:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">set ::</span> <span class="dt">Lens</span> s a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-set l a s <span class="fu">=</span> update l (const a) s</code></pre></div>
-<p>Composition of two lenses are similarly defined:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">compose ::</span> <span class="dt">Lens</span> b c <span class="ot">-&gt;</span> <span class="dt">Lens</span> a b <span class="ot">-&gt;</span> <span class="dt">Lens</span> a c
-compose bc ab <span class="fu">=</span> <span class="dt">Lens</span>
-  { get <span class="fu">=</span> get bc <span class="fu">.</span> get ab
-  , update <span class="fu">=</span> update ab <span class="fu">.</span> update bc
-  }</code></pre></div>
-<h1 id="cps-based-lens-aka-van-laarhoven-lens">CPS based lens (aka van Laarhoven lens)</h1>
-<p>This encoding is called <em>a CPS based lens</em> as the type looks like a continuation passing style function, which would be <code>(b -&gt; r) -&gt; (a -&gt; r)</code> though the return type is <code>f a</code> instead of any <code>r</code>. It is also called <a href="http://www.twanvl.nl/blog/haskell/cps-functional-references">van Laarhoven lens</a> named after <strong>Twan van Laarhoven</strong> who first discovered this encoding.</p>
-<p>This is the most popular lens encoding as it is used by the famous Edward Kmett’s <a href="https://www.stackage.org/haddock/lts-7.12/lens-4.14/Control-Lens.html">lens</a> library.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE Rank2Types #-}</span>
-
-<span class="kw">type</span> <span class="dt">Lens</span> s a <span class="fu">=</span> forall f<span class="fu">.</span> <span class="dt">Functor</span> f <span class="ot">=&gt;</span> (a <span class="ot">-&gt;</span> f a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> f s)</code></pre></div>
-<p>It is hard to understand the type at first sight. There are no longer identifiable setter or getter in the type signature. Instead, we have a functor <code>f</code> in the signature.</p>
-<p>As expected from the clue, we can derive <code>get</code> and <code>update</code> by applying different functors to the type.</p>
-<p>First, we derive <code>get</code> by applying <code>Const</code> functor:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Applicative</span>
-
-<span class="ot">get ::</span> <span class="dt">Lens</span> s a <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a
-get l <span class="fu">=</span> getConst <span class="fu">.</span> l <span class="dt">Const</span></code></pre></div>
-<p>Also we can derive <code>update</code> by applying <code>Identity</code> functor:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.Identity</span>
-
-<span class="ot">update ::</span> <span class="dt">Lens</span> s a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-update l m <span class="fu">=</span> runIdentity <span class="fu">.</span> l (<span class="dt">Identity</span> <span class="fu">.</span> m)</code></pre></div>
-<p><code>set</code> function can be implemented in terms of <code>get</code> and <code>update</code> as usual:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">set ::</span> <span class="dt">Lens</span> s a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-set l b a <span class="fu">=</span> update l (const b) a</code></pre></div>
-<p>Fortunately, defining a lens in var Laarhoven lens encoding is not hard. For example, we can define <code>fstL</code> using <code>fmap</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fstL ::</span> <span class="dt">Lens</span> (a,b) a
-fstL f (x,y) <span class="fu">=</span> fmap (\a <span class="ot">-&gt;</span> (a, y)) (f x)</code></pre></div>
-<p>Or we can define <code>sndL</code> more succinctly using <code>TupleSections</code> and <code>(&lt;$&gt;)</code> operator:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">sndL ::</span> <span class="dt">Lens</span> (a,b) b
-sndL x (a,b) <span class="fu">=</span> (a,) <span class="fu">&lt;$&gt;</span> x b</code></pre></div>
-<p>As this job of defining a lens is so mechanical, lens library provides a <a href="https://hackage.haskell.org/package/lens-4.15.1/docs/Control-Lens-TH.html#v:makeLenses">TemplateHaskell macro</a> to generate lenses from a record.</p>
-<p>Let’s see how <code>get</code> works by actually evaluating <code>get fstL (1,2)</code>:</p>
-<pre><code>get fstL (1,2)
-=&gt; getConst . (fstL Const) (1,2)
-=&gt; getConst . (\x (a,b) -&gt; (,b) &lt;$&gt; x a) (1,2)
-=&gt; getConst . (\(a,b) -&gt; (,b) &lt;$&gt; Const a) (1,2)
-=&gt; getConst . ((,2) &lt;$&gt; Const 1)
-=&gt; getConst . (Const 1)
-=&gt; 1</code></pre>
-<p>One particularly nice property of var Laarhoven lens is that composition of two lens is just the function composition operator <code>(.)</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">compose ::</span> <span class="dt">Lens</span> b c <span class="ot">-&gt;</span> <span class="dt">Lens</span> a b <span class="ot">-&gt;</span> <span class="dt">Lens</span> a c
-compose r s <span class="fu">=</span> s <span class="fu">.</span> r</code></pre></div>
-<p>So we can simply use the <code>(.)</code> to compose two lenses instead of custom <code>compose</code> function.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> update (fstL <span class="fu">.</span> sndL) (<span class="fu">*</span><span class="dv">2</span>) ((<span class="dv">3</span>,<span class="dv">4</span>),<span class="dv">5</span>)
-((<span class="dv">3</span>,<span class="dv">8</span>),<span class="dv">5</span>)</code></pre></div>
-<p>However, the order of composition is reversed due to the nature of CPS based encoding. This is a bit confusing at first, but it makes sense when we think of it as a property referencing in an OO language.</p>
-<pre><code>pair.(fstL.sndL) *= 2</code></pre>
-<p>This style of composition is also possible with previous two encodings if we use Haskell’s type classes to overload <code>(.)</code> and <code>id</code> as described in <a href="http://www.twanvl.nl/blog/haskell/overloading-functional-references">Overloading functional references</a>. But van Laarhoven lens is still simpler as we don’t need to hide the <code>(.)</code> operator of the <code>Prelude</code>.</p>
-<h1 id="isomorphism-lens">Isomorphism lens</h1>
-<p>There is a yet another encoding of lens called <a href="http://www.twanvl.nl/blog/haskell/isomorphism-lenses">Isomorphism lens</a> which was also discovered by van Laarhoven.</p>
-<blockquote>
-<p>A lens from type s to a is a bijection between s and a pair of a and some residual r.</p>
-</blockquote>
-<p>To put it more succinctly,</p>
-<pre><code>type Lens s a = exists r. s &lt;-&gt; (a,r)</code></pre>
-<p>Because Haskell has no <code>exists</code> keyword, we can represent the encoding with a <code>newtype</code> wrapper:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE Rank2Types #-}</span>
-<span class="ot">{-# LANGUAGE ExistentialQuantification #-}</span>
-
-<span class="co">-- Isomorphisms/bijections between type @a@ and @b@</span>
-<span class="kw">data</span> <span class="dt">Iso</span> a b <span class="fu">=</span> <span class="dt">Iso</span> {<span class="ot"> fw ::</span> a <span class="ot">-&gt;</span> b,<span class="ot"> bw ::</span> b <span class="ot">-&gt;</span> a }
-
-<span class="co">-- Lenses with a data wrapper, in practice you might want to unpack the Iso type</span>
-<span class="kw">data</span> <span class="dt">Lens</span> s a <span class="fu">=</span> forall r<span class="fu">.</span> <span class="dt">Lens</span> (<span class="dt">Iso</span> s (a,r))</code></pre></div>
-<p>This encoding captures the intuition of what lens does extremely well. Suppose we have a record type <code>s</code>, and want to take out a field of type <code>a</code>. When we do that, there is some residual, which is <code>s - a</code>. So <code>s</code> and <code>(a, s - a)</code> is must be isomorphic.</p>
-<p>We can define <code>get</code> and <code>update</code> as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Bifunctor</span>
-
-<span class="ot">get ::</span> <span class="dt">Lens</span> s a <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> a
-get (<span class="dt">Lens</span> l) <span class="fu">=</span> fst <span class="fu">.</span> fw l
-
-<span class="ot">update ::</span> <span class="dt">Lens</span> s a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (s <span class="ot">-&gt;</span> s)
-update (<span class="dt">Lens</span> l) f <span class="fu">=</span> bw l <span class="fu">.</span> first f <span class="fu">.</span> fw l</code></pre></div>
-<p><code>set</code> function is the same as before:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">set ::</span> <span class="dt">Lens</span> s a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> s <span class="ot">-&gt;</span> s
-set l b a <span class="fu">=</span> update l (const b) a</code></pre></div>
-<p>Isomorphism lens has the nice property that we can derive lens laws directly from the isomorphism law.</p>
-<blockquote>
-<p>fw i . bw i = bw i . fw i = id</p>
-</blockquote>
-<p>See <a href="http://www.twanvl.nl/blog/haskell/isomorphism-lenses">van Laarhoven’s article</a> to see how we can derive three lens law.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Sat, 10 Dec 2016 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2016-12-10-encodings-of-lense.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
