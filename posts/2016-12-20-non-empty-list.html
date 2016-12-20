@@ -39,7 +39,7 @@
       
   </div>
 
-<p>Haskell is well know for its safety. A well-typed Haskell program never goes wrong. Is it true? Unfortunately, no. The type system of Haskell is great and it does catch many bugs at compile time, but Haskell’s <code>Prelude</code> is full of partial functions.</p>
+<p>Haskell is well known for its safety. A well-typed Haskell program never goes wrong. Is it true? Unfortunately, no. The type system of Haskell is great and it does catch many bugs at compile time, but Haskell’s <code>Prelude</code> is full of partial functions.</p>
 <p>For example, <code>head</code> and <code>tail</code> functions of <code>Data.List</code> throws an error when an empty list is given as an argument.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">λ<span class="fu">&gt;</span> head []
 <span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> Prelude.head<span class="fu">:</span> empty list</code></pre></div>
