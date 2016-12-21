@@ -85,7 +85,7 @@ and                     <span class="fu">=</span>  foldr (<span class="fu">&amp;
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">sum<span class="ot">                     ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> a
 <span class="ot">{-# INLINE sum #-}</span>
 sum                     <span class="fu">=</span>  foldl (<span class="fu">+</span>) <span class="dv">0</span></code></pre></div>
-<p>OMG!</p>
+<p>OMG! There is a historical accident here. Interested readers are referred to <a href="http://www.well-typed.com/blog/90/">Fixing foldl</a> article from Well-Typed.</p>
 <div id="disqus_thread"></div>
 <script>
 
