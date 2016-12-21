@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - foldl vs foldl'</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>foldl vs foldl'</h1>
+
+            <a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 21, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/fold.html">fold</a>, <a href="../tags/recursion.html">recursion</a>
+      
+  </div>
+
+<p>Chris Allen <a href="http://lorepub.com/post/2016-12-17-Haskell-Pitfalls">mentioned</a> <code>foldl</code> as one of the newbie traps in Haskell.</p>
+<blockquote>
+<p>foldl’ is always what you want, don’t use foldl!</p>
+</blockquote>
+<p>Because <code>foldl</code> always has to examine the whole list, there is no reason to make it lazy. It just uses more memory to do the same thing as <code>foldl'</code>.</p>
+<p><a href="http://book.realworldhaskell.org/read/functional-programming.html">Real World Haskell</a> also recommends using <code>foldl'</code> instead of <code>foldl</code>.</p>
+<blockquote>
+<p>Due to the thunking behavior of foldl, it is wise to avoid this function in real programs: even if it doesn’t fail outright, it will be unnecessarily inefficient. Instead, import Data.List and use foldl’</p>
+</blockquote>
+<p><a href="https://wiki.haskell.org/Foldr_Foldl_Foldl'#Foldl">Haskell Wiki</a> compares <code>foldr</code>, <code>foldl</code> and <code>foldl'</code> and recommends using either <code>foldr</code> or <code>foldl'</code>.</p>
+<blockquote>
+<p>foldl’ is the more efficient way to arrive at that result because it doesn’t build a huge thunk.</p>
+</blockquote>
+<p>But here comes a question. If <code>foldl'</code> is almost always better than <code>foldl</code>, why do we have <code>foldl</code> anyway? It makes sense only when the combining function is non-strict in its <em>first</em> argument. (The example is taken from the Haskell Wiki.)</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(?) ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
+_ <span class="fu">?</span> <span class="dv">0</span> <span class="fu">=</span> <span class="dv">0</span>
+x <span class="fu">?</span> y <span class="fu">=</span> x<span class="fu">*</span>y
+
+<span class="ot">list ::</span> [<span class="dt">Int</span>]
+list <span class="fu">=</span> [<span class="dv">2</span>,<span class="dv">3</span>,undefined,<span class="dv">5</span>,<span class="dv">0</span>]
+
+okey <span class="fu">=</span> foldl (<span class="fu">?</span>) <span class="dv">1</span> list
+boom <span class="fu">=</span> foldl' (<span class="fu">?</span>) <span class="dv">1</span> list</code></pre></div>
+<p>Evaluation of <code>okey</code>:</p>
+<pre><code>okey --&gt;
+foldl (?) 1 [2,3,undefined,5,0] --&gt;
+foldl (?) (1 ? 2) [3,undefined,5,0] --&gt;
+foldl (?) ((1 ? 2) ? 3) [undefined,5,0] --&gt;
+foldl (?) (((1 ? 2) ? 3) ? undefined) [5,0] --&gt;
+foldl (?) ((((1 ? 2) ? 3) ? undefined) ? 5) [0] --&gt;
+foldl (?) (((((1 ? 2) ? 3) ? undefined) ? 5) ? 0) [] --&gt;
+((((1 ? 2) ? 3) ? undefined) ? 5) ? 0 --&gt;
+0</code></pre>
+<p>Evaluation of <code>boom</code>:</p>
+<pre><code>boom --&gt;
+foldl' (?) 1 [2,3,undefined,5,0] --&gt;
+    1 ? 2 --&gt; 2
+foldl' (?) 2 [3,undefined,5,0] --&gt;
+    2 ? 3 --&gt; 6
+foldl' (?) 6 [undefined,5,0] --&gt;
+    6 ? undefined --&gt;
+*** Exception: Prelude.undefined</code></pre>
+<p>This example actually shows why <code>foldl</code> is so useless because it is hard to find a function which is non-strict in its <em>first</em> argument.</p>
+<p>Many functions in Haskell are non-strict in its <em>second</em> argument and this is why <code>foldr</code> is useful. For example, <code>(&amp;&amp;)</code> is non-strict in its <em>second</em> argument and <code>and</code> can be efficiently defined using <code>foldr</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&amp;&amp;)                    ::</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+<span class="dt">True</span>  <span class="fu">&amp;&amp;</span> x              <span class="fu">=</span>  x
+<span class="dt">False</span> <span class="fu">&amp;&amp;</span> _              <span class="fu">=</span>  <span class="dt">False</span>
+
+and<span class="ot">                     ::</span> [<span class="dt">Bool</span>] <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+and                     <span class="fu">=</span>  foldr (<span class="fu">&amp;&amp;</span>) <span class="dt">True</span></code></pre></div>
+<p>In conclusion, we should always use <code>foldl'</code> unless we have a very compelling reason to use <code>foldl</code> instead.</p>
+<p>But, wait! Let’s check how our beloved <code>sum</code> function is written. Because <code>(+)</code> is strict in both of its arguments, <code>foldl'</code> should have been used. But here’s <a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/src/GHC.List.html#sum">the actual code</a> taken from the <code>base</code> package.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">sum<span class="ot">                     ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> a
+<span class="ot">{-# INLINE sum #-}</span>
+sum                     <span class="fu">=</span>  foldl (<span class="fu">+</span>) <span class="dv">0</span></code></pre></div>
+<p>OMG!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
