@@ -7,8 +7,122 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Wed, 21 Dec 2016 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Thu, 22 Dec 2016 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Pattern Synonyms</title>
+    <link>http://kseo.github.io//posts/2016-12-22-pattern-synonyms.html</link>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 22, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/GHC%20extension.html">GHC extension</a>, <a href="/tags/PatternSynonyms.html">PatternSynonyms</a>
+      
+  </div>
+
+<p><a href="https://ghc.haskell.org/trac/ghc/wiki/PatternSynonyms">Pattern synonyms</a> allow us give names to pattern matches. It is a relatively new GHC extension which was first introduced in GHC 7.8 and further enhanced in GHC 8.0. In this post, I will show you an usage of pattern synonyms with a practical example.</p>
+<p>Our assignment is to create a compiler for a toy functional language. We’ve already finished writing parsers and type checkers and we have a small IR based on lambda calculus. Our next plan is to transform this IR into SK combinators for execution on the graph reduction machine.</p>
+<p>Here’s the datatype of our IR:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Exp</span> <span class="fu">=</span> <span class="dt">Ap</span> <span class="dt">Exp</span> <span class="dt">Exp</span>
+         <span class="fu">|</span> <span class="dt">Lambda</span> <span class="dt">VarId</span> <span class="dt">Exp</span>
+         <span class="fu">|</span> <span class="dt">Fun</span> <span class="dt">FunId</span>
+         <span class="fu">|</span> <span class="dt">Var</span> <span class="dt">VarId</span>
+         <span class="fu">|</span> <span class="dt">Int</span> <span class="dt">Int</span></code></pre></div>
+<p>The SK compilation scheme is taken from Simon Peyton Jones’s <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">The Implementation of Functional Programming Languages</a>. (You don’t need to understand how this actually works. Interested readers are referred to SPJ’s book.)</p>
+<pre><code>C[e] compiles e to SK combinators
+
+C[e1 e2] = C[e1] C[e2]
+C[\x.e] = A x [C[e]]
+C[cv] = cv
+
+A x [f] abstracts x from f
+
+A x [f1 f2] = S (A x [f1]) (A x [f2])
+A x [x] = I
+A x [cv] = K cv</code></pre>
+<p>This compilation scheme can be succinctly implemented in Haskell using pattern matches on <code>Exp</code> because the scheme uses the data constructors of <code>Exp</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">compile ::</span> <span class="dt">Exp</span> <span class="ot">-&gt;</span> <span class="dt">Exp</span>
+compile (<span class="dt">Ap</span> e1 e2) <span class="fu">=</span> <span class="dt">Ap</span> (compile e1) (compile e2)
+compile (<span class="dt">Lambda</span> v e) <span class="fu">=</span> abstract v (compile e)
+compile cv <span class="fu">=</span> cv
+
+<span class="ot">abstract ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Exp</span> <span class="ot">-&gt;</span> <span class="dt">Exp</span>
+abstract x (<span class="dt">Ap</span> f1 f2) <span class="fu">=</span> (abstract x f1) (abstract x f2)
+abstract x (<span class="dt">Var</span> v) <span class="fu">|</span> x <span class="fu">==</span> v <span class="fu">=</span> i
+abstract x (<span class="dt">Fun</span> v) <span class="fu">|</span> x <span class="fu">==</span> v <span class="fu">=</span> i
+abstract _ cv <span class="fu">=</span> k cv
+
+<span class="ot">s ::</span> <span class="dt">Exp</span> <span class="ot">-&gt;</span> <span class="dt">Exp</span> <span class="ot">-&gt;</span> <span class="dt">Exp</span>
+s f g <span class="fu">=</span> <span class="dt">Ap</span> (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;S&quot;</span>) f ) g
+
+<span class="ot">k ::</span> <span class="dt">Exp</span> <span class="ot">-&gt;</span> <span class="dt">Exp</span>
+k c <span class="fu">=</span> <span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;K&quot;</span>) c
+
+<span class="ot">i ::</span> <span class="dt">Exp</span>
+i <span class="fu">=</span> <span class="dt">Fun</span> <span class="st">&quot;I&quot;</span></code></pre></div>
+<p>So far so good, but we realized that this basic compilation algorithm tends to produce large combinator expressions. SPJ suggests that we can improve the scheme by introducing additional combinators <code>B</code> and <code>C</code>.</p>
+<p>Reduction rules:</p>
+<pre><code>B f g x = f (g x)
+C f g x = f x g</code></pre>
+<p>Optimization rules:</p>
+<pre><code>S (K p) (K q) = K (p q)
+S (K p) I = p
+S (K p) q = B p q
+S p (K q) = C p q</code></pre>
+<p>The optimization algorithm can be implemented as pattern matches on <code>Exp</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">optimize ::</span> <span class="dt">Exp</span> <span class="ot">-&gt;</span> <span class="dt">Exp</span>
+optimize (<span class="dt">Ap</span> (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;S&quot;</span>) (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;K&quot;</span>) p)) (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;K&quot;</span>) q)) <span class="fu">=</span> k (<span class="dt">Ap</span> p q)
+optimize (<span class="dt">Ap</span> (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;S&quot;</span>) (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;K&quot;</span>) p)) (<span class="dt">Fun</span> <span class="st">&quot;I&quot;</span>)) <span class="fu">=</span> p
+optimize (<span class="dt">Ap</span> (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;S&quot;</span>) (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;K&quot;</span>) p)) q) <span class="fu">=</span> b p q
+optimize (<span class="dt">Ap</span> (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;S&quot;</span>) p) (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;K&quot;</span>) q)) <span class="fu">=</span> c p q
+optimize x <span class="fu">=</span> x</code></pre></div>
+<p>Unfortunately, this time the code is very complicated because <code>S</code>, <code>K</code> and <code>I</code> are not the data constructors of <code>Exp</code>. We have to sprinkle <code>Ap</code> and <code>Fun</code> all over to represent <code>S</code>, <code>K</code> and <code>I</code> combinators.</p>
+<p>Can we improve it? As you might have expected, GHC’s <code>PatternSynonyms</code> extension is the rescue! It lets us make synonyms for complicated patterns like these. We can define <code>S</code>, <code>K</code> and <code>I</code> as pattern synonyms and use them as if they were data constructors.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">pattern <span class="dt">S</span> p q <span class="fu">=</span> <span class="dt">Ap</span> (<span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;S&quot;</span>) p) q
+pattern <span class="dt">K</span> p <span class="fu">=</span> <span class="dt">Ap</span> (<span class="dt">Fun</span> <span class="st">&quot;K&quot;</span>) p
+pattern <span class="dt">I</span> <span class="fu">=</span> <span class="dt">Fun</span> <span class="st">&quot;I&quot;</span></code></pre></div>
+<p>With the help of these pattern synonyms, we can rewrite <code>optimize</code> function compactly.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">optimize ::</span> <span class="dt">Exp</span> <span class="ot">-&gt;</span> <span class="dt">Exp</span>
+optimize (<span class="dt">S</span> (<span class="dt">K</span> p) (<span class="dt">K</span> q)) <span class="fu">=</span> k (<span class="dt">Ap</span> p q)
+optimize (<span class="dt">S</span> (<span class="dt">K</span> p) <span class="dt">I</span>) <span class="fu">=</span> p
+optimize (<span class="dt">S</span> (<span class="dt">K</span> p) q) <span class="fu">=</span> b p q
+optimize (<span class="dt">S</span> p (<span class="dt">K</span> q)) <span class="fu">=</span> c p q
+optimize x <span class="fu">=</span> x</code></pre></div>
+<p>Compare the code with the optimization rules. Now they look almost the same!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Thu, 22 Dec 2016 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2016-12-22-pattern-synonyms.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>foldl vs foldl'</title>
     <link>http://kseo.github.io//posts/2016-12-21-foldl-vs-foldl%27.html</link>
     <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
@@ -845,97 +959,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Tue, 13 Dec 2016 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2016-12-13-scott-encoding.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>unfold and fold</title>
-    <link>http://kseo.github.io//posts/2016-12-12-unfold-and-fold.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 12, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/unfold.html">unfold</a>, <a href="/tags/fold.html">fold</a>, <a href="/tags/category%20theory.html">category theory</a>
-      
-  </div>
-
-<h1 id="unfold">unfold</h1>
-<p>Every functional programmer loves <em>fold</em>. fold is <a href="http://www.cs.nott.ac.uk/~pszgmh/fold.pdf">universal and expressive</a>. But <em>fold</em> has a secret twin brother named <em>unfold</em> which undoes what <em>fold</em> does. In this post, we will see what <em>unfold</em> is and how it is related to <em>fold</em>.</p>
-<p><code>unfoldr</code> builds a list from a seed value while <code>foldr</code> reduces a list to a summary value.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a]</code></pre></div>
-<p><code>unfoldr</code> takes the element and returns <code>Nothing</code> if it is done producing the list or returns <code>Just (a, b)</code>, in which case, <code>a</code> is a prepended to the list and <code>b</code> is used as the next element in a recursive call.</p>
-<p>For example, we can define <code>iterate</code> as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">iterate f <span class="fu">==</span> unfoldr (\x <span class="ot">-&gt;</span> <span class="dt">Just</span> (x, f x))</code></pre></div>
-<p>Another simple use of <code>unfoldr</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> unfoldr (\b <span class="ot">-&gt;</span> <span class="kw">if</span> b <span class="fu">==</span> <span class="dv">0</span> <span class="kw">then</span> <span class="dt">Nothing</span> <span class="kw">else</span> <span class="dt">Just</span> (b, b<span class="fu">-</span><span class="dv">1</span>)) <span class="dv">10</span>
-[<span class="dv">10</span>,<span class="dv">9</span>,<span class="dv">8</span>,<span class="dv">7</span>,<span class="dv">6</span>,<span class="dv">5</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>]</code></pre></div>
-<p>As the name suggests, <em>unfold</em> is the categorical dual of <em>fold</em>. (Maybe it should be <em>cofold</em> instead of <em>unfold</em>.) It means we can get the signature of <code>foldr</code> by reversing the arrows of <code>unfoldr</code>, and vice versa.</p>
-<p>Let’s try this.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])
-foldr<span class="ot">   ::</span> (<span class="dt">Maybe</span> (a, b) <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> ([a] <span class="ot">-&gt;</span> b)</code></pre></div>
-<p>Oops! It is not our beloved <code>foldr</code> function whose signature is:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
-<h1 id="type-isomorphisms">Type isomorphisms</h1>
-<p>But don’t be disappointed! We can show that they represent the same thing by using type isomorphisms:</p>
-<pre><code>(a → b → b) → b → ([a] → b)</code></pre>
-<blockquote>
-<p>by a -&gt; b -&gt; c ~= (a, b) -&gt; c</p>
-</blockquote>
-<pre><code>((a, b) → b) → b → ([a] → b)</code></pre>
-<blockquote>
-<p>by a ~= () -&gt; a</p>
-</blockquote>
-<pre><code>((a, b) → b) → (() -&gt; b) → ([a] → b)</code></pre>
-<blockquote>
-<p>by a -&gt; b -&gt; c ~= (a, b) -&gt; c</p>
-</blockquote>
-<pre><code>(((a, b) → b), (() -&gt; b)) → ([a] → b)</code></pre>
-<blockquote>
-<p>by ((a -&gt; c), (b -&gt; c)) ~= Either a b -&gt; c</p>
-</blockquote>
-<pre><code>((Either (a, b) ()) → b) → ([a] → b)</code></pre>
-<blockquote>
-<p>by Either a () ~= Maybe a</p>
-</blockquote>
-<pre><code>(Maybe (a, b) -&gt; b) → ([a] → b)</code></pre>
-<p>Now we can clearly see that <em>unfold</em> is the dual of <em>fold</em>. If you want to learn more on the relationship between <em>fold</em> and <em>unfold</em>, see Conal Elliott’s <a href="http://conal.net/talks/folds-and-unfolds.pdf">Folds and unfolds all around us</a>.</p>
-<h1 id="implementation">Implementation</h1>
-<p>Here’s an implementation of <code>unfoldr</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])
-unfoldr f b <span class="fu">=</span> <span class="kw">case</span> f b <span class="kw">of</span>
-                <span class="dt">Just</span> (a, b&#39;) <span class="ot">-&gt;</span> a <span class="fu">:</span> unfoldr f b&#39;
-                <span class="dt">Nothing</span> <span class="ot">-&gt;</span> []</code></pre></div>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Mon, 12 Dec 2016 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2016-12-12-unfold-and-fold.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
