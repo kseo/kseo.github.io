@@ -7,8 +7,146 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Thu, 22 Dec 2016 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Fri, 23 Dec 2016 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Organize code using monads</title>
+    <link>http://kseo.github.io//posts/2016-12-23-organize-code-using-monads.html</link>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 23, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/monad.html">monad</a>, <a href="/tags/monad%20transformer.html">monad transformer</a>, <a href="/tags/lambda%20lifting.html">lambda lifting</a>
+      
+  </div>
+
+<p>Novice Haskell programmers think that monads are only for IO and stateful computations. But experienced Haskell programmers use monads to better structure their programs.</p>
+<p>In this blog post, I am going to show you how we can better organize our code using monads.</p>
+<h1 id="motivating-example-lambda-lifting">Motivating example: Lambda lifting</h1>
+<p><em>Lambda lifting</em> is a compiler transformation which eliminates all free variables from function definitions. It is an important step in a lazy functional language because it greatly simplifies evaluation on the graph reduction machine.</p>
+<p>In his <a href="https://www.microsoft.com/en-us/research/publication/a-modular-fully-lazy-lambda-lifter-in-haskell/">paper</a>, Simon Peyton Jones describes how to perform lambda lifting in a modular fashion. The lambda lifter works in three steps:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | freeVars: Annotate every node in the expression with its free variables.</span>
+<span class="ot">freeVars ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> <span class="dt">AnnExpr</span> <span class="dt">Name</span> (<span class="dt">Set</span> <span class="dt">Name</span>)
+
+<span class="co">-- | Abstract the free variables from each lambda abstraction, replacing the lambda abstraction with the application of the new abstraction.</span>
+<span class="ot">abstract ::</span> <span class="dt">AnnExpr</span> <span class="dt">Name</span> (<span class="dt">Set</span> <span class="dt">Name</span>) <span class="ot">-&gt;</span> <span class="dt">Expression</span>
+
+<span class="co">-- | Give a unique name to each supercombinator and collect all the supercombinator definitions.</span>
+<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]</code></pre></div>
+<p><code>lambdaLift</code> is the composition of these three functions.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">lambdaLift ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
+lambdaLift <span class="fu">=</span> collectSCs <span class="fu">.</span> abstract <span class="fu">.</span> freeVars</code></pre></div>
+<p>I am not going to explain the details of these steps in this post. Interested readers are referred to SPJ’s <a href="https://www.microsoft.com/en-us/research/publication/a-modular-fully-lazy-lambda-lifter-in-haskell/">paper</a> and <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">book</a>.</p>
+<p>Instead, let’s dive into the last step and see how <code>collectSCs</code> is actually implemented.</p>
+<h1 id="collecting-supercombinators">Collecting supercombinators</h1>
+<p><code>collectSCs</code> is defined in terms of a helper function named <code>collecSC'</code> which returns both the collection of supercombinators it has found and the transformed expression. It also carries around a <em>name supply</em> as an argument and returns the depleted supply as a result because it needs to generate fresh names for supercombinators.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Gives a unique name to each supercombinator, collects all the</span>
+<span class="co">-- supercombinator definitions into a single list, and introduce the</span>
+<span class="co">-- $main supercombinator definition.</span>
+<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
+collectSCs e <span class="fu">=</span> (<span class="st">&quot;$main&quot;</span>, [], e&#39;) <span class="fu">:</span> scs
+  <span class="kw">where</span>
+  (_, scs, e&#39;) <span class="fu">=</span> collectSCs&#39; initialNameSupply e
+
+<span class="ot">collectSCs&#39; ::</span> <span class="dt">NameSupply</span> <span class="ot">-&gt;</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> (<span class="dt">NameSupply</span>, [<span class="dt">SCDefn</span>], <span class="dt">Expression</span>)
+collectSCs&#39; ns (<span class="dt">EConst</span> k) <span class="fu">=</span> (ns, [], <span class="dt">EConst</span> k)
+collectSCs&#39; ns (<span class="dt">EVar</span> v) <span class="fu">=</span> (ns, [], <span class="dt">EVar</span> v)
+collectSCs&#39; ns (<span class="dt">EAp</span> e1 e2) <span class="fu">=</span>
+  (ns2, scs1 <span class="fu">++</span> scs2, <span class="dt">EAp</span> e1&#39; e2&#39;)
+  <span class="kw">where</span>
+  (ns1, scs1, e1&#39;) <span class="fu">=</span> collectSCs&#39; ns e1
+  (ns2, scs2, e2&#39;) <span class="fu">=</span> collectSCs&#39; ns1 e2
+collectSCs&#39; ns (<span class="dt">ELam</span> args body) <span class="fu">=</span>
+  (ns2, (name, args, body&#39;) <span class="fu">:</span> bodySCs, <span class="dt">EConst</span> (<span class="dt">CFun</span> name))
+  <span class="kw">where</span>
+  (ns1, bodySCs, body&#39;) <span class="fu">=</span> collectSCs&#39; ns body
+  (ns2, name) <span class="fu">=</span> newName ns1 <span class="st">&quot;SC&quot;</span>
+collectSCs&#39; ns (<span class="dt">ELet</span> isRec defns body) <span class="fu">=</span>
+  (ns2, scs, <span class="dt">ELet</span> isRec defns&#39; body&#39;)
+  <span class="kw">where</span>
+  (ns1, bodySCs, body&#39;) <span class="fu">=</span> collectSCs&#39; ns body
+  ((ns2, scs), defns&#39;) <span class="fu">=</span> mapAccumL collectSCs&#39;&#39; (ns1, bodySCs) defns
+
+  collectSCs&#39;&#39; (ns, scs) (name, rhs) <span class="fu">=</span>
+    ((ns1, scs <span class="fu">++</span> scs&#39;), (name, rhs&#39;))
+    <span class="kw">where</span>
+    (ns1, scs&#39;, rhs&#39;) <span class="fu">=</span> collectSCs&#39; ns rhs</code></pre></div>
+<p>The code is rather complex compared to what it actually does. The only place where interest things happen is lambda abstractions. It replaces lambda abstractions by names and return supercombinators.</p>
+<p>The code is complex because it violates the most important software engineering principle: <em>separation of concerns</em>. <code>collectSCs</code> contains at least three orthogonal concerns:</p>
+<ol style="list-style-type: decimal">
+<li>Generation of fresh names</li>
+<li>Accumulation of supercombinatros</li>
+<li>Transformation of expressions</li>
+</ol>
+<h1 id="organize-code-using-monads">Organize code using monads</h1>
+<p>Monads are great tools to separate concerns. For example, <code>Reader</code> monad helps us get rid of an extra argument used to pass a context. <code>Writer</code> monad frees us from the agony of returning the accumulated results in every function.</p>
+<p>So let’s separate our concerns in <code>collectSCs</code>.</p>
+<ol style="list-style-type: decimal">
+<li><code>Supply</code> monad for fresh name generation (it’s a <code>State</code> monad in disguise)</li>
+<li><code>Writer</code> monad for accumulation of supercombinators</li>
+</ol>
+<p>Because we need to compose two different monads, we use the monad transformer <code>SupplyT</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Collector</span> a <span class="fu">=</span> <span class="dt">SupplyT</span> (<span class="dt">Writer</span> [<span class="dt">SCDefn</span>]) a
+
+<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
+collectSCs e <span class="fu">=</span> (<span class="st">&quot;$main&quot;</span>, [], e&#39;) <span class="fu">:</span> scs
+  <span class="kw">where</span>
+  (e&#39;, scs) <span class="fu">=</span> runWriter <span class="fu">$</span> evalSupplyT <span class="dv">0</span> (collectSCs&#39; e)
+
+<span class="ot">collectSCs&#39; ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> <span class="dt">Collector</span> <span class="dt">Expression</span>
+collectSCs&#39; (<span class="dt">EConst</span> k) <span class="fu">=</span> return <span class="fu">$</span> <span class="dt">EConst</span> k
+collectSCs&#39; (<span class="dt">EVar</span> v) <span class="fu">=</span> return <span class="fu">$</span> <span class="dt">EVar</span> v
+collectSCs&#39; (<span class="dt">EAp</span> e1 e2) <span class="fu">=</span> <span class="kw">do</span>
+  e1&#39; <span class="ot">&lt;-</span> collectSCs&#39; e1
+  e2&#39; <span class="ot">&lt;-</span> collectSCs&#39; e2
+  return <span class="fu">$</span> <span class="dt">EAp</span> e1&#39; e2&#39;
+collectSCs&#39; (<span class="dt">ELam</span> args body) <span class="fu">=</span> <span class="kw">do</span>
+  name <span class="ot">&lt;-</span> freshName
+  body&#39; <span class="ot">&lt;-</span> collectSCs&#39; body
+  collect (name, args, body&#39;)
+  return <span class="fu">$</span> <span class="dt">EConst</span> (<span class="dt">CFun</span> name)
+collectSCs&#39; (<span class="dt">ELet</span> isRec defns body) <span class="fu">=</span> <span class="kw">do</span>
+  body&#39; <span class="ot">&lt;-</span> collectSCs&#39; body
+  defns&#39; <span class="ot">&lt;-</span> traverse (\(name, defn) <span class="ot">-&gt;</span> (name,) <span class="fu">&lt;$&gt;</span> collectSCs&#39; defn) defns
+  return <span class="fu">$</span> <span class="dt">ELet</span> isRec defns&#39; body&#39;
+
+<span class="ot">collect ::</span> <span class="dt">SCDefn</span> <span class="ot">-&gt;</span> <span class="dt">Collector</span> ()
+collect defn <span class="fu">=</span> tell [defn]</code></pre></div>
+<p>We can see that the resulting code is much more readable by removing all the clutters that not not essential to the core logic.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Fri, 23 Dec 2016 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2016-12-23-organize-code-using-monads.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Pattern Synonyms</title>
     <link>http://kseo.github.io//posts/2016-12-22-pattern-synonyms.html</link>
     <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
@@ -844,121 +982,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Wed, 14 Dec 2016 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2016-12-14-how-quick-check-generate-random-functions.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Scott encoding of Algebraic Data Types</title>
-    <link>http://kseo.github.io//posts/2016-12-13-scott-encoding.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 13, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/scott%20encoding.html">scott encoding</a>, <a href="/tags/algebraic%20data%20type.html">algebraic data type</a>
-      
-  </div>
-
-<p>This article is written in literate Haskell.</p>
-<p>It is well known that algebraic data types can be encoded in a functional programming language by higher order functions. The Church encoding is the most famous one, but there is a lesser known encoding, called Scott encoding. The Scott encoding is generally considered as <a href="https://ifl2014.github.io/submissions/ifl2014_submission_13.pdf">better</a>.</p>
-<p>In this article, I will show you some examples of Scott-encoded algebraic data types. Here I will use named functions intead of anonymous functions because the named function makes the notation of recursive algorithms easier.</p>
-<p>Before move on, we need to turn on GHC extension <code>RankNTypes</code>. If you want to know how Rank-N types are related to the Scott encoding, see <a href="https://ocharles.org.uk/blog/guest-posts/2014-12-18-rank-n-types.html">24 Days of GHC Extensions: Rank N Types</a>.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="ot">{-# LANGUAGE RankNTypes #-}</span></code></pre></div>
-<h1 id="pair">Pair</h1>
-<p><code>Pair</code> is a simplest example of a container type. Because it is a non-recursive type, the Church and Scott encoding overlap in this case. This is the standard encoding used for pairs in λ-calculus courses.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">PairS</span> a b <span class="fu">=</span> <span class="dt">PairS</span> {<span class="ot"> unpairS ::</span> forall r<span class="fu">.</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> r }</code></pre></div>
-<p>Containers can be expressed by using closures (partial applications). <code>pairS</code> takes 3 arguments. We have a closure by applying only 2 arguments.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; pairS ::</span> a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> <span class="dt">PairS</span> a b
-<span class="ot">&gt;</span> pairS a b <span class="fu">=</span> <span class="dt">PairS</span> (\p <span class="ot">-&gt;</span> p a b)</code></pre></div>
-<p>Now it is time to define selection functions. <code>fstS</code> and <code>sndS</code> are implemented by passing a continuation (the function in which the continuation continues). It is a 2 argument function which returns either the first or the second argument. <code>fstS</code> returns the first argument and <code>sndS</code> returns the second argument.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; fstS ::</span> <span class="dt">PairS</span> a b <span class="ot">-&gt;</span> a
-<span class="ot">&gt;</span> fstS (<span class="dt">PairS</span> p) <span class="fu">=</span> p (\x _ <span class="ot">-&gt;</span> x)
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; sndS ::</span> <span class="dt">PairS</span> a b <span class="ot">-&gt;</span> b
-<span class="ot">&gt;</span> sndS (<span class="dt">PairS</span> p) <span class="fu">=</span> p (\_ y <span class="ot">-&gt;</span> y)</code></pre></div>
-<p>Other functions such as <code>swapS</code> can be implemented in terms of <code>pairS</code>, <code>fstS</code> and <code>sndS</code>.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; swapS ::</span> <span class="dt">PairS</span> a b <span class="ot">-&gt;</span> <span class="dt">PairS</span> b a
-<span class="ot">&gt;</span> swapS p <span class="fu">=</span> pairS (sndS p) (fstS p)</code></pre></div>
-<h1 id="peano-numbers">Peano numbers</h1>
-<p><code>NumS</code> is the simplest recursive data type which represents Peano numbers.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">NumS</span> <span class="fu">=</span> <span class="dt">NumS</span> {<span class="ot"> unnumS ::</span> forall r<span class="fu">.</span> (<span class="dt">NumS</span> <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> r }</code></pre></div>
-<p><code>NumS</code> has two constructors. <code>zeroS</code> is the non recursive constructor that represents the value zero. <code>succS</code> is the recursive constructor which yields the successor of such a Peano number.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; zeroS ::</span> <span class="dt">NumS</span>
-<span class="ot">&gt;</span> zeroS <span class="fu">=</span> <span class="dt">NumS</span> (\s z <span class="ot">-&gt;</span> z)
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; succS ::</span> <span class="dt">NumS</span> <span class="ot">-&gt;</span> <span class="dt">NumS</span>
-<span class="ot">&gt;</span> succS n <span class="fu">=</span> <span class="dt">NumS</span> (\s z <span class="ot">-&gt;</span> s n)</code></pre></div>
-<p><code>unnumS</code> is the deconstructor which takes 2 continuations and a <code>NumS</code>. The continuations determine what we reduce the <code>NumS</code> into depending on which constructor is found.</p>
-<p>For convinence, <code>unnumS'</code> is defined to have the <code>NumS</code> argument be the last arugment to the <code>unnumS</code> function.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; unnumS&#39; ::</span> (<span class="dt">NumS</span> <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> <span class="dt">NumS</span> <span class="ot">-&gt;</span> r
-<span class="ot">&gt;</span> unnumS&#39; s z (<span class="dt">NumS</span> f) <span class="fu">=</span> f s z</code></pre></div>
-<p>When we find the num is a successor, then we know that the num is not empty, so we reduce it to <code>False</code>. When we find it is the zero, we reduce it to <code>True</code>.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; isZero ::</span> <span class="dt">NumS</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
-<span class="ot">&gt;</span> isZero <span class="fu">=</span> unnumS&#39; (\_ <span class="ot">-&gt;</span> <span class="dt">False</span>) <span class="dt">True</span></code></pre></div>
-<p><code>addS</code> is slightly more complex, but it can also be defined using the same techinque. You can recognize that it is a pattern mathcing in disguse.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; addS ::</span> <span class="dt">NumS</span> <span class="ot">-&gt;</span> <span class="dt">NumS</span> <span class="ot">-&gt;</span> <span class="dt">NumS</span>
-<span class="ot">&gt;</span> addS n m <span class="fu">=</span>
-<span class="ot">&gt;</span>     unnumS&#39; (\s <span class="ot">-&gt;</span> succS (addS s m))
-<span class="ot">&gt;</span>             m n</code></pre></div>
-<h1 id="list">List</h1>
-<p>We can apply the same transformation to <code>ListS</code> type.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">ListS</span> a <span class="fu">=</span>
-<span class="ot">&gt;</span>    <span class="dt">ListS</span> {
-<span class="ot">&gt;      unconsS ::</span> forall r<span class="fu">.</span> (a <span class="ot">-&gt;</span> <span class="dt">ListS</span> a <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> r
-<span class="ot">&gt;</span>    }
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; nilS ::</span> <span class="dt">ListS</span> a
-<span class="ot">&gt;</span> nilS <span class="fu">=</span> <span class="dt">ListS</span> (\co ni <span class="ot">-&gt;</span> ni)
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; consS ::</span> a <span class="ot">-&gt;</span> <span class="dt">ListS</span> a <span class="ot">-&gt;</span> <span class="dt">ListS</span> a
-<span class="ot">&gt;</span> consS x xs <span class="fu">=</span> <span class="dt">ListS</span> (\co ni <span class="ot">-&gt;</span> co x xs)
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; unconsS&#39; ::</span> (a <span class="ot">-&gt;</span> <span class="dt">ListS</span> a <span class="ot">-&gt;</span> r) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> <span class="dt">ListS</span> a <span class="ot">-&gt;</span> r
-<span class="ot">&gt;</span> unconsS&#39; co ni (<span class="dt">ListS</span> f) <span class="fu">=</span> f co ni
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; isNullS ::</span> <span class="dt">ListS</span> a <span class="ot">-&gt;</span> <span class="dt">Bool</span>
-<span class="ot">&gt;</span> isNullS <span class="fu">=</span> unconsS&#39; (\_ _ <span class="ot">-&gt;</span> <span class="dt">False</span>) <span class="dt">True</span>
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; mapS ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">ListS</span> a <span class="ot">-&gt;</span> <span class="dt">ListS</span> b
-<span class="ot">&gt;</span> mapS f <span class="fu">=</span>
-<span class="ot">&gt;</span>   unconsS&#39; (\x xs <span class="ot">-&gt;</span> consS (f x) (mapS f xs))
-<span class="ot">&gt;</span>            nilS</code></pre></div>
-<h1 id="references">References</h1>
-<p>Interested readers might like to take a look at the following papers for more information:</p>
-<ul>
-<li><a href="http://www.nlda-tw.nl/janmartin/papers/jmjansenLambdapaper.pdf">Comprehensive Encoding of Data Types and Algorithms in the λ-Calculus (Functional Pearl)</a> by JAN MARTIN JANSEN</li>
-<li><a href="https://ifl2014.github.io/submissions/ifl2014_submission_13.pdf">Church Encoding of Data Types Considered Harmful for Implementations (Functional Pearl)</a> by Pieter Koopman, Rinus Plasmeijer and Jan Martin Jansen</li>
-</ul>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Tue, 13 Dec 2016 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2016-12-13-scott-encoding.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
