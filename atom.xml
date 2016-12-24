@@ -8,8 +8,92 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2016-12-23T00:00:00Z</updated>
+    <updated>2016-12-24T00:00:00Z</updated>
     <entry>
+    <title>Reader monad and SKI combinators</title>
+    <link href="http://kseo.github.io//posts/2016-12-24-reader-monad-and-ski-combinators.html" />
+    <id>http://kseo.github.io//posts/2016-12-24-reader-monad-and-ski-combinators.html</id>
+    <published>2016-12-24T00:00:00Z</published>
+    <updated>2016-12-24T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 24, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/reader%20monad.html">reader monad</a>, <a href="/tags/ski%20combinator.html">ski combinator</a>
+      
+  </div>
+
+<p>In this post, I am going to show you the relationship between the reader monad and the SKI combinators.</p>
+<h1 id="reader-monad">Reader monad</h1>
+<p>The reader monad encapsulates computations which read values from a shared environment. Here’s the definition of our beloved <code>Reader</code> monad.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Reader</span> r a <span class="fu">=</span> <span class="dt">Reader</span> {
+<span class="ot">  runReader ::</span> r <span class="ot">→</span> a
+}
+
+<span class="kw">instance</span> <span class="dt">Monad</span> (<span class="dt">Reader</span> r ) <span class="kw">where</span>
+  return a <span class="fu">=</span> <span class="dt">Reader</span> <span class="fu">$</span> \_ <span class="ot">-&gt;</span> a
+  m <span class="fu">&gt;&gt;=</span> k <span class="fu">=</span> <span class="dt">Reader</span> <span class="fu">$</span> \r <span class="ot">-&gt;</span> runReader (k (runReader m r )) r</code></pre></div>
+<p>There are actually two instances of the reader monad in Haskell. The function monad <code>(-&gt;) r</code> is also a reader monad. The definition of the function monad is just like the <code>Reader</code> monad, but without <code>newtype</code> wrapping and unwrapping.</p>
+<pre><code>instance Monad ((-&gt;) r ) where
+  return a = \_ -&gt; a
+  m &gt;&gt;= k = \r -&gt; k (m r ) r</code></pre>
+<p>From now on, I will use the function monad definition because it makes our presentation more clear. But remember these two monad definitions are isomorphic.</p>
+<h1 id="ski-combinators">SKI combinators</h1>
+<p><a href="https://en.wikipedia.org/wiki/Combinatory_logic">Combinatory logic</a> is a formal system without the need for variables. It was introduced by Moses Schönfinkel and Haskell Curry. All operations in lambda calculus can be encoded via <em>abstraction elimination</em> into the SKI calculus.</p>
+<p>The definition of <code>S</code>, <code>K</code> and <code>I</code> are as follows:</p>
+<pre><code>k :: a -&gt; b -&gt; a
+k x y = x
+
+s :: (a -&gt; b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+s x y z = (x z) (y z)
+
+i :: a -&gt; a
+i x = x</code></pre>
+<p>From the types of these combinators, we can see that <code>k</code> is Haskell’s <code>const</code> function and <code>i</code> is Haskell’s <code>id</code> function.</p>
+<p>Technically speaking, we don’t need the I combinator to encode lambda calculus into the SKI combinators because we can encode I in terms of S and K. I is just for convenience.</p>
+<h1 id="relationship">Relationship</h1>
+<p>So what’s the relationship between the reader monad and the SKI combinators? Let’s look at the types of the reader monad more closely.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">return<span class="ot"> ::</span> a <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> a
+<span class="ot">(&gt;&gt;=) ::</span> (r <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> b</code></pre></div>
+<p>Can you see the similarity to the types of the combinator <code>k</code> and <code>s</code>? The function <code>return</code> is the same as <code>k</code>, but the function <code>(&gt;&gt;=)</code> is somewhat similar but not exactly the same as <code>s</code>.</p>
+<p>Let’s see the <em>applicative functor</em> definition of the reader monad instead.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">pure<span class="ot"> ::</span> a <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> a
+<span class="ot">(&lt;*&gt;) ::</span> (r <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (r <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> b</code></pre></div>
+<p>Now we can see that the type of <code>(&lt;*&gt;)</code> is the same to the type of <code>s</code>. Because these functions are fully polymorphic, we don’t need to check the definition of these functions to see if they are really equivalent.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>We’ve just discovered that <code>k</code> and <code>s</code> combinators of SKI calculus correspond to <code>pure</code> and <code>(&lt;*&gt;)</code> functions of the reader monad. Because we can encode any lambda calculus term into SKI calculus, we can encode any lambda calculus term into the reader monad too!. Amazing, isn’t it?</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Organize code using monads</title>
     <link href="http://kseo.github.io//posts/2016-12-23-organize-code-using-monads.html" />
     <id>http://kseo.github.io//posts/2016-12-23-organize-code-using-monads.html</id>
@@ -860,107 +944,6 @@ mkGoldenTest path <span class="fu">=</span> <span class="kw">do</span>
       script <span class="ot">&lt;-</span> readFile path
       <span class="kw">let</span> actual <span class="fu">=</span> either id id (run script)
       return (BS.pack actual)</code></pre></div>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>How QuickCheck generates random functions</title>
-    <link href="http://kseo.github.io//posts/2016-12-14-how-quick-check-generate-random-functions.html" />
-    <id>http://kseo.github.io//posts/2016-12-14-how-quick-check-generate-random-functions.html</id>
-    <published>2016-12-14T00:00:00Z</published>
-    <updated>2016-12-14T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 14, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/QuickCheck.html">QuickCheck</a>, <a href="/tags/test.html">test</a>
-      
-  </div>
-
-<p>In <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a>, test data is produced by <em>test generators</em> whose types are of the form <code>Gen a</code>. <code>Gen a</code> is a generator for values of type <code>a</code>. A type can define a default test data generator by defining an instance of the class <code>Arbitrary</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Arbitrary</span> a <span class="kw">where</span>
-<span class="ot">  arbitrary   ::</span> <span class="dt">Gen</span> a
-  <span class="fu">...</span></code></pre></div>
-<p>We can define instances of <code>Arbitrary</code> using the combinators provided by <em>QuickCheck</em>. For example, the instances of <code>Bool</code> and <code>Ordering</code> are defined using <code>choose</code> and <code>elements</code> respectively. <code>choose</code> generates a random element in the given inclusive range and <code>elements xs</code> generates an arbitrary element of the list <code>xs</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Arbitrary</span> <span class="dt">Bool</span> <span class="kw">where</span>
-  arbitrary <span class="fu">=</span> choose (<span class="dt">False</span>,<span class="dt">True</span>)
-  shrink <span class="dt">True</span> <span class="fu">=</span> [<span class="dt">False</span>]
-  shrink <span class="dt">False</span> <span class="fu">=</span> []
-
-<span class="kw">instance</span> <span class="dt">Arbitrary</span> <span class="dt">Ordering</span> <span class="kw">where</span>
-  arbitrary <span class="fu">=</span> elements [<span class="dt">LT</span>, <span class="dt">EQ</span>, <span class="dt">GT</span>]
-  shrink <span class="dt">GT</span> <span class="fu">=</span> [<span class="dt">EQ</span>, <span class="dt">LT</span>]
-  shrink <span class="dt">LT</span> <span class="fu">=</span> [<span class="dt">EQ</span>]
-  shrink <span class="dt">EQ</span> <span class="fu">=</span> []</code></pre></div>
-<p>Simple and easy! But how about a function? Can we generate a function in the same way? The answer is surprisingly yes, but you need another type class named <code>CoArbitrary</code>.</p>
-<p>Before explaining how <code>CoArbitrary</code> works, we need to check how <code>Gen</code> is defined:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | A generator for values of type @a@.</span>
-<span class="kw">newtype</span> <span class="dt">Gen</span> a <span class="fu">=</span> <span class="dt">MkGen</span>{
-<span class="ot">  unGen ::</span> <span class="dt">QCGen</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> a <span class="co">-- ^ Run the generator on a particular seed.</span>
-                             <span class="co">-- If you just want to get a random value out, consider using &#39;generate&#39;.</span>
-  }</code></pre></div>
-<p>Internally, <code>Gen a</code> is a function which takes 2 arguments (<code>QCGen</code> and <code>Int</code>) and returns <code>a</code>. Here <code>QCGen</code> is a newtype wrapper around either <code>StdGen</code> or <code>TFGen</code>.</p>
-<p>So <code>Gen (a -&gt; b)</code> expands to <code>QCGen -&gt; Int -&gt; a -&gt; b</code>. By reordering parameters, this is equivalent to <code>a -&gt; Int -&gt; QCGen -&gt; b</code>, which represents <code>a -&gt; Gen b</code>. Thus by defining</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">promote ::</span> (a <span class="ot">-&gt;</span> <span class="dt">Gen</span> b) <span class="ot">-&gt;</span> <span class="dt">Gen</span> (a<span class="ot">-&gt;</span>b)</code></pre></div>
-<p>we can produce a generator for a <em>function type</em>, provided that we can construct a generator for the <em>result type</em> which somehow depends on the argument value.</p>
-<p>So we need <code>coarbitrary</code> which modifies a generator in a way depending on its first parameter.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">CoArbitrary</span> a <span class="kw">where</span>
-<span class="ot">  coarbitrary ::</span> a <span class="ot">-&gt;</span> <span class="dt">Gen</span> b <span class="ot">-&gt;</span> <span class="dt">Gen</span> b</code></pre></div>
-<p>To actually define an instance of <code>CoArbitrary</code>, we need a helper function <code>variant</code>, which perturbs the generator. It creates a new generator that produces different pseudo-random results than the original.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Modifies a generator using an integer seed.</span>
-<span class="ot">variant ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Gen</span> a <span class="ot">-&gt;</span> <span class="dt">Gen</span> a</code></pre></div>
-<p>Now we can define instances of <code>CoArbitrary</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">CoArbitrary</span> <span class="dt">Bool</span> <span class="kw">where</span>
-  coarbitrary <span class="dt">False</span> <span class="fu">=</span> variant <span class="dv">0</span>
-  coarbitrary <span class="dt">True</span> <span class="fu">=</span> variant <span class="dv">1</span>
-
-<span class="kw">instance</span> <span class="dt">CoArbitrary</span> a <span class="ot">=&gt;</span> <span class="dt">CoArbitrary</span> (<span class="dt">Maybe</span> a) <span class="kw">where</span>
-  coarbitrary <span class="dt">Nothing</span>  <span class="fu">=</span> variant <span class="dv">0</span>
-  coarbitrary (<span class="dt">Just</span> x) <span class="fu">=</span> variant <span class="dv">1</span> <span class="fu">.</span> coarbitrary x</code></pre></div>
-<p>With all the pieces in place, we can finally define an <code>Arbitrary</code> for the function type <code>a -&gt; b</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> (<span class="dt">Coarbitrary</span> a, <span class="dt">Arbitrary</span> b) <span class="ot">=&gt;</span> <span class="dt">Arbitrary</span> (a <span class="ot">-&gt;</span> b) <span class="kw">where</span>
-  arbitrary <span class="fu">=</span> promote (\a <span class="ot">-&gt;</span> coarbitrary a arbitrary)</code></pre></div>
-<p>To see how this works:</p>
-<ol style="list-style-type: decimal">
-<li><code>\a -&gt; coarbitrary a arbitrary</code> has type <code>a -&gt; Gen b</code></li>
-<li><code>promote</code> has type <code>(a -&gt; Gen b) -&gt; Gen (a-&gt;b)</code></li>
-<li>So, the entire expression has type <code>Gen (a-&gt;b)</code></li>
-</ol>
-<p>The current implementation of <em>QuickCheck</em> is a bit different as it is generalized to <code>Monad</code>, but When <code>m</code> is the function instance of <code>Monad</code>, <code>promote</code> is the same as we derived here.</p>
-<pre><code>promote :: Monad m =&gt; m (Gen a) -&gt; Gen (m a)</code></pre>
-<h1 id="references">References</h1>
-<ul>
-<li><a href="http://www.cs.tufts.edu/~nr/cs257/archive/john-hughes/quick.pdf">QuickCheck: A Lightweight Tool for Random Testing of Haskell Programs</a> by Koen Claessen and John Hughes</li>
-<li><a href="http://stackoverflow.com/a/16220336/2028189">StackOverflow: How to generate random, typed functions</a></li>
-</ul>
 <div id="disqus_thread"></div>
 <script>
 
