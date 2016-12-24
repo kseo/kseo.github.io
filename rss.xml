@@ -66,6 +66,11 @@ i x = x</code></pre>
 <p><a href="http://www.staff.city.ac.uk/~ross/papers/Applicative.html">Conor McBride and Ross Paterson’s paper</a> also mentions this relationship briefly.</p>
 <h1 id="conclusion">Conclusion</h1>
 <p>We’ve just discovered that <code>k</code> and <code>s</code> combinators of SKI calculus correspond to <code>pure</code> and <code>(&lt;*&gt;)</code> functions of the reader monad. Because we can encode any lambda calculus term into SKI calculus, we can encode any lambda calculus term into the reader monad too! Amazing, isn’t it?</p>
+<h1 id="references">References</h1>
+<ol style="list-style-type: decimal">
+<li><a href="https://themonadreader.wordpress.com/2011/01/09/issue-17/">The Monad.Reader Issue 17: The Reader Monad and Abstraction Elimination</a></li>
+<li><a href="http://brandon.si/code/do-applicative-functors-generalize-the-s-k-combinators/">Do Applicative Functors Generalize the S &amp; K Combinators?</a></li>
+</ol>
 <div id="disqus_thread"></div>
 <script>
 
