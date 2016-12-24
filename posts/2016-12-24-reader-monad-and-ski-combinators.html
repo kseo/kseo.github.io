@@ -76,6 +76,7 @@ i x = x</code></pre>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">pure<span class="ot"> ::</span> a <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> a
 <span class="ot">(&lt;*&gt;) ::</span> (r <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> (r <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> r <span class="ot">-&gt;</span> b</code></pre></div>
 <p>Now we can see that the type of <code>(&lt;*&gt;)</code> is the same to the type of <code>s</code>. Because these functions are fully polymorphic, we don’t need to check the definition of these functions to see if they are really equivalent.</p>
+<p><a href="http://www.staff.city.ac.uk/~ross/papers/Applicative.html">Conor McBride and Ross Paterson’s paper</a> also mentions this relationship briefly.</p>
 <h1 id="conclusion">Conclusion</h1>
 <p>We’ve just discovered that <code>k</code> and <code>s</code> combinators of SKI calculus correspond to <code>pure</code> and <code>(&lt;*&gt;)</code> functions of the reader monad. Because we can encode any lambda calculus term into SKI calculus, we can encode any lambda calculus term into the reader monad too! Amazing, isn’t it?</p>
 <div id="disqus_thread"></div>
