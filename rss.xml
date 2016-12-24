@@ -42,8 +42,9 @@
   m &gt;&gt;= k = \r -&gt; k (m r ) r</code></pre>
 <p>From now on, I will use the function monad definition because it makes our presentation more clear. But remember these two monad definitions are isomorphic.</p>
 <h1 id="ski-combinators">SKI combinators</h1>
-<p><a href="https://en.wikipedia.org/wiki/Combinatory_logic">Combinatory logic</a> is a formal system without the need for variables. It was introduced by Moses Schönfinkel and Haskell Curry. All operations in lambda calculus can be encoded via <em>abstraction elimination</em> into the SKI calculus.</p>
-<p>The definition of <code>S</code>, <code>K</code> and <code>I</code> are as follows:</p>
+<p><a href="https://en.wikipedia.org/wiki/Combinatory_logic">Combinatory logic</a> is a formal system without the need for variables. It was introduced by Moses Schönfinkel and Haskell Curry.</p>
+<p>The SKI calculus is a combinatory logic with three combinators S, K and I. It is a universal system as all operations in lambda calculus can be encoded via <em>abstraction elimination</em> into the SKI calculus.</p>
+<p>The Haskell definition of <code>s</code>, <code>k</code> and <code>i</code> are as follows:</p>
 <pre><code>k :: a -&gt; b -&gt; a
 k x y = x
 
