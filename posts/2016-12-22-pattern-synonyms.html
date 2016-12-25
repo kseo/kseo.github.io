@@ -39,6 +39,7 @@
       
   </div>
 
+<p>(<a href="https://www.reddit.com/r/haskell/comments/5jq9gi/kwangs_haskell_blog_pattern_synonyms/">Reddit discussion</a>)</p>
 <p><a href="https://ghc.haskell.org/trac/ghc/wiki/PatternSynonyms">Pattern synonyms</a> allow us give names to pattern matches. It is a relatively new GHC extension which was first introduced in GHC 7.8 and further enhanced in GHC 8.0. In this post, I will show you an usage of pattern synonyms with a practical example.</p>
 <p>Our assignment is to create a compiler for a toy functional language. We’ve already finished writing the parser and the type checker. It uses a small IR based on lambda calculus. Our next plan is to transform this IR into SK combinators for execution on the graph reduction machine.</p>
 <p>Here’s the datatype of our IR:</p>
