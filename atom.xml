@@ -8,8 +8,136 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2016-12-24T00:00:00Z</updated>
+    <updated>2016-12-25T00:00:00Z</updated>
     <entry>
+    <title>Type Isomorphism</title>
+    <link href="http://kseo.github.io//posts/2016-12-25-type-isomorphism.html" />
+    <id>http://kseo.github.io//posts/2016-12-25-type-isomorphism.html</id>
+    <published>2016-12-25T00:00:00Z</published>
+    <updated>2016-12-25T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 25, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/type%20isomorphism.html">type isomorphism</a>
+      
+  </div>
+
+<p>Type isomorphisms are a general notion of conversion between types. We say that type <code>A</code> and <code>B</code> are isomorphic, if we have conversion functions <code>f :: A -&gt; B</code> and <code>g :: B -&gt; A</code> such that</p>
+<pre><code>f . g = idB
+g . f = idA</code></pre>
+<p>Type isomorphisms imply that we can safely convert without loss of information between types.</p>
+<h1 id="motivation">Motivation</h1>
+<p>There always exist multiple types that can represent the same values we want to represent. The problem is that they are not compatible because the type system does not automatically recognize them as equal. So we might not be able to reuse the existing libraries as the types we use in our program are not compatible with the types these libraries use. Type isomorphisms provide wrapping/unwrapping functions that can safely convert between these types.</p>
+<p>Type isomorphisms also help us understand various transformations used in equational reasoning and API design.</p>
+<h1 id="basics">Basics</h1>
+<p>Haskell programmers already use the type isomorphism to reason about programs. For example, we know that pair <code>(a,b)</code> is isomorphic to <code>(b,a)</code> because <code>swap</code> is the conversion function in both directions.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">swap ::</span> (a,b) <span class="ot">-&gt;</span> (b,a)
+swap (a, b) <span class="fu">=</span> (b, a)</code></pre></div>
+<p>Another example of type isomorphism is <code>a</code> and <code>() -&gt; a</code>. We can define conversion functions as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> a <span class="ot">-&gt;</span> () <span class="ot">-&gt;</span> a
+f <span class="fu">=</span> \x _ <span class="ot">-&gt;</span> x
+
+<span class="ot">g ::</span> (() <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> a
+g k <span class="fu">=</span> k ()</code></pre></div>
+<p>What about <code>a -&gt; ()</code>? This type is unsurprisingly isomorphic to <code>()</code> because <code>a -&gt; ()</code> type has only one inhabitant which discards the argument and returns <code>()</code>. Conversion functions are:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> (a <span class="ot">-&gt;</span> ()) <span class="ot">-&gt;</span> ()
+f _ <span class="fu">=</span> ()
+
+<span class="ot">g ::</span> () <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> ()
+g <span class="fu">=</span> \_ _ <span class="ot">-&gt;</span> ()</code></pre></div>
+<h1 id="currying-and-uncurrying">Currying and uncurrying</h1>
+<p>In functional programming, <em>currying</em> transforms a function that takes multiple arguments via a pair, into a function that accepts the first argument of the pair, and returns a function that accepts the second argument, before returning the result. <em>uncurrying</em> performs transformation in the opposite direction.</p>
+<p>Here are the types of <code>curry</code> and <code>uncurry</code> functions.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">curry<span class="ot"> ::</span> ((a, b) <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c
+uncurry<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> (a, b) <span class="ot">-&gt;</span> c</code></pre></div>
+<p>From the signature of these functions, we can see that <code>(a, b) -&gt; c</code> and <code>a -&gt; b -&gt; c</code> are isomorphic by <code>curry</code> and <code>uncurry</code> functions.</p>
+<h1 id="continuation">Continuation</h1>
+<p><code>a</code> can be converted to <code>(a -&gt; r) -&gt; r</code> by CPS transformation. A CPS term can be converted back to the direct style by applying <code>id</code> function.</p>
+<pre><code>{-# LANGUAGE RankNTypes #-}
+
+f :: a -&gt; (a -&gt; r) -&gt; r
+f a b = b a
+
+g :: (forall r. (a -&gt; r) -&gt; r) -&gt; a
+g a = a id</code></pre>
+<p><code>RankNTypes</code> extension is necessary to represent the type of <code>g</code>.</p>
+<h1 id="algebraic-data-types">Algebraic data types</h1>
+<p>Every algebraic data type can be represented with combinations of <em>product</em> and <em>sum</em> types. This is why these types are called <em>algebraic data types</em>.</p>
+<p>In Haskell, products are encoded by <code>(a, b)</code> and sums are encoded by <code>Either a b</code>. Thus an algebraic data type of Haskell is isomorphic to some combinations of <code>(a, b)</code> and <code>Either a b</code>. Let’s see a few examples.</p>
+<p><code>Bool</code> is isomorphic to <code>Either () ()</code> because we can define conversion functions <code>f</code> and <code>g</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> () ()
+f <span class="dt">True</span> <span class="fu">=</span> <span class="dt">Left</span> ()
+f <span class="dt">False</span> <span class="fu">=</span> <span class="dt">Right</span> ()
+
+<span class="ot">g ::</span> <span class="dt">Either</span> () () <span class="ot">-&gt;</span> <span class="dt">Bool</span>
+g (<span class="dt">Left</span> ()) <span class="fu">=</span> <span class="dt">True</span>
+g (<span class="dt">Right</span> ()) <span class="fu">=</span> <span class="dt">False</span></code></pre></div>
+<p><code>Maybe a</code> is isomorphic to <code>Either a ()</code> or <code>Either a ()</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> <span class="dt">Maybe</span> a <span class="ot">-&gt;</span> <span class="dt">Either</span> () a
+f (<span class="dt">Just</span> x) <span class="fu">=</span> <span class="dt">Right</span> x
+f <span class="dt">Nothing</span> <span class="fu">=</span> <span class="dt">Left</span> ()
+
+<span class="ot">g ::</span> <span class="dt">Either</span> () a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a
+g (<span class="dt">Left</span> _) <span class="fu">=</span> <span class="dt">Nothing</span>
+g (<span class="dt">Right</span> x) <span class="fu">=</span> <span class="dt">Just</span> x</code></pre></div>
+<h1 id="playing-with-type-isomorphism">Playing with type isomorphism</h1>
+<p><em>unfold</em> is the categorical dual of <em>fold</em>. It means we can get the type of <code>unfold</code> by reversing arrows of <code>fold</code>.</p>
+<p>Here are the type signatures of <code>foldr</code> and <code>unfoldr</code> taken from the <code>base</code> library.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b
+<span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])</code></pre></div>
+<p>It is not obvious how <code>foldr</code> and <code>unfoldr</code> are related. But we can apply the type isomorphism we’ve learned to derive the type of <code>unfoldr</code> from <code>foldr</code>.</p>
+<pre><code>(a → b → b) → b → ([a] → b)
+=== ((a, b) → b) → b → ([a] → b)
+=== ((a, b) → b) → (() -&gt; b) → ([a] → b)
+=== (((a, b) → b), (() -&gt; b)) → ([a] → b)
+=== ((Either (a, b) ()) → b) → ([a] → b)
+=== (Maybe (a, b) -&gt; b) → ([a] → b)</code></pre>
+<p>We used many type isomorphisms.</p>
+<ul>
+<li><code>a -&gt; b -&gt; c ~= (a, b) -&gt; c</code></li>
+<li><code>a ~= () -&gt; a</code></li>
+<li><code>((a -&gt; c), (b -&gt; c)) ~= Either a b -&gt; c</code></li>
+<li><code>Either a () ~= Maybe a</code>.</li>
+</ul>
+<p>Finally, by reversing the arrows of <code>foldr</code>, we get <code>unfoldr</code>.</p>
+<pre><code>foldr   :: (Maybe (a, b) -&gt; b           ) -&gt; ([a] -&gt; b  )
+unfoldr :: (b            -&gt; Maybe (a, b)) -&gt; (b   -&gt; [a])</code></pre>
+<p>Interested readers might want to take a look at my previous post <a href="http://kseo.github.io/posts/2016-12-12-unfold-and-fold.html">unfold and fold</a> and Conal Elliott’s <a href="http://conal.net/talks/folds-and-unfolds.pdf">Folds and unfolds all around us</a> for the details.</p>
+<h1 id="existentials">Existentials</h1>
+<p><code>{∃X,T}</code> and <code>∀Y. (∀X. T→Y) → Y</code> are isomorphic types. My previous post <a href="http://kseo.github.io/posts/2016-12-19-encoding-existentials.html">Encoding existentials</a> shows how we can encode existential types using only <code>RankNTypes</code> and <em>forall</em> quantifier.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Reader monad and SKI combinators</title>
     <link href="http://kseo.github.io//posts/2016-12-24-reader-monad-and-ski-combinators.html" />
     <id>http://kseo.github.io//posts/2016-12-24-reader-monad-and-ski-combinators.html</id>
@@ -844,114 +972,6 @@ var disqus_config = function () {
 <div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; t ::</span> <span class="dt">Tree</span> <span class="dt">Int</span>
 <span class="ot">&gt;</span> t <span class="fu">=</span> fmap (<span class="fu">+</span><span class="dv">1</span>) (branch <span class="dv">3</span> leaf (branch <span class="dv">4</span> leaf leaf))</code></pre></div>
 <p>This technique of using <em>bifunctors</em> to implement datatype-generic recursive functions is mostly superseded by <code>Applicative</code> and <code>Traversable</code> in Haskell, but I think it is still a good example which shows the real power of <em>bifunctors</em>!</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Golden tests are tasty</title>
-    <link href="http://kseo.github.io//posts/2016-12-15-golden-tests-are-tasty.html" />
-    <id>http://kseo.github.io//posts/2016-12-15-golden-tests-are-tasty.html</id>
-    <published>2016-12-15T00:00:00Z</published>
-    <updated>2016-12-15T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 15, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/tasty.html">tasty</a>, <a href="/tags/golden.html">golden</a>, <a href="/tags/test.html">test</a>
-      
-  </div>
-
-<p>Haskell programmers love property based testing thanks to glorious <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a> library. Once we specify the program behavior in terms of properties, <em>QuickCheck</em> generates random test cases and checks if the given properties hold for these test cases. Once it finds a failing test case, it automatically shrinks the test case to the minimal value which still violates the property.</p>
-<p>However, we, Haskell programmers, often forget that there are other test methodologies. In this post, I am going to introduce <em>gold testing</em> provided by <a href="https://hackage.haskell.org/package/tasty-golden">tasty-golden</a> package.</p>
-<p>The idea is simple. A golden test is just an <code>IO</code> action that writes its result to a file. To pass the test, this output file should be identical to the corresponding <em>golden</em> file, which contains the correct result for the test.</p>
-<h1 id="a-cast-study-untyped-lambda-calculus">A cast study: untyped lambda calculus</h1>
-<p>We have an <a href="https://github.com/kseo/untyped">untyped lambda calculus implementation</a>. It provides <code>run</code> function which evaluates the given lambda calculus script to a <code>String</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">run ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> <span class="dt">String</span></code></pre></div>
-<p>For testing, we would like to check if this function works correctly for various input scripts. To enumerate a few test scenarios:</p>
-<ul>
-<li><code>\x.x</code> evaluates to itself because there is no redex in the term.</li>
-<li><code>(\x.x)(\x.x)</code> evaluates to <code>(\x.x)</code> by substitution.</li>
-<li><code>\x.y</code> throws an error because <code>y</code> is an unbound variable.</li>
-</ul>
-<p>Of course, we can manually create a test case for each scenario, but this is boring and repetitive. Instead of writing test cases in Haskell, let’s create a script file and its expected output file for each input:</p>
-<ul>
-<li><p>t1.lc</p>
-<pre><code>\x.x</code></pre></li>
-<li><p>t1.golden</p>
-<pre><code>\x.x</code></pre></li>
-<li><p>t2.lc</p>
-<pre><code>(\x.x)(\x.x)</code></pre></li>
-<li><p>t2.golden</p>
-<pre><code>(\x.x)</code></pre></li>
-<li><p>t3.lc</p>
-<pre><code>(\x.y)</code></pre></li>
-<li><p>t3.golden</p>
-<pre><code>&quot;untyped lambda-calculus&quot; (line 2, column 1):
-unexpected end of input
-The variable y has not been bound</code></pre></li>
-</ul>
-<p>Once we have these files ready, what golden tests do is to read each script file and evaluates the script, and compares the output with the expected output contained in the expected file. If the actual output and the expected output are different, the test fails. We call the expected output file as the <em>golden file</em>.</p>
-<p>For convenience, tasty-golden generates the golden files if they are not available. So you don’t need to create golden files initially. You also can regenerate the golden files using the <code>--accept</code> flag. This is useful when you know that your change is valid and want to rebase all the golden files accordingly.</p>
-<h1 id="implementation">Implementation</h1>
-<p>Here’s the actual code which performs golden tests as described above. <code>listTestFiles</code> enumerates all the script files under <code>test/tests</code> directory and <code>mkGoldenTest</code> creates a golden test from the script file using <code>goldenVsString</code> function provided by tasty-golden.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Language.LambdaCalculus</span>
-
-<span class="kw">import qualified</span> <span class="dt">Data.ByteString.Lazy.Char8</span> <span class="kw">as</span> <span class="dt">BS</span>
-<span class="kw">import </span><span class="dt">System.FilePath</span>
-<span class="kw">import </span><span class="dt">System.FilePath.Glob</span>
-
-<span class="kw">import </span><span class="dt">Test.Tasty</span>
-<span class="kw">import </span><span class="dt">Test.Tasty.Golden</span> <span class="kw">as</span> <span class="dt">G</span>
-
-<span class="ot">main ::</span> <span class="dt">IO</span> ()
-main <span class="fu">=</span> <span class="kw">do</span>
-  paths <span class="ot">&lt;-</span> listTestFiles
-  goldens <span class="ot">&lt;-</span> mapM mkGoldenTest paths
-  defaultMain (testGroup <span class="st">&quot;Tests&quot;</span> goldens)
-
-<span class="ot">listTestFiles ::</span> <span class="dt">IO</span> [FilePath]
-listTestFiles <span class="fu">=</span> globDir1 pat <span class="st">&quot;test/tests&quot;</span>
-  <span class="kw">where</span> pat <span class="fu">=</span> compile <span class="st">&quot;*.lc&quot;</span>
-
-<span class="ot">mkGoldenTest ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">TestTree</span>
-mkGoldenTest path <span class="fu">=</span> <span class="kw">do</span>
-  <span class="kw">let</span> testName <span class="fu">=</span> takeBaseName path
-  <span class="kw">let</span> goldenPath <span class="fu">=</span> replaceExtension path <span class="st">&quot;.golden&quot;</span>
-  return (goldenVsString testName goldenPath action)
-  <span class="kw">where</span>
-<span class="ot">    action ::</span> <span class="dt">IO</span> <span class="dt">BS.ByteString</span>
-    action <span class="fu">=</span> <span class="kw">do</span>
-      script <span class="ot">&lt;-</span> readFile path
-      <span class="kw">let</span> actual <span class="fu">=</span> either id id (run script)
-      return (BS.pack actual)</code></pre></div>
 <div id="disqus_thread"></div>
 <script>
 
