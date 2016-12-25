@@ -93,14 +93,14 @@ g (<span class="dt">Right</span> x) <span class="fu">=</span> <span class="dt">J
 <p>Here are the type signatures of <code>foldr</code> and <code>unfoldr</code> taken from the <code>base</code> library.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b
 <span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])</code></pre></div>
-<p>It is not obvious how <code>foldr</code> and <code>unfoldr</code> are related. But we can apply the type isomorphism we’ve learned to derive the type of <code>unfoldr</code> from <code>foldr</code>.</p>
+<p>It is not obvious how <code>foldr</code> and <code>unfoldr</code> are related. But we can apply the types isomorphism we’ve learned to derive the type of <code>unfoldr</code> from <code>foldr</code>.</p>
 <pre><code>(a → b → b) → b → ([a] → b)
 === ((a, b) → b) → b → ([a] → b)
 === ((a, b) → b) → (() -&gt; b) → ([a] → b)
 === (((a, b) → b), (() -&gt; b)) → ([a] → b)
 === ((Either (a, b) ()) → b) → ([a] → b)
 === (Maybe (a, b) -&gt; b) → ([a] → b)</code></pre>
-<p>We used many type isomorphisms.</p>
+<p>We used the following type isomorphisms:</p>
 <ul>
 <li><code>a -&gt; b -&gt; c ~= (a, b) -&gt; c</code></li>
 <li><code>a ~= () -&gt; a</code></li>
