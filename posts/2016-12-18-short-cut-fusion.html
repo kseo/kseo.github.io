@@ -50,15 +50,18 @@
 <p>So functional programming is nice, but it is not performant in real world? The answer is no! Our Haskell compiler, GHC is smart enough to optimize this pattern into a simple loop which does not require an explicit list structure. This compiler optimization technique is called <a href="https://wiki.haskell.org/Short_cut_fusion">short cut fusion</a>.</p>
 <p>Let’s see how our example is actually transformed into a simple loop step by step.</p>
 <p>First, the list comprehension expression <code>[1..10]</code> is a syntactic sugar for <code>from 1 10</code>. The definition of <code>from</code> is as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">from a b <span class="fu">=</span> <span class="kw">if</span> a <span class="fu">&gt;</span> b
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">from ::</span> (<span class="dt">Ord</span> a, <span class="dt">Num</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [a]
+from a b <span class="fu">=</span> <span class="kw">if</span> a <span class="fu">&gt;</span> b
            <span class="kw">then</span> []
            <span class="kw">else</span> a <span class="fu">:</span> from (a <span class="fu">+</span> <span class="dv">1</span>) b</code></pre></div>
 <p><code>from</code> is a list producing function and we can abstract the definition over <em>cons</em> and <em>nil</em> by parameterizing both as arguments.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">from' a b <span class="fu">=</span> \c n <span class="ot">-&gt;</span> <span class="kw">if</span> a <span class="fu">&gt;</span> b
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">from' ::</span> (<span class="dt">Ord</span> a, <span class="dt">Num</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b
+from' a b <span class="fu">=</span> \c n <span class="ot">-&gt;</span> <span class="kw">if</span> a <span class="fu">&gt;</span> b
                     <span class="kw">then</span> n
                     <span class="kw">else</span> c a (from' (a <span class="fu">+</span> <span class="dv">1</span>) b c n)</code></pre></div>
 <p>The original <code>from</code> can be obtained in terms of <code>build</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">build g <span class="fu">=</span> g (<span class="fu">:</span>) []
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">build ::</span> forall a<span class="fu">.</span> (forall b<span class="fu">.</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a]
+build g <span class="fu">=</span> g (<span class="fu">:</span>) []
 
 from a b <span class="fu">=</span> build (from' a b )</code></pre></div>
 <p>Here <code>build</code> is a dual of <code>foldr</code> which produces a list. You can think of <code>from'</code> as a program with ‘holes’ for constructors, and <code>build</code> plugs those holes with actual constructors.</p>
