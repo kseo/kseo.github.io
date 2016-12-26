@@ -39,7 +39,7 @@
       
   </div>
 
-<p>The type system of Haskell is based on <em>Hindley-Milner</em>, so it has so called <em>let-bound polymorphism</em>. It means identifiers bound using a <code>let</code> or <code>where</code> clause and top level definitions can be polymorphic. On the contrary, lambda-bound identifiers are monomorphic.</p>
+<p>The type system of Haskell is based on <em>Hindley-Milner</em>, so it has so called <em>let-bound polymorphism</em>. It means identifiers bound using a <code>let</code> or <code>where</code> clause can be polymorphic. On the contrary, lambda-bound identifiers are monomorphic.</p>
 <p>For example, the following program is illegal in Haskell:</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">foo ::</span> (<span class="dt">Int</span>, <span class="dt">Char</span>)
 foo <span class="fu">=</span> (\f <span class="ot">-&gt;</span> (f <span class="dv">1</span>, f <span class="ch">'a'</span>)) id</code></pre></div>
