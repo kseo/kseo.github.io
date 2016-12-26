@@ -89,13 +89,13 @@ f <span class="dt">False</span> <span class="fu">=</span> <span class="dt">Right
 <span class="ot">g ::</span> <span class="dt">Either</span> () () <span class="ot">-&gt;</span> <span class="dt">Bool</span>
 g (<span class="dt">Left</span> ()) <span class="fu">=</span> <span class="dt">True</span>
 g (<span class="dt">Right</span> ()) <span class="fu">=</span> <span class="dt">False</span></code></pre></div>
-<p><code>Maybe a</code> is isomorphic to <code>Either a ()</code> or <code>Either a ()</code>.</p>
+<p><code>Maybe a</code> is isomorphic to <code>Either a ()</code> or <code>Either () a</code>.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> <span class="dt">Maybe</span> a <span class="ot">-&gt;</span> <span class="dt">Either</span> () a
 f (<span class="dt">Just</span> x) <span class="fu">=</span> <span class="dt">Right</span> x
 f <span class="dt">Nothing</span> <span class="fu">=</span> <span class="dt">Left</span> ()
 
 <span class="ot">g ::</span> <span class="dt">Either</span> () a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a
-g (<span class="dt">Left</span> _) <span class="fu">=</span> <span class="dt">Nothing</span>
+g (<span class="dt">Left</span> ()) <span class="fu">=</span> <span class="dt">Nothing</span>
 g (<span class="dt">Right</span> x) <span class="fu">=</span> <span class="dt">Just</span> x</code></pre></div>
 <h1 id="playing-with-type-isomorphism">Playing with type isomorphism</h1>
 <p><em>unfold</em> is the categorical dual of <em>fold</em>. It means we can get the type of <code>unfold</code> by reversing arrows of <code>fold</code>.</p>
