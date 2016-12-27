@@ -31,7 +31,7 @@
   </div>
 
 <p><a href="https://www.stackage.org/lts-7.12/package/mtl-2.2.1">mtl</a> (or its underlying <a href="https://www.stackage.org/lts-7.12/package/transformers-0.5.2.0">transformers</a>) package provides two types of <code>State</code> monad; <code>Control.Monad.State.Strict</code> and <code>Control.Monad.State.Lazy</code>. <code>Control.Monad.State</code> re-exports <code>Control.Monad.State.Lazy</code>.</p>
-<p>The difference between these two state monads don’t matter in most cases, but it may cause unexpected surprises when infinite lists are involved. In this post, I am going to explain the subtle difference between lazy and strict state monads.</p>
+<p>The difference between these two state monads does not matter in most cases, but it may cause unexpected surprises when infinite lists are involved. In this post, I am going to explain the subtle difference between lazy and strict state monads.</p>
 <p>Let’s start the discussion with a simple example. The program shown below simply returns an infinite list of integers <code>[1..]</code> in a lazy state monad. Running the program prints <code>[1,2,3,4,5]</code> as expected.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.State.Lazy</span>
 
