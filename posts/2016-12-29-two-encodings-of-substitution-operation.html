@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Two encodings of substitution operation</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Two encodings of substitution operation</h1>
+
+            <a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 29, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/substitution.html">substitution</a>
+      
+  </div>
+
+<p>Substitution operations are heavily used in implementing type checkers. A substitution is a finite mappings from type variables to types. Thus it is natural to define <code>Subst</code> as a list of <code>(Name, Type)</code> pairs as in the following example.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Bifunctor</span>
+
+<span class="kw">type</span> <span class="dt">Name</span> <span class="fu">=</span> <span class="dt">String</span>
+
+<span class="kw">data</span> <span class="dt">Type</span> <span class="fu">=</span> <span class="dt">TVar</span> <span class="dt">Name</span>
+          <span class="fu">|</span> <span class="dt">TCon</span> <span class="dt">Name</span> [<span class="dt">Type</span>]
+
+<span class="kw">type</span> <span class="dt">Subst</span> <span class="fu">=</span> [(<span class="dt">Name</span>, <span class="dt">Type</span>)]</code></pre></div>
+<p>Composition of substitutions can be encoded as operations over the underlying association list.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">idSubst ::</span> <span class="dt">Subst</span>
+idSubst <span class="fu">=</span> []
+
+<span class="ot">composeSubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span>
+composeSubst s1 s2 <span class="fu">=</span> map (second (applySubst s1)) s2 <span class="fu">++</span> s1</code></pre></div>
+<p><code>applySubst</code> applies the substitution given over the structure of the type replacing type variables as specified.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applySubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
+applySubst s (<span class="dt">TVar</span> n) <span class="fu">=</span> <span class="kw">case</span> lookup n s <span class="kw">of</span>
+                          <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="dt">TVar</span> n
+                          <span class="dt">Just</span> t <span class="ot">-&gt;</span> t
+applySubst s (<span class="dt">TCon</span> n ts) <span class="fu">=</span> <span class="dt">TCon</span> n (map (applySubst s) ts)</code></pre></div>
+<p>Martin Grabm¨uller’s <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.65.7733&amp;rep=rep1&amp;type=pdf">Algorithm W Step by Step</a> uses a slight variation of this encoding to implement Hindley-Milner type system. His version uses <code>Map Name Type</code> instead of <code>[(Name, String)]</code> for efficient lookup.</p>
+<p>Alternatively, we can encode substitution operations directly as a function from type variables to types.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Subst</span> <span class="fu">=</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
+
+<span class="ot">idSubst ::</span> <span class="dt">Subst</span>
+idSubst n <span class="fu">=</span> <span class="dt">TVar</span> n
+
+<span class="ot">composeSubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span>
+composeSubst s1 s2 <span class="fu">=</span> applySubst s1 <span class="fu">.</span> s2
+
+<span class="ot">applySubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
+applySubst s (<span class="dt">TVar</span> n) <span class="fu">=</span> s n
+applySubst s (<span class="dt">TCon</span> n ts) <span class="fu">=</span> <span class="dt">TCon</span> n (map (applySubst s) ts)</code></pre></div>
+<p>Simon Peyton Jones’s <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">The Implementation of Functional Programming Languages</a> uses this encoding of substitution to implement the type checker.</p>
+<p>These two encodings are equivalent.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>

@@ -8,8 +8,89 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2016-12-28T00:00:00Z</updated>
+    <updated>2016-12-29T00:00:00Z</updated>
     <entry>
+    <title>Two encodings of substitution operation</title>
+    <link href="http://kseo.github.io//posts/2016-12-29-two-encodings-of-substitution-operation.html" />
+    <id>http://kseo.github.io//posts/2016-12-29-two-encodings-of-substitution-operation.html</id>
+    <published>2016-12-29T00:00:00Z</published>
+    <updated>2016-12-29T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 29, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/substitution.html">substitution</a>
+      
+  </div>
+
+<p>Substitution operations are heavily used in implementing type checkers. A substitution is a finite mappings from type variables to types. Thus it is natural to define <code>Subst</code> as a list of <code>(Name, Type)</code> pairs as in the following example.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Bifunctor</span>
+
+<span class="kw">type</span> <span class="dt">Name</span> <span class="fu">=</span> <span class="dt">String</span>
+
+<span class="kw">data</span> <span class="dt">Type</span> <span class="fu">=</span> <span class="dt">TVar</span> <span class="dt">Name</span>
+          <span class="fu">|</span> <span class="dt">TCon</span> <span class="dt">Name</span> [<span class="dt">Type</span>]
+
+<span class="kw">type</span> <span class="dt">Subst</span> <span class="fu">=</span> [(<span class="dt">Name</span>, <span class="dt">Type</span>)]</code></pre></div>
+<p>Composition of substitutions can be encoded as operations over the underlying association list.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">idSubst ::</span> <span class="dt">Subst</span>
+idSubst <span class="fu">=</span> []
+
+<span class="ot">composeSubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span>
+composeSubst s1 s2 <span class="fu">=</span> map (second (applySubst s1)) s2 <span class="fu">++</span> s1</code></pre></div>
+<p><code>applySubst</code> applies the substitution given over the structure of the type replacing type variables as specified.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applySubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
+applySubst s (<span class="dt">TVar</span> n) <span class="fu">=</span> <span class="kw">case</span> lookup n s <span class="kw">of</span>
+                          <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="dt">TVar</span> n
+                          <span class="dt">Just</span> t <span class="ot">-&gt;</span> t
+applySubst s (<span class="dt">TCon</span> n ts) <span class="fu">=</span> <span class="dt">TCon</span> n (map (applySubst s) ts)</code></pre></div>
+<p>Martin Grabm¨uller’s <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.65.7733&amp;rep=rep1&amp;type=pdf">Algorithm W Step by Step</a> uses a slight variation of this encoding to implement Hindley-Milner type system. His version uses <code>Map Name Type</code> instead of <code>[(Name, String)]</code> for efficient lookup.</p>
+<p>Alternatively, we can encode substitution operations directly as a function from type variables to types.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Subst</span> <span class="fu">=</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
+
+<span class="ot">idSubst ::</span> <span class="dt">Subst</span>
+idSubst n <span class="fu">=</span> <span class="dt">TVar</span> n
+
+<span class="ot">composeSubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span>
+composeSubst s1 s2 <span class="fu">=</span> applySubst s1 <span class="fu">.</span> s2
+
+<span class="ot">applySubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
+applySubst s (<span class="dt">TVar</span> n) <span class="fu">=</span> s n
+applySubst s (<span class="dt">TCon</span> n ts) <span class="fu">=</span> <span class="dt">TCon</span> n (map (applySubst s) ts)</code></pre></div>
+<p>Simon Peyton Jones’s <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">The Implementation of Functional Programming Languages</a> uses this encoding of substitution to implement the type checker.</p>
+<p>These two encodings are equivalent.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Lazy vs Strict State Monad</title>
     <link href="http://kseo.github.io//posts/2016-12-28-lazy-vs-strict-state-monad.html" />
     <id>http://kseo.github.io//posts/2016-12-28-lazy-vs-strict-state-monad.html</id>
@@ -862,92 +943,6 @@ obj f <span class="fu">=</span> f <span class="st">&quot;hello&quot;</span>
 
 <span class="ot">app ::</span> <span class="dt">Obj</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
 app obj <span class="fu">=</span> obj (\x <span class="ot">-&gt;</span> show x)</code></pre></div>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Short cut fusion</title>
-    <link href="http://kseo.github.io//posts/2016-12-18-short-cut-fusion.html" />
-    <id>http://kseo.github.io//posts/2016-12-18-short-cut-fusion.html</id>
-    <published>2016-12-18T00:00:00Z</published>
-    <updated>2016-12-18T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 18, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/short%20cut%20fusion.html">short cut fusion</a>, <a href="/tags/optimization.html">optimization</a>
-      
-  </div>
-
-<p>Let’s start with a simple programming task. How do you add integers from 1 to 10? In Java-like language, we use a loop to calculate the sum.</p>
-<div class="sourceCode"><pre class="sourceCode java"><code class="sourceCode java"><span class="dt">int</span> sum = <span class="dv">0</span>;
-<span class="kw">for</span> (<span class="dt">int</span> i = <span class="dv">1</span>; i &lt;= <span class="dv">10</span>; i++) {
-  sum += i;
-}</code></pre></div>
-<p>In Haskell, we can succinctly performs the same calculation using <em>list comprehension</em> and <code>foldr</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr (<span class="fu">+</span>) <span class="dv">0</span> [<span class="dv">1</span><span class="fu">..</span><span class="dv">10</span>]</code></pre></div>
-<p>The code is short and elegant, but novice Haskell programmers are often concerned with the performance of this program. Indeed, it looks very inefficient on the surface because it first generates a list of integers from 1 to 10 by allocating each con cells, and subsequently deallocates them by folding over the list.</p>
-<p>So functional programming is nice, but it is not performant in real world? The answer is no! Our Haskell compiler, GHC is smart enough to optimize this pattern into a simple loop which does not require an explicit list structure. This compiler optimization technique is called <a href="https://wiki.haskell.org/Short_cut_fusion">short cut fusion</a>.</p>
-<p>Let’s see how our example is actually transformed into a simple loop step by step.</p>
-<p>First, the list comprehension expression <code>[1..10]</code> is a syntactic sugar for <code>from 1 10</code>. The definition of <code>from</code> is as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">from ::</span> (<span class="dt">Ord</span> a, <span class="dt">Num</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [a]
-from a b <span class="fu">=</span> <span class="kw">if</span> a <span class="fu">&gt;</span> b
-           <span class="kw">then</span> []
-           <span class="kw">else</span> a <span class="fu">:</span> from (a <span class="fu">+</span> <span class="dv">1</span>) b</code></pre></div>
-<p><code>from</code> is a list producing function and we can abstract the definition over <em>cons</em> and <em>nil</em> by parameterizing both as arguments.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">from&#39; ::</span> (<span class="dt">Ord</span> a, <span class="dt">Num</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b
-from&#39; a b <span class="fu">=</span> \c n <span class="ot">-&gt;</span> <span class="kw">if</span> a <span class="fu">&gt;</span> b
-                    <span class="kw">then</span> n
-                    <span class="kw">else</span> c a (from&#39; (a <span class="fu">+</span> <span class="dv">1</span>) b c n)</code></pre></div>
-<p>The original <code>from</code> can be obtained in terms of <code>build</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">build ::</span> forall a<span class="fu">.</span> (forall b<span class="fu">.</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a]
-build g <span class="fu">=</span> g (<span class="fu">:</span>) []
-
-from a b <span class="fu">=</span> build (from&#39; a b )</code></pre></div>
-<p>Here <code>build</code> is a dual of <code>foldr</code> which produces a list. You can think of <code>from'</code> as a program with ‘holes’ for constructors, and <code>build</code> plugs those holes with actual constructors.</p>
-<p>The key idea of the <em>short cut fusion</em> is that <code>build</code> and <code>foldr</code> cancel each other. To put it another way, when we produce a list that will be consumed immediately, we can fuse them together.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr k z (build g) <span class="fu">=</span> g k z</code></pre></div>
-<p>We now can see that the evaluation of <code>foldr (+) 0 [1..10]</code> does not produce an intermediate list.</p>
-<pre><code>foldr (+) 0 (from 1 10)
-=&gt; foldr (+) 0 (build (from&#39; 1 10))
-=&gt; from&#39; 1 10 (+) 0
-=&gt; \c n -&gt; (if 1 &gt; 10
-            then n
-            else c 1 (from&#39; 2 10 c n)) (+) 0
-=&gt; if 1 &gt; 10
-   then 0
-   else 1 + (from&#39; 2 10 (+) 0)
-=&gt; 1 + 2 + ... + 9 + 10 + 0
-=&gt; 55</code></pre>
-<p>Interested readers might like to take a look at the <a href="https://www.microsoft.com/en-us/research/wp-content/uploads/2016/07/deforestation-short-cut.pdf">original paper</a> for further information.</p>
 <div id="disqus_thread"></div>
 <script>
 
