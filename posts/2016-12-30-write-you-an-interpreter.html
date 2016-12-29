@@ -104,7 +104,7 @@ desugar e <span class="fu">=</span> e</code></pre></div>
   <span class="fu">|</span> <span class="dt">CLam</span> (<span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>)
   <span class="fu">|</span> <span class="dt">CBool</span> <span class="dt">Bool</span>
   <span class="fu">|</span> <span class="dt">CInt</span> <span class="dt">Integer</span></code></pre></div>
-<p><code>compile</code> transforms a lambda calculus expression into an expression involving only <code>S</code>, <code>K</code>, <code>I</code> and constants. The SK compilation algorithm is well described in Simon Peyton John’s <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">The Implementation of Functional Programming Languages</a>.</p>
+<p><code>compile</code> transforms a lambda calculus expression into an expression involving only <code>S</code>, <code>K</code>, <code>I</code> and constants. The SK compilation algorithm is well described in Simon Peyton Jones’s <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">The Implementation of Functional Programming Languages</a>.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">compile ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
 compile (<span class="dt">Var</span> n) <span class="fu">=</span> <span class="dt">CVar</span> n
 compile (<span class="dt">App</span> fun arg) <span class="fu">=</span> <span class="dt">CApp</span> (compile fun) (compile arg)
