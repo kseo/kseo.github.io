@@ -8,8 +8,70 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2016-12-30T00:00:00Z</updated>
+    <updated>2016-12-31T00:00:00Z</updated>
     <entry>
+    <title>Type inference algorithms of Haskell-like languages</title>
+    <link href="http://kseo.github.io//posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html" />
+    <id>http://kseo.github.io//posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html</id>
+    <published>2016-12-31T00:00:00Z</published>
+    <updated>2016-12-31T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on December 31, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/type%20inference.html">type inference</a>, <a href="/tags/type%20system.html">type system</a>, <a href="/tags/Haskell.html">Haskell</a>
+      
+  </div>
+
+<p>I collected papers on the type inference algorithms used by Haskell-like languages.</p>
+<h1 id="haskell">Haskell</h1>
+<p>Haskell supports advanced type system features such as GADTs, type classes and type families. The current type checker implemented by GHC is described in <a href="https://www.microsoft.com/en-us/research/publication/outsideinx-modular-type-inference-with-local-assumptions/">OutsideIn(X): Modular type inference with local assumptions</a>.</p>
+<h1 id="purescript">PureScript</h1>
+<p>The type checker of PureScript is inspired by the following papers. It supports type classes, row polymorphism, higher kinded polymorphism (rank N types). There are no soundness proofs yet.</p>
+<ul>
+<li><a href="https://people.mpi-sws.org/~neelk/bidir.pdf">Complete and Easy Bidirectional Typechecking for Higher-Rank Polymorphism</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/publication/hmf-simple-type-inference-for-first-class-polymorphism/">HMF: Simple Type Inference for First-Class Polymorphism</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/publication/koka-programming-with-row-polymorphic-effect-types/">Koka: Programming with Row-polymorphic Effect Types</a></li>
+</ul>
+<h1 id="elm">Elm</h1>
+<p>Elm’s type checker is an implementation of Pottier and Rem’s <a href="http://gallium.inria.fr/~fpottier/publis/emlti-final.pdf">The Essence of ML Type Inference</a> with two extensions:</p>
+<ul>
+<li>A limited set of built-in type classes (i.e. number, appendable, comparable)</li>
+<li>Records based on <a href="https://www.microsoft.com/en-us/research/publication/extensible-records-with-scoped-labels/">Extensible records with scoped labels</a></li>
+</ul>
+<p>There is no support for type classes or higher kinded polymorphism yet.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Write you an interpreter</title>
     <link href="http://kseo.github.io//posts/2016-12-30-write-you-an-interpreter.html" />
     <id>http://kseo.github.io//posts/2016-12-30-write-you-an-interpreter.html</id>
@@ -994,65 +1056,6 @@ and                     <span class="fu">=</span>  foldr (<span class="fu">&amp;
 <span class="ot">{-# INLINE sum #-}</span>
 sum                     <span class="fu">=</span>  foldl (<span class="fu">+</span>) <span class="dv">0</span></code></pre></div>
 <p>OMG! There is a historical accident here. Interested readers are referred to <a href="http://www.well-typed.com/blog/90/">Fixing foldl</a> article from Well-Typed.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Non empty list</title>
-    <link href="http://kseo.github.io//posts/2016-12-20-non-empty-list.html" />
-    <id>http://kseo.github.io//posts/2016-12-20-non-empty-list.html</id>
-    <published>2016-12-20T00:00:00Z</published>
-    <updated>2016-12-20T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 20, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/non%20empty%20list.html">non empty list</a>, <a href="/tags/prelude.html">prelude</a>
-      
-  </div>
-
-<p>Haskell is well known for its safety. A well-typed Haskell program never goes wrong. Is it true? Unfortunately, no. The type system of Haskell is great and it does catch many bugs at compile time, but Haskell’s <code>Prelude</code> is full of partial functions.</p>
-<p>For example, <code>head</code> and <code>tail</code> functions of <code>Data.List</code> throws an error when an empty list is given as an argument.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">λ<span class="fu">&gt;</span> head []
-<span class="fu">***</span> <span class="dt">Exception</span><span class="fu">:</span> Prelude.head<span class="fu">:</span> empty list</code></pre></div>
-<p>That’s why we have a separate <a href="https://hackage.haskell.org/package/safe">safe</a> package which provides alternative safe functions such as <a href="https://www.stackage.org/haddock/lts-7.12/safe-0.3.10/Safe.html#v:headMay">headMay</a> and <a href="https://www.stackage.org/haddock/lts-7.12/safe-0.3.10/Safe.html#v:tailMay">tailMay</a>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">λ<span class="fu">&gt;</span> headMay []
-<span class="dt">Nothing</span>
-<span class="ot">it ::</span> <span class="dt">Maybe</span> a</code></pre></div>
-<p>What if you know that your list is never empty? Checking the return value of <code>headMay</code> or <code>tailMay</code> soon becomes cumbersome.</p>
-<p>Fortunately, Haskell <code>Prelude</code> provides <a href="https://www.stackage.org/haddock/lts-7.12/base-4.9.0.0/Data-List-NonEmpty.html">NonEmpty</a> data type which guarantees that the list is not empty. You can use <code>head</code> and <code>tail</code> functions without worrying about the partiality. It also provides many list functions such as <code>map</code>, <code>reverse</code> and <code>length</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">infixr</span> <span class="dv">5</span> <span class="fu">:|</span>, <span class="fu">&lt;|</span>
-<span class="kw">data</span> <span class="dt">NonEmpty</span> a <span class="fu">=</span> a <span class="fu">:|</span> [a]
-
-head<span class="ot"> ::</span> <span class="dt">NonEmpty</span> a <span class="ot">-&gt;</span> a</code></pre></div>
 <div id="disqus_thread"></div>
 <script>
 
