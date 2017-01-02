@@ -8,8 +8,56 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2016-12-31T00:00:00Z</updated>
+    <updated>2017-01-02T00:00:00Z</updated>
     <entry>
+    <title>Hindley-Milner type inference with constraints</title>
+    <link href="http://kseo.github.io//posts/2017-01-02-hindley-milner-inference-with-constraints.html" />
+    <id>http://kseo.github.io//posts/2017-01-02-hindley-milner-inference-with-constraints.html</id>
+    <published>2017-01-02T00:00:00Z</published>
+    <updated>2017-01-02T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on January  2, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/type%20inference.html">type inference</a>, <a href="/tags/Hindley-Milner.html">Hindley-Milner</a>, <a href="/tags/constraints.html">constraints</a>
+      
+  </div>
+
+<p>Algorithm W is the best known algorithm for implementing Hindley-Milner type inference. But it is a bit complicated as it intermingles two separate processes: constraint generation and solving.</p>
+<p>There is an alternative approach based on <em>constraints generation</em>. In this approach, constraints are collected by bottom-up traversal, and then solved independently. Heeren’s <a href="http://soft.vub.ac.be/~cfscholl/Capita-Selecta-2015/papers/2002%20Heeren.pdf">Generalizing Hindley-Milner Type Inference Algorithms</a> paper describes the algorithm in details.</p>
+<p>Here’s <a href="https://github.com/kseo/poly_constraints">my implementation</a> of Heeren’s algorithm. I forked Stephen Diehls’s <a href="https://github.com/sdiehl/write-you-a-haskell/tree/master/chapter7/poly_constraints">Poly</a> and modified <a href="https://github.com/kseo/poly_constraints/blob/master/src/Infer.hs">the type checker</a> to use the Heeren’s algorithm.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Type inference algorithms of Haskell-like languages</title>
     <link href="http://kseo.github.io//posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html" />
     <id>http://kseo.github.io//posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html</id>
@@ -955,107 +1003,6 @@ optimize (<span class="dt">S</span> (<span class="dt">K</span> p) q) <span class
 optimize (<span class="dt">S</span> p (<span class="dt">K</span> q)) <span class="fu">=</span> c p q
 optimize x <span class="fu">=</span> x</code></pre></div>
 <p>Compare the code with the optimization rules. Now they look almost the same!</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>foldl vs foldl'</title>
-    <link href="http://kseo.github.io//posts/2016-12-21-foldl-vs-foldl%27.html" />
-    <id>http://kseo.github.io//posts/2016-12-21-foldl-vs-foldl%27.html</id>
-    <published>2016-12-21T00:00:00Z</published>
-    <updated>2016-12-21T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 21, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/fold.html">fold</a>, <a href="/tags/recursion.html">recursion</a>
-      
-  </div>
-
-<p>Chris Allen <a href="http://lorepub.com/post/2016-12-17-Haskell-Pitfalls">mentioned</a> <code>foldl</code> as one of the newbie traps in Haskell.</p>
-<blockquote>
-<p>foldl’ is always what you want, don’t use foldl!</p>
-</blockquote>
-<p>Because <code>foldl</code> always has to examine the whole list, there is no reason to make it lazy. It just uses more memory to do the same thing as <code>foldl'</code>.</p>
-<p><a href="http://book.realworldhaskell.org/read/functional-programming.html">Real World Haskell</a> also recommends using <code>foldl'</code> instead of <code>foldl</code>.</p>
-<blockquote>
-<p>Due to the thunking behavior of foldl, it is wise to avoid this function in real programs: even if it doesn’t fail outright, it will be unnecessarily inefficient. Instead, import Data.List and use foldl’</p>
-</blockquote>
-<p><a href="https://wiki.haskell.org/Foldr_Foldl_Foldl&#39;#Foldl">Haskell Wiki</a> compares <code>foldr</code>, <code>foldl</code> and <code>foldl'</code> and recommends using either <code>foldr</code> or <code>foldl'</code>.</p>
-<blockquote>
-<p>foldl’ is the more efficient way to arrive at that result because it doesn’t build a huge thunk.</p>
-</blockquote>
-<p>But here comes a question. If <code>foldl'</code> is almost always better than <code>foldl</code>, why do we have <code>foldl</code> anyway? It makes sense only when the combining function is non-strict in its <em>first</em> argument. (The example is taken from the Haskell Wiki.)</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(?) ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-_ <span class="fu">?</span> <span class="dv">0</span> <span class="fu">=</span> <span class="dv">0</span>
-x <span class="fu">?</span> y <span class="fu">=</span> x<span class="fu">*</span>y
-
-<span class="ot">list ::</span> [<span class="dt">Int</span>]
-list <span class="fu">=</span> [<span class="dv">2</span>,<span class="dv">3</span>,undefined,<span class="dv">5</span>,<span class="dv">0</span>]
-
-okey <span class="fu">=</span> foldl (<span class="fu">?</span>) <span class="dv">1</span> list
-boom <span class="fu">=</span> foldl&#39; (<span class="fu">?</span>) <span class="dv">1</span> list</code></pre></div>
-<p>Evaluation of <code>okey</code>:</p>
-<pre><code>okey --&gt;
-foldl (?) 1 [2,3,undefined,5,0] --&gt;
-foldl (?) (1 ? 2) [3,undefined,5,0] --&gt;
-foldl (?) ((1 ? 2) ? 3) [undefined,5,0] --&gt;
-foldl (?) (((1 ? 2) ? 3) ? undefined) [5,0] --&gt;
-foldl (?) ((((1 ? 2) ? 3) ? undefined) ? 5) [0] --&gt;
-foldl (?) (((((1 ? 2) ? 3) ? undefined) ? 5) ? 0) [] --&gt;
-((((1 ? 2) ? 3) ? undefined) ? 5) ? 0 --&gt;
-0</code></pre>
-<p>Evaluation of <code>boom</code>:</p>
-<pre><code>boom --&gt;
-foldl&#39; (?) 1 [2,3,undefined,5,0] --&gt;
-    1 ? 2 --&gt; 2
-foldl&#39; (?) 2 [3,undefined,5,0] --&gt;
-    2 ? 3 --&gt; 6
-foldl&#39; (?) 6 [undefined,5,0] --&gt;
-    6 ? undefined --&gt;
-*** Exception: Prelude.undefined</code></pre>
-<p>This example actually shows why <code>foldl</code> is so useless because it is hard to find a function which is non-strict in its <em>first</em> argument.</p>
-<p>Many functions in Haskell are non-strict in its <em>second</em> argument and this is why <code>foldr</code> is useful. For example, <code>(&amp;&amp;)</code> is non-strict in its <em>second</em> argument and <code>and</code> can be efficiently defined using <code>foldr</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">(&amp;&amp;)                    ::</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>
-<span class="dt">True</span>  <span class="fu">&amp;&amp;</span> x              <span class="fu">=</span>  x
-<span class="dt">False</span> <span class="fu">&amp;&amp;</span> _              <span class="fu">=</span>  <span class="dt">False</span>
-
-and<span class="ot">                     ::</span> [<span class="dt">Bool</span>] <span class="ot">-&gt;</span> <span class="dt">Bool</span>
-and                     <span class="fu">=</span>  foldr (<span class="fu">&amp;&amp;</span>) <span class="dt">True</span></code></pre></div>
-<p>In conclusion, we should use <code>foldl'</code> by default unless we have a very compelling reason to use <code>foldl</code> instead.</p>
-<p>But, wait! Let’s check how our beloved <code>sum</code> function is written. Because <code>(+)</code> is strict in both of its arguments, <code>foldl'</code> should have been used. But here’s <a href="https://hackage.haskell.org/package/base-4.9.0.0/docs/src/GHC.List.html#sum">the actual code</a> taken from the <code>base</code> package.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">sum<span class="ot">                     ::</span> (<span class="dt">Num</span> a) <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> a
-<span class="ot">{-# INLINE sum #-}</span>
-sum                     <span class="fu">=</span>  foldl (<span class="fu">+</span>) <span class="dv">0</span></code></pre></div>
-<p>OMG! There is a historical accident here. Interested readers are referred to <a href="http://www.well-typed.com/blog/90/">Fixing foldl</a> article from Well-Typed.</p>
 <div id="disqus_thread"></div>
 <script>
 
