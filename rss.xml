@@ -7,8 +7,91 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Tue, 03 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Wed, 04 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Type defaulting in Haskell</title>
+    <link>http://kseo.github.io//posts/2017-01-04-type-defaulting-in-haskell.html</link>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on January  4, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/type%20defaulting.html">type defaulting</a>
+      
+  </div>
+
+<p>Type defaulting is introduced to solve the ambiguous type problems caused by type classes.</p>
+<p>Consider the following classic example:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">show<span class="ot"> ::</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>
+read<span class="ot"> ::</span> <span class="dt">Read</span> a <span class="ot">=&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> a
+
+<span class="ot">f ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+f s <span class="fu">=</span> show (read s)</code></pre></div>
+<p><code>f</code> appears to be well-typed, but GHC complains about the ambiguous type variable. The problem is that there is nothing to specify the type of the intermediate subexpression <code>(read s)</code>. <code>read</code> can parse an <code>Int</code>, a <code>String</code> or any other type that is an instance of <code>Read</code>. The compiler can’t arbitrarily choose a type because the choice of the type affects the program behavior. We can avoid the ambiguity by specifying the type explicitly:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+f s <span class="fu">=</span> show (read<span class="ot"> s ::</span> <span class="dt">Int</span>)</code></pre></div>
+<p>However, the restriction above becomes quite cumbersome when we need to handle numeric types. For example,</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">negate<span class="ot"> ::</span> <span class="dt">Num</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a
+show<span class="ot"> ::</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>
+
+(show (negate <span class="dv">4</span>))</code></pre></div>
+<p>The expression <code>(show (negate 4))</code> is ambiguous because the literal <code>4</code> is of <code>Num a =&gt; a</code> type in Haskell. <code>4</code> can be an <code>Int</code>, a <code>Float</code> or any other type that is an instance of <code>Num</code>, so the compiler can’t choose any particular type for the same reason above. But the Haskell Committee thought that this is too much restriction. After much debates, they compromised and added an ad-hoc rule for choosing a particular default type. <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/history-of-haskell/history.pdf">A History of Haskell</a> mentions the rationale behind this decision:</p>
+<blockquote>
+<p>Performing numerical calculations on constants is one of the very first things a Haskell programmer does, and furthermore there is more reason to expect numeric operations to behave in similar ways for different types than there is for non-numeric operations.</p>
+</blockquote>
+<p>The default type of <code>Num</code> is <code>Integer</code>, so the Haskell compiler infers the type of <code>(negate 4)</code> as <code>Integer</code> instead of rejecting it as an invalid program.</p>
+<p>Haskell default rule can be summarized as:</p>
+<pre><code>default Num Integer
+default Real Integer
+default Enum Integer
+default Integral Integer
+default Fractional Double
+default RealFrac Double
+default Floating Double
+default RealFloat Double</code></pre>
+<p>The type defaulting rule is very conservative. Defaults are limited to Prelude numeric classes and cannot be applied to user-defined classes. Our first example <code>f</code> is invalid because <code>Read</code> is not a numeric type class. But, sometimes, we would like to change the default type for the type classes. So Haskell lets us specify a list of types in a special top-level <em>default</em> declaration.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">default (<span class="dt">Int</span>, <span class="dt">Float</span>)</code></pre></div>
+<p>The restriction is still too tight. According to the rule, even innocuously looking <code>show []</code> is not typeable because GHC can’t decide the type of <code>[a]</code>. So compiling the following program causes an ambiguous type error.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">=</span> show []</code></pre></div>
+<p>But every Haskell programmer knows that <code>show []</code> works fine in GHCi from experience. We don’t know the exact type chosen because the output is always <code>&quot;[]&quot;</code> regardless of the type. But it works anyway. What happened here?</p>
+<pre><code>λ&gt; show []
+&quot;[]&quot;</code></pre>
+<p>In fact, GHCi extends Haskell’s type-defaulting rules by including <code>Show</code>, <code>Eq</code> and <code>Ord</code> in addition to numeric type classes. <a href="https://downloads.haskell.org/~ghc/7.8.4/docs/html/users_guide/interactive-evaluation.html">Type defaulting in GHCi</a> explains the details. It also adds the unit type <code>()</code> to the standard list of types which are tried when doing type defaulting. So the type of <code>[]</code> in <code>show []</code> becomes <code>[()]</code> according to the extended type defaulting rules in GHCi.</p>
+<p>Type defaulting in Haskell is one of the controversial language features. It is confusing to novice Haskell programmers because the defaulting rule is very ad-hoc. Interested readers might want to take a look several enhancement <a href="https://prime.haskell.org/wiki/Defaulting">proposals</a> being discussed in Haskell Prime Wiki.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Wed, 04 Jan 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-01-04-type-defaulting-in-haskell.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Writing an interpreter using fold</title>
     <link>http://kseo.github.io//posts/2017-01-03-writing-an-interpreter-using-fold.html</link>
     <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
@@ -862,144 +945,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Sat, 24 Dec 2016 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2016-12-24-reader-monad-and-ski-combinators.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Organize code using monads</title>
-    <link>http://kseo.github.io//posts/2016-12-23-organize-code-using-monads.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 23, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/monad.html">monad</a>, <a href="/tags/monad%20transformer.html">monad transformer</a>, <a href="/tags/lambda%20lifting.html">lambda lifting</a>
-      
-  </div>
-
-<p>Novice Haskell programmers think that monads are only for IO and stateful computations. But experienced Haskell programmers use monads to better structure their programs.</p>
-<p>In this blog post, I am going to show you how we can better organize our code using monads.</p>
-<h1 id="motivating-example-lambda-lifting">Motivating example: Lambda lifting</h1>
-<p><em>Lambda lifting</em> is a compiler transformation which eliminates all free variables from function definitions. It is an important step in a lazy functional language because it greatly simplifies evaluation on the graph reduction machine.</p>
-<p>In his <a href="https://www.microsoft.com/en-us/research/publication/a-modular-fully-lazy-lambda-lifter-in-haskell/">paper</a>, Simon Peyton Jones describes how to perform lambda lifting in a modular fashion. The lambda lifter works in three steps:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | freeVars: Annotate every node in the expression with its free variables.</span>
-<span class="ot">freeVars ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> <span class="dt">AnnExpr</span> <span class="dt">Name</span> (<span class="dt">Set</span> <span class="dt">Name</span>)
-
-<span class="co">-- | Abstract the free variables from each lambda abstraction, replacing the lambda abstraction with the application of the new abstraction.</span>
-<span class="ot">abstract ::</span> <span class="dt">AnnExpr</span> <span class="dt">Name</span> (<span class="dt">Set</span> <span class="dt">Name</span>) <span class="ot">-&gt;</span> <span class="dt">Expression</span>
-
-<span class="co">-- | Give a unique name to each supercombinator and collect all the supercombinator definitions.</span>
-<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]</code></pre></div>
-<p><code>lambdaLift</code> is the composition of these three functions.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">lambdaLift ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
-lambdaLift <span class="fu">=</span> collectSCs <span class="fu">.</span> abstract <span class="fu">.</span> freeVars</code></pre></div>
-<p>I am not going to explain the details of these steps in this post. Interested readers are referred to SPJ’s <a href="https://www.microsoft.com/en-us/research/publication/a-modular-fully-lazy-lambda-lifter-in-haskell/">paper</a> and <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">book</a>.</p>
-<p>Instead, let’s dive into the last step and see how <code>collectSCs</code> is actually implemented.</p>
-<h1 id="collecting-supercombinators">Collecting supercombinators</h1>
-<p><code>collectSCs</code> is defined in terms of a helper function named <code>collecSC'</code> which returns both the collection of supercombinators it has found and the transformed expression. It also carries around a <em>name supply</em> as an argument and returns the depleted supply as a result because it needs to generate fresh names for supercombinators.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Gives a unique name to each supercombinator, collects all the</span>
-<span class="co">-- supercombinator definitions into a single list, and introduce the</span>
-<span class="co">-- $main supercombinator definition.</span>
-<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
-collectSCs e <span class="fu">=</span> (<span class="st">&quot;$main&quot;</span>, [], e&#39;) <span class="fu">:</span> scs
-  <span class="kw">where</span>
-  (_, scs, e&#39;) <span class="fu">=</span> collectSCs&#39; initialNameSupply e
-
-<span class="ot">collectSCs&#39; ::</span> <span class="dt">NameSupply</span> <span class="ot">-&gt;</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> (<span class="dt">NameSupply</span>, [<span class="dt">SCDefn</span>], <span class="dt">Expression</span>)
-collectSCs&#39; ns (<span class="dt">EConst</span> k) <span class="fu">=</span> (ns, [], <span class="dt">EConst</span> k)
-collectSCs&#39; ns (<span class="dt">EVar</span> v) <span class="fu">=</span> (ns, [], <span class="dt">EVar</span> v)
-collectSCs&#39; ns (<span class="dt">EAp</span> e1 e2) <span class="fu">=</span>
-  (ns2, scs1 <span class="fu">++</span> scs2, <span class="dt">EAp</span> e1&#39; e2&#39;)
-  <span class="kw">where</span>
-  (ns1, scs1, e1&#39;) <span class="fu">=</span> collectSCs&#39; ns e1
-  (ns2, scs2, e2&#39;) <span class="fu">=</span> collectSCs&#39; ns1 e2
-collectSCs&#39; ns (<span class="dt">ELam</span> args body) <span class="fu">=</span>
-  (ns2, (name, args, body&#39;) <span class="fu">:</span> bodySCs, <span class="dt">EConst</span> (<span class="dt">CFun</span> name))
-  <span class="kw">where</span>
-  (ns1, bodySCs, body&#39;) <span class="fu">=</span> collectSCs&#39; ns body
-  (ns2, name) <span class="fu">=</span> newName ns1 <span class="st">&quot;SC&quot;</span>
-collectSCs&#39; ns (<span class="dt">ELet</span> isRec defns body) <span class="fu">=</span>
-  (ns2, scs, <span class="dt">ELet</span> isRec defns&#39; body&#39;)
-  <span class="kw">where</span>
-  (ns1, bodySCs, body&#39;) <span class="fu">=</span> collectSCs&#39; ns body
-  ((ns2, scs), defns&#39;) <span class="fu">=</span> mapAccumL collectSCs&#39;&#39; (ns1, bodySCs) defns
-
-  collectSCs&#39;&#39; (ns, scs) (name, rhs) <span class="fu">=</span>
-    ((ns1, scs <span class="fu">++</span> scs&#39;), (name, rhs&#39;))
-    <span class="kw">where</span>
-    (ns1, scs&#39;, rhs&#39;) <span class="fu">=</span> collectSCs&#39; ns rhs</code></pre></div>
-<p>The code is rather complex compared to what it actually does. The only place where interest things happen is lambda abstractions. It replaces lambda abstractions by names and return supercombinators.</p>
-<p>The code is complex because it violates the most important software engineering principle: <em>separation of concerns</em>. <code>collectSCs</code> contains at least three orthogonal concerns:</p>
-<ol style="list-style-type: decimal">
-<li>Generation of fresh names</li>
-<li>Accumulation of supercombinatros</li>
-<li>Transformation of expressions</li>
-</ol>
-<h1 id="organize-code-using-monads">Organize code using monads</h1>
-<p>Monads are great tools to separate concerns. For example, <code>Reader</code> monad helps us get rid of an extra argument used to pass a context. <code>Writer</code> monad frees us from the agony of returning the accumulated results in every function.</p>
-<p>So let’s separate our concerns in <code>collectSCs</code>.</p>
-<ol style="list-style-type: decimal">
-<li><code>Supply</code> monad for fresh name generation (it’s a <code>State</code> monad in disguise)</li>
-<li><code>Writer</code> monad for accumulation of supercombinators</li>
-</ol>
-<p>Because we need to compose two different monads, we use the monad transformer <code>SupplyT</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Collector</span> a <span class="fu">=</span> <span class="dt">SupplyT</span> (<span class="dt">Writer</span> [<span class="dt">SCDefn</span>]) a
-
-<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
-collectSCs e <span class="fu">=</span> (<span class="st">&quot;$main&quot;</span>, [], e&#39;) <span class="fu">:</span> scs
-  <span class="kw">where</span>
-  (e&#39;, scs) <span class="fu">=</span> runWriter <span class="fu">$</span> evalSupplyT <span class="dv">0</span> (collectSCs&#39; e)
-
-<span class="ot">collectSCs&#39; ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> <span class="dt">Collector</span> <span class="dt">Expression</span>
-collectSCs&#39; (<span class="dt">EConst</span> k) <span class="fu">=</span> return <span class="fu">$</span> <span class="dt">EConst</span> k
-collectSCs&#39; (<span class="dt">EVar</span> v) <span class="fu">=</span> return <span class="fu">$</span> <span class="dt">EVar</span> v
-collectSCs&#39; (<span class="dt">EAp</span> e1 e2) <span class="fu">=</span> <span class="kw">do</span>
-  e1&#39; <span class="ot">&lt;-</span> collectSCs&#39; e1
-  e2&#39; <span class="ot">&lt;-</span> collectSCs&#39; e2
-  return <span class="fu">$</span> <span class="dt">EAp</span> e1&#39; e2&#39;
-collectSCs&#39; (<span class="dt">ELam</span> args body) <span class="fu">=</span> <span class="kw">do</span>
-  name <span class="ot">&lt;-</span> freshName
-  body&#39; <span class="ot">&lt;-</span> collectSCs&#39; body
-  collect (name, args, body&#39;)
-  return <span class="fu">$</span> <span class="dt">EConst</span> (<span class="dt">CFun</span> name)
-collectSCs&#39; (<span class="dt">ELet</span> isRec defns body) <span class="fu">=</span> <span class="kw">do</span>
-  body&#39; <span class="ot">&lt;-</span> collectSCs&#39; body
-  defns&#39; <span class="ot">&lt;-</span> traverse (\(name, defn) <span class="ot">-&gt;</span> (name,) <span class="fu">&lt;$&gt;</span> collectSCs&#39; defn) defns
-  return <span class="fu">$</span> <span class="dt">ELet</span> isRec defns&#39; body&#39;
-
-<span class="ot">collect ::</span> <span class="dt">SCDefn</span> <span class="ot">-&gt;</span> <span class="dt">Collector</span> ()
-collect defn <span class="fu">=</span> tell [defn]</code></pre></div>
-<p>We can see that the resulting code is much more readable by removing all the clutters that not not essential to the core logic.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Fri, 23 Dec 2016 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2016-12-23-organize-code-using-monads.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
