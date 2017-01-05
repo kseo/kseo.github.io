@@ -84,6 +84,7 @@ test <span class="fu">=</span> eval emptyEnv <span class="fu">$</span> <span cla
 10</code></pre>
 <p>The evaluation order implemented by our interpreter is call-by-need because the defining language, Haskell, uses the call-by-need evaluation order and our interpreter depends on this. Transforming our interpreter into a call-by-value interpreter is not trivial because we need to find and fix every place where lazy evaluation is used in our interpreter.</p>
 <p>In his seminar paper <a href="http://surface.syr.edu/cgi/viewcontent.cgi?article=1012&amp;context=lcsmith_other">Definitional interpreters for higher-order programming languages</a>, John C. Reynolds showed how to remove this order dependence by CPS transformation. But in Haskell, we can use monads to enforce the evaluation order. This is not a coincidence because there is a <a href="https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/the-essence-of-functional-programming.pdf">close relationship</a> between computational monads and generalized CPS.</p>
+<p><strong>UPDATE: Roman Cheplyaka pointed out that Identity monad or CPS transformation does not work unless application is made strict. See the comment below.</strong></p>
 <p>Here’s a monadic version of our interpreter which implements the call-by-value evaluation strategy.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.Identity</span>
 
