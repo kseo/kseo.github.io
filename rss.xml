@@ -7,8 +7,70 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Thu, 05 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sat, 07 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Lazy vs Strict Identity Monad</title>
+    <link>http://kseo.github.io//posts/2017-01-07-lazy-vs-strict-identity-monad.html</link>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+<article>
+  <div class="info">
+      Posted on January  7, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/identity%20monad.html">identity monad</a>, <a href="/tags/lazy.html">lazy</a>, <a href="/tags/strict.html">strict</a>
+      
+  </div>
+
+<p>In my <a href="http://kseo.github.io/posts/2016-12-28-lazy-vs-strict-state-monad.html">previous post</a>, I explained the difference between the lazy and strict state monads. What I didn’t mention in the post is that the state monad is not special in this regard. Other monads also can have both lazy and strict variants. For example, <a href="https://www.stackage.org/lts-7.12/package/transformers-0.5.2.0">transformers</a> package provides both flavors of monads for <code>RWS</code> and <code>Writer</code> monads too.</p>
+<p>It is also possible to have identity monads with either lazy or strict semantics. <em>transformers</em> package provides only the lazy variant, but it is not hard to image a strict variant of the identity monad. Here’s the definition of <code>Control.Monad.StrictIdentity</code> defined in <a href="https://hackage.haskell.org/package/strict-identity">strict-identity</a> package.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">StrictIdentity</span> a <span class="fu">=</span>  <span class="dt">StrictIdentity</span> {<span class="ot">runStrictIdentity_ ::</span> a }
+
+<span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">StrictIdentity</span> <span class="kw">where</span>
+    return <span class="fu">!</span>a <span class="fu">=</span> <span class="dt">StrictIdentity</span> <span class="fu">$!</span> a
+    (<span class="fu">!</span>m) <span class="fu">&gt;&gt;=</span> (<span class="fu">!</span>k)  <span class="fu">=</span> k <span class="fu">$!</span> runStrictIdentity  m</code></pre></div>
+<p>The strict identity monad when bound to a function always evaluate its argument. We can see that both <a href="https://ocharles.org.uk/blog/posts/2014-12-05-bang-patterns.html">BangPatterns</a> and the strict application operator <code>($!)</code> are used to enforce strict evaluation of arguments.</p>
+<p>In this sense, <a href="https://www.stackage.org/haddock/lts-7.12/parallel-3.2.1.0/Control-Parallel-Strategies.html#t:Eval">Eval</a> monad from <code>Control.Parallel.Strategies</code> is also an identity monad. Its definition enforces the strict evaluation of the argument with a pattern matching.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Eval</span> a <span class="fu">=</span> <span class="dt">Eval</span> (<span class="dt">State</span><span class="fu">#</span> <span class="dt">RealWorld</span> <span class="ot">-&gt;</span> (<span class="fu">#</span> <span class="dt">State</span><span class="fu">#</span> <span class="dt">RealWorld</span>, a <span class="fu">#</span>))
+
+<span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Eval</span> <span class="kw">where</span>
+  return <span class="fu">=</span> pure
+  <span class="dt">Eval</span> x <span class="fu">&gt;&gt;=</span> k <span class="fu">=</span> <span class="dt">Eval</span> <span class="fu">$</span> \s <span class="ot">-&gt;</span> <span class="kw">case</span> x s <span class="kw">of</span>
+                                (<span class="fu">#</span> s&#39;, a <span class="fu">#</span>) <span class="ot">-&gt;</span> <span class="kw">case</span> k a <span class="kw">of</span>
+                                                      <span class="dt">Eval</span> f <span class="ot">-&gt;</span> f s&#39;</code></pre></div>
+<p>In <a href="http://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Implementing a call-by-value interpreter in Haskell</a>, I mistakenly used the lazy identity monad to force strict evaluation. We need to keep in mind that transforming a program into a monadic form does not automatically guarantees strict evaluation unless the monad is strict.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+/*
+var disqus_config = function () {
+    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
+    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
+*/
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Sat, 07 Jan 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-01-07-lazy-vs-strict-identity-monad.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Implementing a call-by-value interpreter in Haskell</title>
     <link>http://kseo.github.io//posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html</link>
     <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
@@ -920,134 +982,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Tue, 27 Dec 2016 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2016-12-27-higher-rank-polymorphism.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Type Isomorphism</title>
-    <link>http://kseo.github.io//posts/2016-12-25-type-isomorphism.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
-
-<article>
-  <div class="info">
-      Posted on December 25, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/type%20isomorphism.html">type isomorphism</a>
-      
-  </div>
-
-<p>Type isomorphisms are a general notion of conversion between types. We say that type <code>A</code> and <code>B</code> are isomorphic, if we have conversion functions <code>f :: A -&gt; B</code> and <code>g :: B -&gt; A</code> such that</p>
-<pre><code>f . g = idB
-g . f = idA</code></pre>
-<p>Type isomorphisms imply that we can safely convert without loss of information between types.</p>
-<h1 id="motivation">Motivation</h1>
-<p>There always exist multiple types that can represent the same values we want to represent. The problem is that they are not compatible because the type system does not automatically recognize them as equal. So we might not be able to reuse the existing libraries as the types we use in our program are not compatible with the types these libraries use. Type isomorphisms provide wrapping/unwrapping functions that can safely convert between these types.</p>
-<p>Type isomorphisms also help us understand various transformations used in equational reasoning and API design.</p>
-<h1 id="basics">Basics</h1>
-<p>Haskell programmers already use the type isomorphism to reason about programs. For example, we know that pair <code>(a,b)</code> is isomorphic to <code>(b,a)</code> because <code>swap</code> is the conversion function in both directions.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">swap ::</span> (a,b) <span class="ot">-&gt;</span> (b,a)
-swap (a, b) <span class="fu">=</span> (b, a)</code></pre></div>
-<p>Another example of type isomorphism is <code>a</code> and <code>() -&gt; a</code>. We can define conversion functions as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> a <span class="ot">-&gt;</span> () <span class="ot">-&gt;</span> a
-f <span class="fu">=</span> \x _ <span class="ot">-&gt;</span> x
-
-<span class="ot">g ::</span> (() <span class="ot">-&gt;</span> a) <span class="ot">-&gt;</span> a
-g k <span class="fu">=</span> k ()</code></pre></div>
-<p>What about <code>a -&gt; ()</code>? This type is unsurprisingly isomorphic to <code>()</code> because <code>a -&gt; ()</code> type has only one inhabitant which discards the argument and returns <code>()</code>. Conversion functions are:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> (a <span class="ot">-&gt;</span> ()) <span class="ot">-&gt;</span> ()
-f _ <span class="fu">=</span> ()
-
-<span class="ot">g ::</span> () <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> ()
-g <span class="fu">=</span> \_ _ <span class="ot">-&gt;</span> ()</code></pre></div>
-<h1 id="currying-and-uncurrying">Currying and uncurrying</h1>
-<p>In functional programming, <em>currying</em> transforms a function that takes multiple arguments via a pair, into a function that accepts the first argument of the pair, and returns a function that accepts the second argument, before returning the result. <em>uncurrying</em> performs transformation in the opposite direction.</p>
-<p>Here are the types of <code>curry</code> and <code>uncurry</code> functions.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">curry<span class="ot"> ::</span> ((a, b) <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c
-uncurry<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> (a, b) <span class="ot">-&gt;</span> c</code></pre></div>
-<p>From the signature of these functions, we can see that <code>(a, b) -&gt; c</code> and <code>a -&gt; b -&gt; c</code> are isomorphic by <code>curry</code> and <code>uncurry</code> functions.</p>
-<h1 id="continuation">Continuation</h1>
-<p><code>a</code> can be converted to <code>(a -&gt; r) -&gt; r</code> by CPS transformation. A CPS term can be converted back to the direct style by applying <code>id</code> function.</p>
-<pre><code>{-# LANGUAGE RankNTypes #-}
-
-f :: a -&gt; (a -&gt; r) -&gt; r
-f a b = b a
-
-g :: (forall r. (a -&gt; r) -&gt; r) -&gt; a
-g a = a id</code></pre>
-<p><code>RankNTypes</code> extension is necessary to represent the type of <code>g</code>.</p>
-<h1 id="algebraic-data-types">Algebraic data types</h1>
-<p>Every algebraic data type can be represented with combinations of <em>product</em> and <em>sum</em> types. This is why these types are called <em>algebraic data types</em>.</p>
-<p>In Haskell, products are encoded by <code>(a, b)</code> and sums are encoded by <code>Either a b</code>. Thus an algebraic data type of Haskell is isomorphic to some combinations of <code>(a, b)</code> and <code>Either a b</code>. Let’s see a few examples.</p>
-<p><code>Bool</code> is isomorphic to <code>Either () ()</code> because we can define conversion functions <code>f</code> and <code>g</code>:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> () ()
-f <span class="dt">True</span> <span class="fu">=</span> <span class="dt">Left</span> ()
-f <span class="dt">False</span> <span class="fu">=</span> <span class="dt">Right</span> ()
-
-<span class="ot">g ::</span> <span class="dt">Either</span> () () <span class="ot">-&gt;</span> <span class="dt">Bool</span>
-g (<span class="dt">Left</span> ()) <span class="fu">=</span> <span class="dt">True</span>
-g (<span class="dt">Right</span> ()) <span class="fu">=</span> <span class="dt">False</span></code></pre></div>
-<p><code>Maybe a</code> is isomorphic to <code>Either a ()</code> or <code>Either () a</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> <span class="dt">Maybe</span> a <span class="ot">-&gt;</span> <span class="dt">Either</span> () a
-f (<span class="dt">Just</span> x) <span class="fu">=</span> <span class="dt">Right</span> x
-f <span class="dt">Nothing</span> <span class="fu">=</span> <span class="dt">Left</span> ()
-
-<span class="ot">g ::</span> <span class="dt">Either</span> () a <span class="ot">-&gt;</span> <span class="dt">Maybe</span> a
-g (<span class="dt">Left</span> ()) <span class="fu">=</span> <span class="dt">Nothing</span>
-g (<span class="dt">Right</span> x) <span class="fu">=</span> <span class="dt">Just</span> x</code></pre></div>
-<h1 id="playing-with-type-isomorphism">Playing with type isomorphism</h1>
-<p><em>unfold</em> is the categorical dual of <em>fold</em>. It means we can get the type of <code>unfold</code> by reversing arrows of <code>fold</code>.</p>
-<p>Here are the type signatures of <code>foldr</code> and <code>unfoldr</code> taken from the <code>base</code> library.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b
-<span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])</code></pre></div>
-<p>It is not obvious how <code>foldr</code> and <code>unfoldr</code> are related. But we can apply the types isomorphism we’ve learned to derive the type of <code>unfoldr</code> from <code>foldr</code>.</p>
-<pre><code>(a → b → b) → b → ([a] → b)
-=== ((a, b) → b) → b → ([a] → b)
-=== ((a, b) → b) → (() -&gt; b) → ([a] → b)
-=== (((a, b) → b), (() -&gt; b)) → ([a] → b)
-=== ((Either (a, b) ()) → b) → ([a] → b)
-=== (Maybe (a, b) -&gt; b) → ([a] → b)</code></pre>
-<p>We used the following type isomorphisms:</p>
-<ul>
-<li><code>a -&gt; b -&gt; c ~= (a, b) -&gt; c</code></li>
-<li><code>a ~= () -&gt; a</code></li>
-<li><code>((a -&gt; c), (b -&gt; c)) ~= Either a b -&gt; c</code></li>
-<li><code>Either a () ~= Maybe a</code>.</li>
-</ul>
-<p>Finally, by reversing the arrows of <code>foldr</code>, we get <code>unfoldr</code>.</p>
-<pre><code>foldr   :: (Maybe (a, b) -&gt; b           ) -&gt; ([a] -&gt; b  )
-unfoldr :: (b            -&gt; Maybe (a, b)) -&gt; (b   -&gt; [a])</code></pre>
-<p>Interested readers might want to take a look at my previous post <a href="http://kseo.github.io/posts/2016-12-12-unfold-and-fold.html">unfold and fold</a> and Conal Elliott’s <a href="http://conal.net/talks/folds-and-unfolds.pdf">Folds and unfolds all around us</a> for the details.</p>
-<h1 id="existentials">Existentials</h1>
-<p><code>{∃X,T}</code> and <code>∀Y. (∀X. T→Y) → Y</code> are isomorphic types. My previous post <a href="http://kseo.github.io/posts/2016-12-19-encoding-existentials.html">Encoding existentials</a> shows how we can encode existential types using only <code>RankNTypes</code> and <em>forall</em> quantifier.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-/*
-var disqus_config = function () {
-    this.page.url = PAGE_URL;  // Replace PAGE_URL with your page's canonical URL variable
-    this.page.identifier = PAGE_IDENTIFIER; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
-};
-*/
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Sun, 25 Dec 2016 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2016-12-25-type-isomorphism.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
