@@ -53,7 +53,7 @@
 <span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Eval</span> <span class="kw">where</span>
   return x <span class="fu">=</span> <span class="dt">Done</span> x
   <span class="dt">Done</span> x <span class="fu">&gt;&gt;=</span> k <span class="fu">=</span> k x   <span class="co">-- Note: pattern 'Done x' makes '&gt;&gt;=' strict</span></code></pre></div>
-<p>In <a href="http://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Implementing a call-by-value interpreter in Haskell</a>, I mistakenly used the lazy identity monad to force strict evaluation. We need to keep in mind that transforming a program into a monadic form does not automatically guarantees strict evaluation unless the monad is strict.</p>
+<p>In <a href="http://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Implementing a call-by-value interpreter in Haskell</a>, I mistakenly used the lazy identity monad to force the evaluation order. We need to keep in mind that transforming a program into a monadic form does not automatically guarantees the evaluation order unless the monad is strict.</p>
 <div id="disqus_thread"></div>
 <script>
 
