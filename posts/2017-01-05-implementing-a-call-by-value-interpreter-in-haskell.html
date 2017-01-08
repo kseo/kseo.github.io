@@ -79,7 +79,7 @@ eval env term <span class="fu">=</span> <span class="kw">case</span> term <span 
 
 <span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
 evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
-evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
+evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
 
 <span class="ot">emptyEnv ::</span> <span class="dt">Env</span>
 emptyEnv <span class="fu">=</span> []
@@ -134,7 +134,7 @@ eval env term <span class="fu">=</span> <span class="kw">case</span> term <span 
 
 <span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
 evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
-evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
+evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
 
 <span class="ot">emptyEnv ::</span> <span class="dt">Env</span>
 emptyEnv <span class="fu">=</span> []
@@ -173,7 +173,7 @@ eval env term <span class="fu">=</span> <span class="kw">case</span> term <span 
 
 <span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
 evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
-evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
+evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
 evalPrim <span class="dt">Div</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="ot">`div`</span> b)
 
 <span class="co">-- (\x y -&gt; x) 10 (20 / 0)</span>
