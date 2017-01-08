@@ -62,10 +62,18 @@ idString <span class="fu">=</span> id <span class="fu">@</span><span class="dt">
 λ&gt; id @Int 3
 3</code></pre>
 <p>This is useful in resolving ambiguity in type classes or type families. The show/read problem from <a href="http://kseo.github.io/posts/2017-01-04-type-defaulting-in-haskell.html">Type defaulting in Haskell</a> was not typeable due to ambiguity, but we can easily remove ambiguity by giving an explicit type argument.</p>
-<pre><code>{-# LANGUAGE TypeApplications #-}
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE TypeApplications #-}</span>
 
-f :: String -&gt; String
-f s = show (read @Int s)</code></pre>
+<span class="ot">f ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+f s <span class="fu">=</span> show (read <span class="fu">@</span><span class="dt">Int</span> s)</code></pre></div>
+<p>The type argument is not limited to concrete types. As we can pass a variable to a function as an argument, it is possible to pass a type variable to a function as a type argument if it is explicitly quantified with <code>ExplicitForAll</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE ExplicitForAll      #-}</span>
+<span class="ot">{-# LANGUAGE TypeApplications    #-}</span>
+
+<span class="ot">incShow ::</span> forall a <span class="fu">.</span> (<span class="dt">Read</span> a, <span class="dt">Show</span> a, <span class="dt">Num</span> a) <span class="ot">=&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+incShow <span class="fu">=</span> show <span class="fu">.</span> (<span class="fu">+</span><span class="dv">1</span>) <span class="fu">.</span> read <span class="fu">@</span>a</code></pre></div>
+<pre><code>λ&gt; incShow @Double &quot;3.0&quot;
+&quot;4.0&quot;`</code></pre>
 <p>In the following example, <code>g False</code> would be ill-typed because GHC can’t infer the proper type. Adding the explicit type <code>@Char</code> resolves the problem.</p>
 <pre><code>type family F a
 type instance F Char = Bool
