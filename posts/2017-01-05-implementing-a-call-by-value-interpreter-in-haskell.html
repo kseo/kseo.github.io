@@ -92,9 +92,9 @@ test <span class="fu">=</span> eval emptyEnv <span class="fu">$</span> <span cla
 <pre><code>λ&gt; test
 10</code></pre>
 <p>The evaluation order implemented by our interpreter is call-by-need because the defining language, Haskell, uses the call-by-need evaluation order and our interpreter depends on this. Transforming our interpreter into a call-by-value interpreter is not trivial because we need to find and fix every place where lazy evaluation is used in our interpreter.</p>
-<p>In his seminar paper <a href="http://surface.syr.edu/cgi/viewcontent.cgi?article=1012&amp;context=lcsmith_other">Definitional interpreters for higher-order programming languages</a>, John C. Reynolds showed how to remove this order dependence by CPS transformation. But in Haskell, we can use monads to enforce the evaluation order. This is not a coincidence because there is a <a href="https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/the-essence-of-functional-programming.pdf">close relationship</a> between computational monads and generalized CPS.</p>
-<p><strong>UPDATE: Roman Cheplyaka pointed out that Identity monad or CPS transformation does not work unless application is made strict. See the comment below.</strong></p>
-<p>Here’s a monadic version of our interpreter which implements the call-by-value evaluation strategy.</p>
+<p>In his seminar paper <a href="http://surface.syr.edu/cgi/viewcontent.cgi?article=1012&amp;context=lcsmith_other">Definitional interpreters for higher-order programming languages</a>, John C. Reynolds showed how to remove this order dependence by CPS transformation. <del>But in Haskell, we can use monads to enforce the evaluation order. This is not a coincidence because there is a <a href="https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/the-essence-of-functional-programming.pdf">close relationship</a> between computational monads and generalized CPS.</del></p>
+<p><strong>UPDATE: There is a technical mistake in the original article. The Identity monad does not make any difference here. I should have used either a strict variant of Identity monad or the Cont monad to force strict evaluation.</strong></p>
+<p>Here’s a monadic version of our interpreter.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.Identity</span>
 
 <span class="kw">data</span> <span class="dt">Expr</span>
@@ -146,6 +146,7 @@ test <span class="fu">=</span> runIdentity <span class="fu">$</span> eval emptyE
 <pre><code>λ&gt; test
 10</code></pre>
 <p>Oops. What went wrong? The problem is that our interpreter does not enforce the evaluation of the argument in <code>App a b</code> case of <code>eval</code>. <code>v &lt;- eval env b</code> just binds a thunk to <code>v</code> and it won’t be evaluated until it is actually needed. To fix the problem, we need to force the evaluation of the argument using <em>bang patterns</em>.</p>
+<p><strong>UPDATE: This bang pattern is not necessary if I we used a strict monad.</strong></p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE BangPatterns #-}</span>
 
 <span class="fu">...</span>
