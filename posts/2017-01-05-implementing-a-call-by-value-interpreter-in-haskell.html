@@ -146,7 +146,7 @@ test <span class="fu">=</span> runIdentity <span class="fu">$</span> eval emptyE
 <pre><code>λ&gt; test
 10</code></pre>
 <p>Oops. What went wrong? The problem is that our interpreter does not enforce the evaluation of the argument in <code>App a b</code> case of <code>eval</code>. <code>v &lt;- eval env b</code> just binds a thunk to <code>v</code> and it won’t be evaluated until it is actually needed. To fix the problem, we need to force the evaluation of the argument using <em>bang patterns</em>.</p>
-<p><strong>UPDATE: This bang pattern is not necessary if I we used a strict monad.</strong></p>
+<p><strong>UPDATE: This bang pattern is not necessary if we used a strict monad.</strong></p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE BangPatterns #-}</span>
 
 <span class="fu">...</span>
