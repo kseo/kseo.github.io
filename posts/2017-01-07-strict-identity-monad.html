@@ -54,7 +54,7 @@
   return x <span class="fu">=</span> <span class="dt">Done</span> x
   <span class="dt">Done</span> x <span class="fu">&gt;&gt;=</span> k <span class="fu">=</span> k x   <span class="co">-- Note: pattern 'Done x' makes '&gt;&gt;=' strict</span></code></pre></div>
 <p>In <a href="http://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Implementing a call-by-value interpreter in Haskell</a>, I mistakenly used the lazy identity monad to force the evaluation order. We need to keep in mind that transforming a program into a monadic form does not automatically guarantees the evaluation order unless the monad is strict.</p>
-<p><strong>UPDATE: Calling arbitrary monads lazy or strict is not appropriate as each monad has varying degree of strictness. For example, the <code>StrictIdentity</code> is more strict than the <code>Eval</code> monad.</strong></p>
+<p><strong>UPDATE</strong>: Calling arbitrary monads lazy or strict is not appropriate as each monad has varying degree of strictness. For example, the <code>StrictIdentity</code> is more strict than the <code>Eval</code> monad. See <a href="https://www.reddit.com/r/haskell/comments/5mp9e8/kwangs_haskell_blog_strict_identity_monad/">the Reddit discussion thread</a> for details.</p>
 <pre><code>λ&gt; Control.Monad.StrictIdentity.runStrictIdentity $ do x &lt;- return undefined; return 1
 *** Exception: Prelude.undefined
 λ&gt; Control.Parallel.Strategies.runEval $ do x &lt;- return undefined; return 1
