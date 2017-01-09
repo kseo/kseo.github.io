@@ -130,7 +130,7 @@ eval env term k <span class="fu">=</span> <span class="kw">case</span> term <spa
   <span class="dt">Escape</span> a <span class="ot">-&gt;</span> eval (<span class="dt">VClosure</span> (\v _ <span class="ot">-&gt;</span> k v) <span class="fu">:</span> env) a k</code></pre></div>
 <pre><code>λ&gt; evalExpr $ Escape (Prim Mul (Prim Add (Lit 1) (Lit 3)) (Prim Add (Lit 4) (App (Var 0) (Lit 10))))
 10</code></pre>
-<p>Yay, it works! You can also implement Scheme’s <em>call/cc</em> operator in a similar way.</p>
+<p>Yay, it works!</p>
 <div id="disqus_thread"></div>
 <script>
 
