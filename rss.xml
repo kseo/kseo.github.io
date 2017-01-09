@@ -10,7 +10,7 @@
         <lastBuildDate>Mon, 09 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
     <title>Continuation Passing Style Interpreter</title>
-    <link>http://kseo.github.io//posts/2017-01-09-continuating-passing-style-interpreter.html</link>
+    <link>http://kseo.github.io//posts/2017-01-09-continuation-passing-style-interpreter.html</link>
     <description><![CDATA[<a class="twitter-share-button"
     href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
 
@@ -126,8 +126,8 @@ eval env term k <span class="fu">=</span> <span class="kw">case</span> term <spa
  *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
  *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
 var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-09-continuating-passing-style-interpreter.html";
-    this.page.identifier = "/posts/2017-01-09-continuating-passing-style-interpreter.html";
+    this.page.url = "https://kseo.github.io/posts/2017-01-09-continuation-passing-style-interpreter.html";
+    this.page.identifier = "/posts/2017-01-09-continuation-passing-style-interpreter.html";
 };
 (function() { // DON'T EDIT BELOW THIS LINE
     var d = document, s = d.createElement('script');
@@ -141,7 +141,7 @@ var disqus_config = function () {
 </article>
 ]]></description>
     <pubDate>Mon, 09 Jan 2017 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2017-01-09-continuating-passing-style-interpreter.html</guid>
+    <guid>http://kseo.github.io//posts/2017-01-09-continuation-passing-style-interpreter.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 <item>

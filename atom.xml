@@ -11,8 +11,8 @@
     <updated>2017-01-09T00:00:00Z</updated>
     <entry>
     <title>Continuation Passing Style Interpreter</title>
-    <link href="http://kseo.github.io//posts/2017-01-09-continuating-passing-style-interpreter.html" />
-    <id>http://kseo.github.io//posts/2017-01-09-continuating-passing-style-interpreter.html</id>
+    <link href="http://kseo.github.io//posts/2017-01-09-continuation-passing-style-interpreter.html" />
+    <id>http://kseo.github.io//posts/2017-01-09-continuation-passing-style-interpreter.html</id>
     <published>2017-01-09T00:00:00Z</published>
     <updated>2017-01-09T00:00:00Z</updated>
     <summary type="html"><![CDATA[<a class="twitter-share-button"
@@ -130,8 +130,8 @@ eval env term k <span class="fu">=</span> <span class="kw">case</span> term <spa
  *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
  *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
 var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-09-continuating-passing-style-interpreter.html";
-    this.page.identifier = "/posts/2017-01-09-continuating-passing-style-interpreter.html";
+    this.page.url = "https://kseo.github.io/posts/2017-01-09-continuation-passing-style-interpreter.html";
+    this.page.identifier = "/posts/2017-01-09-continuation-passing-style-interpreter.html";
 };
 (function() { // DON'T EDIT BELOW THIS LINE
     var d = document, s = d.createElement('script');
