@@ -53,7 +53,7 @@ idString <span class="fu">=</span> id <span class="fu">@</span><span class="dt">
 &quot;a&quot;
 λ&gt; id @Int 3
 3</code></pre>
-<p>This is useful in resolving ambiguity in type classes or type families. The show/read problem from <a href="http://kseo.github.io/posts/2017-01-04-type-defaulting-in-haskell.html">Type defaulting in Haskell</a> was not typeable due to ambiguity, but we can easily remove ambiguity by giving an explicit type argument.</p>
+<p>This is useful in resolving ambiguity in type classes or type families. The show/read problem from <a href="https://kseo.github.io/posts/2017-01-04-type-defaulting-in-haskell.html">Type defaulting in Haskell</a> was not typeable due to ambiguity, but we can easily remove ambiguity by giving an explicit type argument.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE TypeApplications #-}</span>
 
 <span class="ot">f ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
@@ -124,7 +124,7 @@ var disqus_config = function () {
       
   </div>
 
-<p>In my <a href="http://kseo.github.io/posts/2016-12-28-lazy-vs-strict-state-monad.html">previous post</a>, I explained the difference between the lazy and strict state monads. What I didn’t mention in the post is that the state monad is not special in this regard. Other monads also can have both lazy and strict variants. For example, <a href="https://www.stackage.org/lts-7.12/package/transformers-0.5.2.0">transformers</a> package provides both flavors of monads for <code>RWS</code> and <code>Writer</code> monads too.</p>
+<p>In my <a href="https://kseo.github.io/posts/2016-12-28-lazy-vs-strict-state-monad.html">previous post</a>, I explained the difference between the lazy and strict state monads. What I didn’t mention in the post is that the state monad is not special in this regard. Other monads also can have both lazy and strict variants. For example, <a href="https://www.stackage.org/lts-7.12/package/transformers-0.5.2.0">transformers</a> package provides both flavors of monads for <code>RWS</code> and <code>Writer</code> monads too.</p>
 <p>It is also possible to have identity monads with either lazy or strict semantics. <em>transformers</em> package provides only the lazy variant, but it is not hard to image a strict variant of the identity monad. Here’s the definition of <code>Control.Monad.StrictIdentity</code> defined in <a href="https://hackage.haskell.org/package/strict-identity">strict-identity</a> package.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">StrictIdentity</span> a <span class="fu">=</span>  <span class="dt">StrictIdentity</span> {<span class="ot">runStrictIdentity_ ::</span> a }
 
@@ -138,7 +138,7 @@ var disqus_config = function () {
 <span class="kw">instance</span> <span class="dt">Monad</span> <span class="dt">Eval</span> <span class="kw">where</span>
   return x <span class="fu">=</span> <span class="dt">Done</span> x
   <span class="dt">Done</span> x <span class="fu">&gt;&gt;=</span> k <span class="fu">=</span> k x   <span class="co">-- Note: pattern &#39;Done x&#39; makes &#39;&gt;&gt;=&#39; strict</span></code></pre></div>
-<p>In <a href="http://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Implementing a call-by-value interpreter in Haskell</a>, I mistakenly used the lazy identity monad to force the evaluation order. We need to keep in mind that transforming a program into a monadic form does not automatically guarantees the evaluation order unless the monad is strict.</p>
+<p>In <a href="https://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Implementing a call-by-value interpreter in Haskell</a>, I mistakenly used the lazy identity monad to force the evaluation order. We need to keep in mind that transforming a program into a monadic form does not automatically guarantees the evaluation order unless the monad is strict.</p>
 <p><strong>UPDATE</strong>: Calling arbitrary monads lazy or strict is not appropriate as each monad has varying degree of strictness. For example, the <code>StrictIdentity</code> is more strict than the <code>Eval</code> monad. See <a href="https://www.reddit.com/r/haskell/comments/5mp9e8/kwangs_haskell_blog_strict_identity_monad/">the Reddit discussion thread</a> for details.</p>
 <pre><code>λ&gt; Control.Monad.StrictIdentity.runStrictIdentity $ do x &lt;- return undefined; return 1
 *** Exception: Prelude.undefined

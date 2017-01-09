@@ -119,9 +119,9 @@ g (<span class="dt">Right</span> x) <span class="fu">=</span> <span class="dt">J
 <p>Finally, by reversing the arrows of <code>foldr</code>, we get <code>unfoldr</code>.</p>
 <pre><code>foldr   :: (Maybe (a, b) -&gt; b           ) -&gt; ([a] -&gt; b  )
 unfoldr :: (b            -&gt; Maybe (a, b)) -&gt; (b   -&gt; [a])</code></pre>
-<p>Interested readers might want to take a look at my previous post <a href="http://kseo.github.io/posts/2016-12-12-unfold-and-fold.html">unfold and fold</a> and Conal Elliott’s <a href="http://conal.net/talks/folds-and-unfolds.pdf">Folds and unfolds all around us</a> for the details.</p>
+<p>Interested readers might want to take a look at my previous post <a href="https://kseo.github.io/posts/2016-12-12-unfold-and-fold.html">unfold and fold</a> and Conal Elliott’s <a href="http://conal.net/talks/folds-and-unfolds.pdf">Folds and unfolds all around us</a> for the details.</p>
 <h1 id="existentials">Existentials</h1>
-<p><code>{∃X,T}</code> and <code>∀Y. (∀X. T→Y) → Y</code> are isomorphic types. My previous post <a href="http://kseo.github.io/posts/2016-12-19-encoding-existentials.html">Encoding existentials</a> shows how we can encode existential types using only <code>RankNTypes</code> and <em>forall</em> quantifier.</p>
+<p><code>{∃X,T}</code> and <code>∀Y. (∀X. T→Y) → Y</code> are isomorphic types. My previous post <a href="https://kseo.github.io/posts/2016-12-19-encoding-existentials.html">Encoding existentials</a> shows how we can encode existential types using only <code>RankNTypes</code> and <em>forall</em> quantifier.</p>
 <div id="disqus_thread"></div>
 <script>
 

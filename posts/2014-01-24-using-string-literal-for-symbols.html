@@ -43,7 +43,7 @@
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Symbol</span> <span class="fu">=</span> <span class="dt">Symbol</span> <span class="dt">String</span></code></pre></div>
 <p>Now <code>String</code> and <code>Symbol</code> are distinct types and we can’t accidentally mix two. But it also means that we have to use <code>Symbol</code> constructor whenever we need to create a symbol from a string literal.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Symbol</span> <span class="st">&quot;main&quot;</span></code></pre></div>
-<p>You can avoid this labor using the GHC extension, <a href="http://kseo.github.io/posts/2014-01-15-overloaded-string-literals.html">OverloadedStrings</a>. By making <code>Symbol</code> an instance of <code>IsString</code>, GHC automatically coerces a string literal into a symbol.</p>
+<p>You can avoid this labor using the GHC extension, <a href="https://kseo.github.io/posts/2014-01-15-overloaded-string-literals.html">OverloadedStrings</a>. By making <code>Symbol</code> an instance of <code>IsString</code>, GHC automatically coerces a string literal into a symbol.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
 <span class="kw">import </span><span class="dt">Data.String</span>
 
