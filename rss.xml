@@ -11,7 +11,7 @@
         <item>
     <title>Visible Type Application in GHC 8</title>
     <link>http://kseo.github.io//posts/2017-01-08-visible-type-application-ghc8.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -103,7 +103,7 @@ var disqus_config = function () {
 <item>
     <title>Strict Identity Monad</title>
     <link>http://kseo.github.io//posts/2017-01-07-strict-identity-monad.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -166,7 +166,7 @@ var disqus_config = function () {
 <item>
     <title>Implementing a call-by-value interpreter in Haskell</title>
     <link>http://kseo.github.io//posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -359,7 +359,7 @@ var disqus_config = function () {
 <item>
     <title>Type defaulting in Haskell</title>
     <link>http://kseo.github.io//posts/2017-01-04-type-defaulting-in-haskell.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -440,7 +440,7 @@ var disqus_config = function () {
 <item>
     <title>Writing an interpreter using fold</title>
     <link>http://kseo.github.io//posts/2017-01-03-writing-an-interpreter-using-fold.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -529,7 +529,7 @@ var disqus_config = function () {
 <item>
     <title>Hindley-Milner type inference with constraints</title>
     <link>http://kseo.github.io//posts/2017-01-02-hindley-milner-inference-with-constraints.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -575,7 +575,7 @@ var disqus_config = function () {
 <item>
     <title>Type inference algorithms of Haskell-like languages</title>
     <link>http://kseo.github.io//posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -635,7 +635,7 @@ var disqus_config = function () {
 <item>
     <title>Write you an interpreter</title>
     <link>http://kseo.github.io//posts/2016-12-30-write-you-an-interpreter.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -820,7 +820,7 @@ var disqus_config = function () {
 <item>
     <title>Two encodings of substitution operation</title>
     <link>http://kseo.github.io//posts/2016-12-29-two-encodings-of-substitution-operation.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
@@ -899,7 +899,7 @@ var disqus_config = function () {
 <item>
     <title>Lazy vs Strict State Monad</title>
     <link>http://kseo.github.io//posts/2016-12-28-lazy-vs-strict-state-monad.html</link>
-    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+    <description><![CDATA[<a href="https://twitter.com/share" class="twitter-share-button" data-show-count="false">Tweet</a><script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 <article>
   <div class="info">
