@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Double-barrelled Continuation Passing Style Interpreter</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Double-barrelled Continuation Passing Style Interpreter</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 10, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/double-barrelled.html">double-barrelled</a>, <a href="../tags/CPS.html">CPS</a>, <a href="../tags/interpreter.html">interpreter</a>
+      
+  </div>
+
+<p>In the <a href="https://kseo.github.io/posts/2017-01-09-continuation-passing-style-interpreter.html">Continuation Passing Style Interpreter</a>, we wrote a continuation-passing style interpreter for a small functional language and implemented the <em>escape expression</em> which is the binder form of Scheme’s <em>call/cc</em>.</p>
+<p>Though <em>call/cc</em> is a powerful control operator, it is generally considered as a <a href="http://okmij.org/ftp/continuations/against-callcc.html">bad abstraction</a> as a core language feature. So, in this post, we will drop escape expressions and add ML-style exceptions.</p>
+<p>Exceptions can be used to effect non-local transfers of control. By using an <em>exception handler</em> we may “catch” a raised exception and continue evaluation. For example,</p>
+<pre><code>1 + (raise 2)
+handle \x -&gt; x + 3</code></pre>
+<p>evaluates to <code>5</code> because <code>2</code> raised by <code>raise 2</code> is passed to the exception handler <code>\x -&gt; x + 3</code>.</p>
+<p>To support exceptions in our interpreter, <code>eval</code> function is modified to take two continuations: an exception-handler continuation, and a return continuation. This is the so-called <em>double-barrelled continuation-passing style</em> introduced in <a href="http://www.cs.bham.ac.uk/~hxt/research/HOSC-double-barrel.pdf">Comparing Control Constructs by Double-barrelled CPS</a>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term h k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="dt">Var</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> env <span class="fu">!!</span> n
+  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VClosure</span> (\v k' <span class="ot">-&gt;</span> eval (v <span class="fu">:</span> env) a h k')
+  <span class="dt">App</span> a b <span class="ot">-&gt;</span>
+    eval env a h <span class="fu">$</span> \(<span class="dt">VClosure</span> c) <span class="ot">-&gt;</span>
+    eval env b h <span class="fu">$</span> \v <span class="ot">-&gt;</span>
+    c v k
+
+  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VInt</span> n
+  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> eval env a h <span class="fu">$</span> \v1 <span class="ot">-&gt;</span>
+                eval env b h <span class="fu">$</span> \v2 <span class="ot">-&gt;</span>
+                k <span class="fu">$</span> evalPrim p v1 v2
+
+<span class="ot">evalExpr ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalExpr e <span class="fu">=</span> eval emptyEnv e (\x <span class="ot">-&gt;</span> error <span class="st">&quot;uncaught exception&quot;</span>) id</code></pre></div>
+<p><code>h</code> is the exception-handler continuation and it is simply passed along the application of <code>eval</code>. <code>evalExpr</code> is also modified to handle an uncaught exception.</p>
+<p>Once our interpreter is transformed into a double-barrelled continuation-passing style, it is easy to add handle and raise expressions. First, let’s extend <code>Expr</code> with <code>Handle</code> and <code>Raise</code> nodes.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span>
+  <span class="fu">=</span> <span class="fu">...</span>
+  <span class="fu">|</span> <span class="dt">Handle</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Raise</span> <span class="dt">Expr</span>
+  <span class="fu">...</span></code></pre></div>
+<p>Then extend <code>eval</code> function with two additional AST nodes.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term h k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="fu">...</span>
+  <span class="dt">Raise</span> a <span class="ot">-&gt;</span> eval env a h h
+  <span class="dt">Handle</span> a b <span class="ot">-&gt;</span>
+    <span class="kw">let</span> h' x <span class="fu">=</span> eval (x <span class="fu">:</span> env) b h k
+    <span class="kw">in</span> eval env a h' k</code></pre></div>
+<p><code>Raise</code> evaluates <code>a</code> with both continuations set to the error-handler continuation <code>h</code>. So the value is passed to the current error-handler.</p>
+<p><code>Handle</code> sets up a new error-handler <code>h'</code> which evaluates <code>b</code> with the environment extended with the raised value <code>x</code>. Note that <code>a</code> is evaluated with the error-handler set to <code>h'</code> so that any exception raised while evaluating <code>a</code> is passed to <code>h'</code>.</p>
+<p>Let’s run the example above!</p>
+<pre><code>λ&gt; evalExpr $ (Prim Add (Lit 1) (Raise (Lit 2))) `Handle` (Prim Add (Var 0) (Lit 3))
+5</code></pre>
+<p>Yay, it works again!</p>
+<p>If you would like to know why we can’t implement exceptions using <em>call/cc</em> alone, please read Oleg Kiselyov’s article <a href="http://okmij.org/ftp/continuations/undelimited.html#delim-vs-undelim">Vast difference between delimited and undelimited continuations</a>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html";
+    this.page.identifier = "/posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>

@@ -7,8 +7,97 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Mon, 09 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Tue, 10 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Double-barrelled Continuation Passing Style Interpreter</title>
+    <link>http://kseo.github.io//posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html</link>
+    <description><![CDATA[<a class="twitter-share-button"
+    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 10, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/double-barrelled.html">double-barrelled</a>, <a href="/tags/CPS.html">CPS</a>, <a href="/tags/interpreter.html">interpreter</a>
+      
+  </div>
+
+<p>In the <a href="https://kseo.github.io/posts/2017-01-09-continuation-passing-style-interpreter.html">Continuation Passing Style Interpreter</a>, we wrote a continuation-passing style interpreter for a small functional language and implemented the <em>escape expression</em> which is the binder form of Scheme’s <em>call/cc</em>.</p>
+<p>Though <em>call/cc</em> is a powerful control operator, it is generally considered as a <a href="http://okmij.org/ftp/continuations/against-callcc.html">bad abstraction</a> as a core language feature. So, in this post, we will drop escape expressions and add ML-style exceptions.</p>
+<p>Exceptions can be used to effect non-local transfers of control. By using an <em>exception handler</em> we may “catch” a raised exception and continue evaluation. For example,</p>
+<pre><code>1 + (raise 2)
+handle \x -&gt; x + 3</code></pre>
+<p>evaluates to <code>5</code> because <code>2</code> raised by <code>raise 2</code> is passed to the exception handler <code>\x -&gt; x + 3</code>.</p>
+<p>To support exceptions in our interpreter, <code>eval</code> function is modified to take two continuations: an exception-handler continuation, and a return continuation. This is the so-called <em>double-barrelled continuation-passing style</em> introduced in <a href="http://www.cs.bham.ac.uk/~hxt/research/HOSC-double-barrel.pdf">Comparing Control Constructs by Double-barrelled CPS</a>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term h k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="dt">Var</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> env <span class="fu">!!</span> n
+  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VClosure</span> (\v k&#39; <span class="ot">-&gt;</span> eval (v <span class="fu">:</span> env) a h k&#39;)
+  <span class="dt">App</span> a b <span class="ot">-&gt;</span>
+    eval env a h <span class="fu">$</span> \(<span class="dt">VClosure</span> c) <span class="ot">-&gt;</span>
+    eval env b h <span class="fu">$</span> \v <span class="ot">-&gt;</span>
+    c v k
+
+  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VInt</span> n
+  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> eval env a h <span class="fu">$</span> \v1 <span class="ot">-&gt;</span>
+                eval env b h <span class="fu">$</span> \v2 <span class="ot">-&gt;</span>
+                k <span class="fu">$</span> evalPrim p v1 v2
+
+<span class="ot">evalExpr ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalExpr e <span class="fu">=</span> eval emptyEnv e (\x <span class="ot">-&gt;</span> error <span class="st">&quot;uncaught exception&quot;</span>) id</code></pre></div>
+<p><code>h</code> is the exception-handler continuation and it is simply passed along the application of <code>eval</code>. <code>evalExpr</code> is also modified to handle an uncaught exception.</p>
+<p>Once our interpreter is transformed into a double-barrelled continuation-passing style, it is easy to add handle and raise expressions. First, let’s extend <code>Expr</code> with <code>Handle</code> and <code>Raise</code> nodes.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span>
+  <span class="fu">=</span> <span class="fu">...</span>
+  <span class="fu">|</span> <span class="dt">Handle</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Raise</span> <span class="dt">Expr</span>
+  <span class="fu">...</span></code></pre></div>
+<p>Then extend <code>eval</code> function with two additional AST nodes.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term h k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="fu">...</span>
+  <span class="dt">Raise</span> a <span class="ot">-&gt;</span> eval env a h h
+  <span class="dt">Handle</span> a b <span class="ot">-&gt;</span>
+    <span class="kw">let</span> h&#39; x <span class="fu">=</span> eval (x <span class="fu">:</span> env) b h k
+    <span class="kw">in</span> eval env a h&#39; k</code></pre></div>
+<p><code>Raise</code> evaluates <code>a</code> with both continuations set to the error-handler continuation <code>h</code>. So the value is passed to the current error-handler.</p>
+<p><code>Handle</code> sets up a new error-handler <code>h'</code> which evaluates <code>b</code> with the environment extended with the raised value <code>x</code>. Note that <code>a</code> is evaluated with the error-handler set to <code>h'</code> so that any exception raised while evaluating <code>a</code> is passed to <code>h'</code>.</p>
+<p>Let’s run the example above!</p>
+<pre><code>λ&gt; evalExpr $ (Prim Add (Lit 1) (Raise (Lit 2))) `Handle` (Prim Add (Var 0) (Lit 3))
+5</code></pre>
+<p>Yay, it works again!</p>
+<p>If you would like to know why we can’t implement exceptions using <em>call/cc</em> alone, please read Oleg Kiselyov’s article <a href="http://okmij.org/ftp/continuations/undelimited.html#delim-vs-undelim">Vast difference between delimited and undelimited continuations</a>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html";
+    this.page.identifier = "/posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Tue, 10 Jan 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Continuation Passing Style Interpreter</title>
     <link>http://kseo.github.io//posts/2017-01-09-continuation-passing-style-interpreter.html</link>
     <description><![CDATA[<a class="twitter-share-button"
@@ -959,86 +1048,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Fri, 30 Dec 2016 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2016-12-30-write-you-an-interpreter.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Two encodings of substitution operation</title>
-    <link>http://kseo.github.io//posts/2016-12-29-two-encodings-of-substitution-operation.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on December 29, 2016
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/substitution.html">substitution</a>
-      
-  </div>
-
-<p>Substitution operations are heavily used in implementing type checkers. A substitution is a finite mappings from type variables to types. Thus it is natural to define <code>Subst</code> as a list of <code>(Name, Type)</code> pairs as in the following example.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Bifunctor</span>
-
-<span class="kw">type</span> <span class="dt">Name</span> <span class="fu">=</span> <span class="dt">String</span>
-
-<span class="kw">data</span> <span class="dt">Type</span> <span class="fu">=</span> <span class="dt">TVar</span> <span class="dt">Name</span>
-          <span class="fu">|</span> <span class="dt">TCon</span> <span class="dt">Name</span> [<span class="dt">Type</span>]
-
-<span class="kw">type</span> <span class="dt">Subst</span> <span class="fu">=</span> [(<span class="dt">Name</span>, <span class="dt">Type</span>)]</code></pre></div>
-<p>Composition of substitutions can be encoded as operations over the underlying association list.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">idSubst ::</span> <span class="dt">Subst</span>
-idSubst <span class="fu">=</span> []
-
-<span class="ot">composeSubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span>
-composeSubst s1 s2 <span class="fu">=</span> map (second (applySubst s1)) s2 <span class="fu">++</span> s1</code></pre></div>
-<p><code>applySubst</code> applies the substitution given over the structure of the type replacing type variables as specified.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">applySubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
-applySubst s (<span class="dt">TVar</span> n) <span class="fu">=</span> <span class="kw">case</span> lookup n s <span class="kw">of</span>
-                          <span class="dt">Nothing</span> <span class="ot">-&gt;</span> <span class="dt">TVar</span> n
-                          <span class="dt">Just</span> t <span class="ot">-&gt;</span> t
-applySubst s (<span class="dt">TCon</span> n ts) <span class="fu">=</span> <span class="dt">TCon</span> n (map (applySubst s) ts)</code></pre></div>
-<p>Martin Grabm¨uller’s <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.65.7733&amp;rep=rep1&amp;type=pdf">Algorithm W Step by Step</a> uses a slight variation of this encoding to implement Hindley-Milner type system. His version uses <code>Map Name Type</code> instead of <code>[(Name, String)]</code> for efficient lookup.</p>
-<p>Alternatively, we can encode substitution operations directly as a function from type variables to types.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Subst</span> <span class="fu">=</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
-
-<span class="ot">idSubst ::</span> <span class="dt">Subst</span>
-idSubst n <span class="fu">=</span> <span class="dt">TVar</span> n
-
-<span class="ot">composeSubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Subst</span>
-composeSubst s1 s2 <span class="fu">=</span> applySubst s1 <span class="fu">.</span> s2
-
-<span class="ot">applySubst ::</span> <span class="dt">Subst</span> <span class="ot">-&gt;</span> <span class="dt">Type</span> <span class="ot">-&gt;</span> <span class="dt">Type</span>
-applySubst s (<span class="dt">TVar</span> n) <span class="fu">=</span> s n
-applySubst s (<span class="dt">TCon</span> n ts) <span class="fu">=</span> <span class="dt">TCon</span> n (map (applySubst s) ts)</code></pre></div>
-<p>Simon Peyton Jones’s <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">The Implementation of Functional Programming Languages</a> uses this encoding of substitution to implement the type checker.</p>
-<p>These two encodings are equivalent.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2016-12-29-two-encodings-of-substitution-operation.html";
-    this.page.identifier = "/posts/2016-12-29-two-encodings-of-substitution-operation.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Thu, 29 Dec 2016 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2016-12-29-two-encodings-of-substitution-operation.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
