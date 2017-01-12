@@ -68,20 +68,20 @@ test2 <span class="fu">=</span> runState (unMW c) (<span class="dv">0</span><spa
                  \_ <span class="ot">-&gt;</span> ireturn v))
 <span class="co">-- (0, 1)</span></code></pre></div>
 <h1 id="indexed-state-monad">Indexed State Monad</h1>
-<p><code>VST</code> defines an indexed state monad where <code>si</code> and <code>so</code> represents the input and the output state type respectively. The definition of <code>VST</code> is similar to that of <code>StateT</code> except that the type of the state can be changed during the computation.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">VST</span> m si so v <span class="fu">=</span> <span class="dt">VST</span> {<span class="ot"> runVST::</span> si <span class="ot">-&gt;</span> m (so,v) }
+<p><code>IxStateT</code> defines an indexed state monad where <code>si</code> and <code>so</code> represents the input and the output state type respectively. The definition of <code>IxStateT</code> is similar to that of <code>StateT</code> except that the type of the state can be changed during the computation.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">IxStateT</span> m si so v <span class="fu">=</span> <span class="dt">IxStateT</span> {<span class="ot"> runIxStateT::</span> si <span class="ot">-&gt;</span> m (so,v) }
 
-<span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxMonad</span> (<span class="dt">VST</span> m) <span class="kw">where</span>
-  ireturn x <span class="fu">=</span> <span class="dt">VST</span> (\si <span class="ot">-&gt;</span> return (si,x))
-  ibind (<span class="dt">VST</span> m) f <span class="fu">=</span> <span class="dt">VST</span> (\si <span class="ot">-&gt;</span> m si <span class="fu">&gt;&gt;=</span> (\ (sm,x) <span class="ot">-&gt;</span> runVST (f x) sm))
+<span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxMonad</span> (<span class="dt">IxStateT</span> m) <span class="kw">where</span>
+  ireturn x <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (si,x))
+  ibind (<span class="dt">IxStateT</span> m) f <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> m si <span class="fu">&gt;&gt;=</span> (\ (sm,x) <span class="ot">-&gt;</span> runIxStateT (f x) sm))
 
-<span class="ot">vsget ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">VST</span> m si si si
-vsget <span class="fu">=</span> <span class="dt">VST</span> (\si <span class="ot">-&gt;</span> return (si,si))
+<span class="ot">vsget ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m si si si
+vsget <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (si,si))
 
-<span class="ot">vsput ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> so <span class="ot">-&gt;</span> <span class="dt">VST</span> m si so ()
-vsput x <span class="fu">=</span> <span class="dt">VST</span> (\si <span class="ot">-&gt;</span> return (x,()))</code></pre></div>
+<span class="ot">vsput ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> so <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m si so ()
+vsput x <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (x,()))</code></pre></div>
 <p>The following example gets an <code>Int</code> from the state and puts a <code>String</code> into the state. We can see that the type of the state is changed from <code>Int</code> to <code>String</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">test3 <span class="fu">=</span> runVST c (<span class="dv">0</span><span class="ot">::</span><span class="dt">Int</span>) <span class="fu">&gt;&gt;=</span> print <span class="kw">where</span>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">test3 <span class="fu">=</span> runIxStateT c (<span class="dv">0</span><span class="ot">::</span><span class="dt">Int</span>) <span class="fu">&gt;&gt;=</span> print <span class="kw">where</span>
          c <span class="fu">=</span> vsget <span class="ot">`ibind`</span> (
                \v <span class="ot">-&gt;</span> vsput (show v) <span class="ot">`ibind`</span> (
                  \_ <span class="ot">-&gt;</span> vsget <span class="ot">`ibind`</span> (
@@ -92,18 +92,18 @@ vsput x <span class="fu">=</span> <span class="dt">VST</span> (\si <span class="
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE RebindableSyntax #-}</span>
 
 <span class="kw">import </span><span class="dt">Prelude</span> <span class="kw">hiding</span> ((&gt;&gt;=), (&gt;&gt;), return)
-<span class="kw">import </span><span class="dt">VSTMonad</span>
+<span class="kw">import </span><span class="dt">IxState</span>
 
-return<span class="ot"> ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">VST</span> m si si a
+return<span class="ot"> ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m si si a
 return <span class="fu">=</span> ireturn
 
-<span class="ot">(&gt;&gt;=) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">VST</span> m p q a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">VST</span> m q r b) <span class="ot">-&gt;</span> <span class="dt">VST</span> m p r b
+<span class="ot">(&gt;&gt;=) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m p q a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m q r b) <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m p r b
 (<span class="fu">&gt;&gt;=</span>) <span class="fu">=</span> ibind
 
-<span class="ot">(&gt;&gt;) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">VST</span> m p q a <span class="ot">-&gt;</span> <span class="dt">VST</span> m q r b <span class="ot">-&gt;</span> <span class="dt">VST</span> m p r b
+<span class="ot">(&gt;&gt;) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m p q a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m q r b <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m p r b
 v <span class="fu">&gt;&gt;</span> w <span class="fu">=</span> v <span class="fu">&gt;&gt;=</span> \_ <span class="ot">-&gt;</span> w
 
-<span class="ot">c ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">VST</span> m <span class="dt">Int</span> <span class="dt">String</span> (<span class="dt">Int</span>, <span class="dt">String</span>)
+<span class="ot">c ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m <span class="dt">Int</span> <span class="dt">String</span> (<span class="dt">Int</span>, <span class="dt">String</span>)
 c <span class="fu">=</span> <span class="kw">do</span>
   v <span class="ot">&lt;-</span> vsget
   vsput (show v)
