@@ -75,8 +75,8 @@ test2 <span class="fu">=</span> runState (unMW c) (<span class="dv">0</span><spa
                \v <span class="ot">-&gt;</span> iput (succ v) <span class="ot">`ibind`</span> (
                  \_ <span class="ot">-&gt;</span> ireturn v))
 <span class="co">-- (0, 1)</span></code></pre></div>
-<h1 id="vstvariable-state-type-monad">VST(Variable State Type) Monad</h1>
-<p><code>VST</code> defines a variable state type monad where <code>si</code> and <code>so</code> represents the input and the output state type respectively. The definition of <code>VST</code> is similar to that of <code>State</code> except that the type of the state can be changed during the computation.</p>
+<h1 id="indexed-state-monad">Indexed State Monad</h1>
+<p><code>VST</code> defines an indexed state monad where <code>si</code> and <code>so</code> represents the input and the output state type respectively. The definition of <code>VST</code> is similar to that of <code>StateT</code> except that the type of the state can be changed during the computation.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">VST</span> m si so v <span class="fu">=</span> <span class="dt">VST</span> {<span class="ot"> runVST::</span> si <span class="ot">-&gt;</span> m (so,v) }
 
 <span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxMonad</span> (<span class="dt">VST</span> m) <span class="kw">where</span>
