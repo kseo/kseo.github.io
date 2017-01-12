@@ -109,12 +109,18 @@ c <span class="fu">=</span> <span class="kw">do</span>
   vsput (show v)
   v&#39; <span class="ot">&lt;-</span> vsget
   return (v, v&#39;)</code></pre></div>
+<h1 id="other-definitions">Other definitions</h1>
+<p>There are multiple ways to define indexed monads. The one used here is from Robert Atkey’s <a href="http://bentnib.org/paramnotions-jfp.pdf">Parameterised Notions of Computation</a>.</p>
+<p>Other definitions include:</p>
+<ul>
+<li>McBride: <a href="https://personal.cis.strath.ac.uk/conor.mcbride/Kleisli.pdf">Kleisli Arrows of Outrageous Fortune</a></li>
+<li>Orchard: <a href="http://www.cl.cam.ac.uk/~dao29/ixmonad/ixmonad-fita14.pdf">Fun with indexed monads</a></li>
+</ul>
 <h1 id="references">References</h1>
 <ol style="list-style-type: decimal">
 <li>Oleg Kiselyov’s <a href="http://okmij.org/ftp/Computation/monads.html#param-monad">Parameterized `monad’</a></li>
 <li><a href="http://dev.stephendiehl.com/hask/#indexed-monads">Indexed Monad section</a> of Stephen Diehl’s What I Wish I Knew When Learning Haskell</li>
 </ol>
-<p>An interested reader might also want to take a look at Robert Atkey’s <a href="http://bentnib.org/paramnotions-jfp.pdf">Parameterised Notions of Computation</a> for theoretical details of indexed monads.</p>
 <div id="disqus_thread"></div>
 <script>
 
