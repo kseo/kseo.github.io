@@ -94,7 +94,7 @@ vsput x <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span cl
                \v <span class="ot">-&gt;</span> vsput (show v) <span class="ot">`ibind`</span> (
                  \_ <span class="ot">-&gt;</span> vsget <span class="ot">`ibind`</span> (
                    \v' <span class="ot">-&gt;</span> ireturn (v,v'))))
-<span class="co">-- (&quot;A&quot;,(0,&quot;0&quot;))</span></code></pre></div>
+<span class="co">-- (&quot;0&quot;,(0,&quot;0&quot;))</span></code></pre></div>
 <h1 id="do-notation">Do notation</h1>
 <p>The <code>IxMonad</code> examples above looks ugly as we couldn’t use the do notation. Fortunately, <code>-XRebindableSyntax</code> extension allows us to overload the do-notation by providing alternative definitions that are local to the module.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE RebindableSyntax #-}</span>
