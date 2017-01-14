@@ -7,8 +7,102 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Fri, 13 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sat, 14 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Memoization in Haskell</title>
+    <link>http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html</link>
+    <description><![CDATA[<a class="twitter-share-button"
+    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 14, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/memoization.html">memoization</a>
+      
+  </div>
+
+<p><em>Memoization</em> is an optimization technique used to speed up a function by caching its previously computed results. In impure programming languages, a mutable map is used to cache computed results.</p>
+<p>For example, <code>fib</code> function in Python</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="kw">def</span> fib(n):
+    <span class="cf">if</span> n <span class="op">&lt;</span> <span class="dv">2</span>: <span class="cf">return</span> <span class="dv">1</span>
+    <span class="cf">return</span> fib(n<span class="dv">-1</span>) <span class="op">+</span> fib(n<span class="dv">-2</span>)</code></pre></div>
+<p>can be speed up by memoization:</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">fib_memo <span class="op">=</span> {}
+<span class="kw">def</span> fib(n):
+    <span class="cf">if</span> n <span class="op">&lt;</span> <span class="dv">2</span>: <span class="cf">return</span> <span class="dv">1</span>
+    <span class="cf">if</span> <span class="kw">not</span> fib_memo.has_key(n):
+        fib_memo[n] <span class="op">=</span> fib(n<span class="dv">-1</span>) <span class="op">+</span> fib(n<span class="dv">-2</span>)
+    <span class="cf">return</span> fib_memo[n]</code></pre></div>
+<p><code>fib_memo</code> dictionary caches the previous computed results, so <code>fib(n)</code> does not need to repeat the same calculation again for the same <code>n</code>.</p>
+<p>This implementation technique of memoization is used widely in many programming languages, but it can’t be applied directly to Haskell because Haskell is pure and we don’t want to introduce impurity just to memoize a function. Fortunately, it is possible to memoize a function without side effects thanks to Haskell’s nature of <em>lazy evaluation</em>.</p>
+<p>The following <code>memoize</code> function takes a function of type <code>Int -&gt; a</code> and returns a memoized version of the same function. The trick is to turn a function into a value because, in Haskell, <em>functions</em> are not memoized but <em>values</em> are. <code>memoize</code> converts a function <code>f :: Int -&gt; a</code> into an infinite list <code>[a]</code> whose <code>n</code>th element contains the value of <code>f n</code>. Thus each element of the list is evaluated when it is first accessed and cached automatically by the Haskell runtime thanks to lazy evaluation.</p>
+<pre><code>memoize :: (Int -&gt; a) -&gt; (Int -&gt; a)
+memoize f = (map f [0 ..] !!)</code></pre>
+<p>Let’s define a memoized version of <code>fib</code> using <code>memoize</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>
+fib <span class="dv">0</span> <span class="fu">=</span> <span class="dv">0</span>
+fib <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span>
+fib n <span class="fu">=</span> fib (n <span class="fu">-</span> <span class="dv">1</span>) <span class="fu">+</span> fib (n <span class="fu">-</span> <span class="dv">2</span>)
+
+fibMemo <span class="fu">=</span> memoize fib</code></pre></div>
+<p>Does <code>fibMemo</code> work properly? Sadly no, because <code>fib</code> is a recursive function which calls itself. When we call <code>fibMemo 10</code> twice, the second call is returned immediately because the first result is cached. However, intermediate <code>fib</code> calls used to evaluate <code>fib 10</code> are not cached at all because the body of <code>fib</code> calls itself directly without using <code>fibMemo</code>.</p>
+<p>We can fix this issue by factoring out recursion from <code>fib</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Function</span> (fix)
+
+<span class="ot">fib ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>) <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>
+fib f <span class="dv">0</span> <span class="fu">=</span> <span class="dv">0</span>
+fib f <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span>
+fib f n <span class="fu">=</span> f (n <span class="fu">-</span> <span class="dv">1</span>) <span class="fu">+</span> f (n <span class="fu">-</span> <span class="dv">2</span>)
+
+<span class="ot">fibMemo ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>
+fibMemo <span class="fu">=</span> fix (memoize <span class="fu">.</span> fib)</code></pre></div>
+<p>Now every call to <code>fib</code> is memoized because <code>memoize . fib</code> is used every time <code>fib</code> recursively calls itself.</p>
+<p>So far, I explained how to memoize a function whose domain is <code>Int</code>. Of course, we can generalize this technique so that an arbitrary function can be memoized. The basic idea is the same. A function is converted into a large data structure which contains the same information so that memoization is performed by lazy evaluation.</p>
+<p>Interested readers are referred to</p>
+<ul>
+<li>Section 3 of <a href="https://wiki.haskell.org/Simonpj/Talk:FunWithTypeFuns">Fun with type functions</a> explains the type-directed memoization technique using type families.</li>
+<li>Ralf Hinze’s <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.43.3272&amp;rep=rep1&amp;type=pdf">Memo funtions, polytypially!</a></li>
+</ul>
+<p>Conal Elliott’s articles on memoization:</p>
+<ul>
+<li><a href="http://conal.net/blog/posts/memoizing-polymorphic-functions-part-one">Memoizing polymorphic functions – part one</a></li>
+<li><a href="http://conal.net/blog/posts/memoizing-polymorphic-functions-part-two">Memoizing polymorphic functions – part two</a></li>
+<li><a href="http://conal.net/blog/posts/memoizing-polymorphic-functions-via-unmemoization">Memoizing polymorphic functions via unmemoization</a></li>
+<li><a href="http://conal.net/blog/posts/elegant-memoization-with-functional-memo-tries">Elegant memoization with functional memo tries</a></li>
+</ul>
+<p><a href="https://hackage.haskell.org/package/MemoTrie-0.6.7">MemoTrie</a> provides a basis for memoized functions over some domains, using tries.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-14-memoization-in-hasekll.html";
+    this.page.identifier = "/posts/2017-01-14-memoization-in-hasekll.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Sat, 14 Jan 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Constraint Kinds</title>
     <link>http://kseo.github.io//posts/2017-01-13-constraint-kinds.html</link>
     <description><![CDATA[<a class="twitter-share-button"
@@ -1005,53 +1099,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Tue, 03 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-03-writing-an-interpreter-using-fold.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Hindley-Milner type inference with constraints</title>
-    <link>http://kseo.github.io//posts/2017-01-02-hindley-milner-inference-with-constraints.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January  2, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/type%20inference.html">type inference</a>, <a href="/tags/Hindley-Milner.html">Hindley-Milner</a>, <a href="/tags/constraints.html">constraints</a>
-      
-  </div>
-
-<p>Algorithm W is the best known algorithm for implementing Hindley-Milner type inference. But it is a bit complicated as it intermingles two separate processes: constraint generation and solving.</p>
-<p>There is an alternative approach based on <em>constraints generation</em>. In this approach, constraints are collected by bottom-up traversal, and then solved independently. Heeren’s <a href="http://soft.vub.ac.be/~cfscholl/Capita-Selecta-2015/papers/2002%20Heeren.pdf">Generalizing Hindley-Milner Type Inference Algorithms</a> paper describes the algorithm in details.</p>
-<p>Here’s <a href="https://github.com/kseo/poly_constraints">my implementation</a> of Heeren’s algorithm. I forked Stephen Diehls’s <a href="https://github.com/sdiehl/write-you-a-haskell/tree/master/chapter7/poly_constraints">Poly</a> and modified <a href="https://github.com/kseo/poly_constraints/blob/master/src/Infer.hs">the type checker</a> to use the Heeren’s algorithm.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-02-hindley-milner-inference-with-constraints.html";
-    this.page.identifier = "/posts/2017-01-02-hindley-milner-inference-with-constraints.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Mon, 02 Jan 2017 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2017-01-02-hindley-milner-inference-with-constraints.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
