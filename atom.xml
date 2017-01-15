@@ -8,8 +8,121 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2017-01-14T00:00:00Z</updated>
+    <updated>2017-01-15T00:00:00Z</updated>
     <entry>
+    <title>Data.Proxy</title>
+    <link href="http://kseo.github.io//posts/2017-01-15-data-proxy.html" />
+    <id>http://kseo.github.io//posts/2017-01-15-data-proxy.html</id>
+    <published>2017-01-15T00:00:00Z</published>
+    <updated>2017-01-15T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<a class="twitter-share-button"
+    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 15, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/Proxy.html">Proxy</a>
+      
+  </div>
+
+<p><a href="https://www.stackage.org/haddock/lts-7.12/base-4.9.0.0/Data-Proxy.html">Proxy</a> is a mysterious type residing in <code>Data.Proxy</code> module. The definition of <code>Proxy</code> tells nothing about its nature.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | A concrete, poly-kinded proxy type</span>
+<span class="kw">data</span> <span class="dt">Proxy</span> t <span class="fu">=</span> <span class="dt">Proxy</span></code></pre></div>
+<p>The documentation of <code>Proxy</code> says two hints. It is a (1) <em>concrete</em> and (2) <em>poly-kinded</em> proxy type.</p>
+<h1 id="poly-kinded">Poly-kinded</h1>
+<p>The kind of <code>Proxy</code> is <code>forall k. k -&gt; *</code>.</p>
+<pre><code>λ&gt; :k Proxy
+Proxy :: k -&gt; *</code></pre>
+<p>Here <code>k</code> is <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#ghc-flag--XPolyKinds">poly-kinded</a> so we can pass types of any kind to <code>Proxy</code>.</p>
+<ul>
+<li><code>Proxy Char</code> where <code>k</code> is <code>*</code>.</li>
+<li><code>Proxy (,)</code> where <code>k</code> is <code>* -&gt; *</code></li>
+<li><code>Proxy Show</code> where <code>k</code> is <code>* -&gt; Constraint</code></li>
+<li><code>Proxy Monad</code> where <code>k</code> is <code>(* -&gt; *) -&gt; Constraint</code></li>
+</ul>
+<h1 id="concrete-value">Concrete value</h1>
+<p>In Haskell, we can create a value of any type we want by annotating <code>undefined</code> with the type.</p>
+<pre><code>λ&gt; let p = undefined :: Int</code></pre>
+<p>However, we can’t use this trick if the kind of the type is not <code>*</code>, For example, we can’t annotate <code>undefined</code> with type <code>(,)</code> because its kind is <code>* -&gt; * -&gt; *</code>.</p>
+<pre><code>λ&gt; let q = undefined :: (,)
+
+&lt;interactive&gt;:4:22: error:
+    • Expecting two more arguments to ‘(,)’
+      Expected a type, but ‘(,)’ has kind ‘* -&gt; * -&gt; *’
+    • In an expression type signature: (,)
+      In the expression: undefined :: (,)
+      In an equation for ‘q’: q = undefined :: (,)
+λ&gt; let q = undefined :: Show</code></pre>
+<p><code>Proxy</code> lets us to overcome this limitation. We can create a concrete value of any type by annotating <code>Proxy</code> data constructor with the type we want.</p>
+<pre><code>λ&gt; import Data.Proxy
+λ&gt; let p = Proxy :: Proxy (,)
+λ&gt; :t p
+p :: Proxy (,)</code></pre>
+<p>We can think of <code>Proxy :: Proxy (,)</code> as a reified value of the type <code>(,)</code>.</p>
+<h1 id="type-application">Type Application</h1>
+<p>The read/show problem below is ill-typed because of ambiguity.</p>
+<pre><code>f :: String -&gt; String
+f s = show (read s)</code></pre>
+<p>We can fix this issue by explicitly passing the type as a value argument. As you can see the wild card pattern <code>_</code>, the value is not used anywhere in the definition of <code>f</code>. Only its type is used.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> forall proxy a<span class="fu">.</span> (<span class="dt">Read</span> a, <span class="dt">Show</span> a) <span class="ot">=&gt;</span> proxy a <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+f _ <span class="fu">=</span> (show<span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>) <span class="fu">.</span> read</code></pre></div>
+<pre><code>λ&gt; f (Proxy :: Proxy Int) &quot;3&quot;
+&quot;3&quot;</code></pre>
+<p>The example explains the trick of <code>Proxy</code> well, but it became obsolete with the introduction of <a href="https://kseo.github.io/posts/2017-01-08-visible-type-application-ghc8.html">TypeApplications</a> extension in GHC 8.</p>
+<h1 id="typeable">Typeable</h1>
+<p>Another application of <code>Proxy</code> is <code>Typeable</code>. Before kind polymorphism was introduced in GHC, there was a lot of code duplication in the way <code>Typeable</code> is implemented because <code>t</code> can represent only a specific kind.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Typeable</span> (<span class="ot">t ::</span> <span class="fu">*</span>) <span class="kw">where</span>
+<span class="ot">  typeOf ::</span> t <span class="ot">-&gt;</span> <span class="dt">TypeRep</span>
+
+<span class="kw">class</span> <span class="dt">Typeable1</span> (<span class="ot">t ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span>) <span class="kw">where</span>
+<span class="ot">  typeOf1 ::</span> t a <span class="ot">-&gt;</span> <span class="dt">TypeRep</span>
+
+<span class="kw">class</span> <span class="dt">Typeable2</span> (<span class="ot">t ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span>) <span class="kw">where</span>
+<span class="ot">  typeOf2 ::</span> t a b <span class="ot">-&gt;</span> <span class="dt">TypeRep</span></code></pre></div>
+<p><code>Proxy</code> allows us to merge all these classes into one:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Typeable</span> t <span class="kw">where</span>
+<span class="ot">  typeOf ::</span> <span class="dt">Proxy</span> t <span class="ot">-&gt;</span> <span class="dt">TypeRep</span>
+
+<span class="kw">instance</span> <span class="dt">Typeable</span> <span class="dt">Int</span>  <span class="kw">where</span> typeOf _ <span class="fu">=</span> <span class="dt">TypeRep</span>
+<span class="kw">instance</span> <span class="dt">Typeable</span> []   <span class="kw">where</span> typeOf _ <span class="fu">=</span> <span class="dt">TypeRep</span></code></pre></div>
+<h1 id="other-use-cases-of-proxy">Other use cases of Proxy</h1>
+<ul>
+<li><a href="https://www.stackage.org/lts-7.12/package/json-schema-0.7.4.1">json-schema</a> uses <code>Proxy</code> to obtain the JSON representation for the given type.</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">JSONSchema</span> a <span class="kw">where</span>
+<span class="ot">  schema ::</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> <span class="dt">Schema</span></code></pre></div>
+<ul>
+<li>Edward Kmett’s <a href="https://www.stackage.org/lts-7.12/package/reflection-2.1.2">reflection</a> package shows an advanced usage of <code>Proxy</code>. Austin Seipp’s <a href="https://www.schoolofhaskell.com/user/thoughtpolice/using-reflection">Reflecting values to types and back</a> explains how to reify arbitrary terms into types that can be reflected back into terms.</li>
+</ul>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-15-data-proxy.html";
+    this.page.identifier = "/posts/2017-01-15-data-proxy.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Memoization in Haskell</title>
     <link href="http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html" />
     <id>http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html</id>
@@ -999,96 +1112,6 @@ default RealFloat Double</code></pre>
 var disqus_config = function () {
     this.page.url = "https://kseo.github.io/posts/2017-01-04-type-defaulting-in-haskell.html";
     this.page.identifier = "/posts/2017-01-04-type-defaulting-in-haskell.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Writing an interpreter using fold</title>
-    <link href="http://kseo.github.io//posts/2017-01-03-writing-an-interpreter-using-fold.html" />
-    <id>http://kseo.github.io//posts/2017-01-03-writing-an-interpreter-using-fold.html</id>
-    <published>2017-01-03T00:00:00Z</published>
-    <updated>2017-01-03T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January  3, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/fold.html">fold</a>, <a href="/tags/interpreter.html">interpreter</a>, <a href="/tags/catamorphism.html">catamorphism</a>
-      
-  </div>
-
-<p><em>fold</em> is a Swiss Army knife in functional programming. It is <a href="http://www.cs.nott.ac.uk/~pszgmh/fold.pdf">expressive</a> enough to write an interpreter for a simple functional programming language.</p>
-<p>Let’s start with a simple arithmetic language.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Expr</span> <span class="fu">=</span> <span class="dt">Const</span> <span class="dt">Int</span>
-<span class="ot">&gt;</span>           <span class="fu">|</span> <span class="dt">Add</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
-<span class="ot">&gt;</span>           <span class="fu">|</span> <span class="dt">Mul</span> <span class="dt">Expr</span> <span class="dt">Expr</span></code></pre></div>
-<p>Writing an interpreter for this language is trivial.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interp ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-<span class="ot">&gt;</span> interp (<span class="dt">Const</span> x) <span class="fu">=</span> x
-<span class="ot">&gt;</span> interp (<span class="dt">Add</span> e1 e2) <span class="fu">=</span> interp e1 <span class="fu">+</span> interp e2
-<span class="ot">&gt;</span> interp (<span class="dt">Mul</span> e1 e2) <span class="fu">=</span> interp e1 <span class="fu">*</span> interp e2</code></pre></div>
-<p>Writing a pretty printer is also easy.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; pretty ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-<span class="ot">&gt;</span> pretty (<span class="dt">Const</span> x) <span class="fu">=</span> show x
-<span class="ot">&gt;</span> pretty (<span class="dt">Add</span> e1 e2) <span class="fu">=</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> pretty e1 <span class="fu">++</span> <span class="st">&quot; + &quot;</span> <span class="fu">++</span> pretty e2 <span class="fu">++</span> <span class="st">&quot;)&quot;</span>
-<span class="ot">&gt;</span> pretty (<span class="dt">Mul</span> e1 e2) <span class="fu">=</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> pretty e1 <span class="fu">++</span> <span class="st">&quot; * &quot;</span> <span class="fu">++</span> pretty e2 <span class="fu">++</span> <span class="st">&quot;)&quot;</span></code></pre></div>
-<p>Sensitive readers might have noticed the duplication of code in <code>interp</code> and <code>pretty</code>. Yes, recursion on the structure of <code>Expr</code> is repeated.</p>
-<p>We can extract recursion as <code>foldExpr</code> and algorithms as <code>ExprA</code>. <code>foldExpr</code> does recursion on the structure of <code>Expr</code> regardless of the algorithm being used.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ExprA</span> a <span class="fu">=</span> <span class="dt">ExprA</span>
-<span class="ot">&gt;</span>   {<span class="ot"> val ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> a
-<span class="ot">&gt;</span>   ,<span class="ot"> add ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a
-<span class="ot">&gt;</span>   ,<span class="ot"> mul ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a
-<span class="ot">&gt;</span>   }
-<span class="ot">&gt;</span> 
-<span class="ot">&gt; foldExpr ::</span> <span class="dt">ExprA</span> a <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> a
-<span class="ot">&gt;</span> foldExpr alg (<span class="dt">Const</span> i)   <span class="fu">=</span> val alg i
-<span class="ot">&gt;</span> foldExpr alg (<span class="dt">Add</span> e1 e2) <span class="fu">=</span> add alg (foldExpr alg e1) (foldExpr alg e2)
-<span class="ot">&gt;</span> foldExpr alg (<span class="dt">Mul</span> e1 e2) <span class="fu">=</span> mul alg (foldExpr alg e1) (foldExpr alg e2)</code></pre></div>
-<p>Now it is possible to define the interpreter just by giving <code>val</code>, <code>add</code> and <code>mul</code> functions.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interpA ::</span> <span class="dt">ExprA</span> <span class="dt">Int</span>
-<span class="ot">&gt;</span> interpA <span class="fu">=</span> <span class="dt">ExprA</span>
-<span class="ot">&gt;</span>   { val <span class="fu">=</span> id
-<span class="ot">&gt;</span>   , add <span class="fu">=</span> (<span class="fu">+</span>)
-<span class="ot">&gt;</span>   , mul <span class="fu">=</span> (<span class="fu">*</span>)
-<span class="ot">&gt;</span>   }</code></pre></div>
-<p>The same goes for pretty printer.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; prettyA ::</span> <span class="dt">ExprA</span> <span class="dt">String</span>
-<span class="ot">&gt;</span> prettyA <span class="fu">=</span> <span class="dt">ExprA</span>
-<span class="ot">&gt;</span>   { val <span class="fu">=</span> show
-<span class="ot">&gt;</span>   , add <span class="fu">=</span> \a b <span class="ot">-&gt;</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> a <span class="fu">++</span> <span class="st">&quot; + &quot;</span> <span class="fu">++</span> b <span class="fu">++</span> <span class="st">&quot;)&quot;</span>
-<span class="ot">&gt;</span>   , mul <span class="fu">=</span> \a b <span class="ot">-&gt;</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> a <span class="fu">++</span> <span class="st">&quot; * &quot;</span> <span class="fu">++</span> b <span class="fu">++</span> <span class="st">&quot;)&quot;</span>
-<span class="ot">&gt;</span>   }</code></pre></div>
-<p>Here is our <code>interp'</code> function defined in terms of <code>foldExpr</code> and <code>interpA</code>.</p>
-<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interp&#39; ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
-<span class="ot">&gt;</span> interp&#39; <span class="fu">=</span> foldExpr interpA</code></pre></div>
-<p>We successfully isolated algorithms from recursion, but we are still not satisfied. <code>ExprA</code> is mostly duplication of <code>Expr</code> and defining <code>foldExpr</code> is boilerplate.</p>
-<p>We can fix this by introducing <em>F-algebras</em> and <em>catamorphisms</em>. Interested readers might want to take a look at Bartosz Milewski’s <a href="https://bartoszmilewski.com/2013/06/10/understanding-f-algebras/">Understanding F-Algebras</a> article.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-03-writing-an-interpreter-using-fold.html";
-    this.page.identifier = "/posts/2017-01-03-writing-an-interpreter-using-fold.html";
 };
 (function() { // DON'T EDIT BELOW THIS LINE
     var d = document, s = d.createElement('script');
