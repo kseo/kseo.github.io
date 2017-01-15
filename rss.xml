@@ -53,8 +53,7 @@ Proxy :: k -&gt; *</code></pre>
       Expected a type, but ‘(,)’ has kind ‘* -&gt; * -&gt; *’
     • In an expression type signature: (,)
       In the expression: undefined :: (,)
-      In an equation for ‘q’: q = undefined :: (,)
-λ&gt; let q = undefined :: Show</code></pre>
+      In an equation for ‘q’: q = undefined :: (,)</code></pre>
 <p><code>Proxy</code> lets us to overcome this limitation. We can create a concrete value of any type by annotating <code>Proxy</code> data constructor with the type we want.</p>
 <pre><code>λ&gt; import Data.Proxy
 λ&gt; let p = Proxy :: Proxy (,)
