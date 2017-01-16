@@ -54,7 +54,7 @@ Proxy :: k -&gt; *</code></pre>
     • In an expression type signature: (,)
       In the expression: undefined :: (,)
       In an equation for ‘q’: q = undefined :: (,)</code></pre>
-<p><code>Proxy</code> lets us to overcome this limitation. We can create a concrete value of any type by annotating <code>Proxy</code> data constructor with the type we want.</p>
+<p><code>Proxy</code> lets us to overcome this limitation. We can create a proxy value representing the type by annotating <code>Proxy</code> data constructor.</p>
 <pre><code>λ&gt; import Data.Proxy
 λ&gt; let p = Proxy :: Proxy (,)
 λ&gt; :t p
@@ -69,7 +69,7 @@ f s = show (read s)</code></pre>
 f _ <span class="fu">=</span> (show<span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>) <span class="fu">.</span> read</code></pre></div>
 <pre><code>λ&gt; f (Proxy :: Proxy Int) &quot;3&quot;
 &quot;3&quot;</code></pre>
-<p>The example explains the trick of <code>Proxy</code> well, but it became obsolete with the introduction of <a href="https://kseo.github.io/posts/2017-01-08-visible-type-application-ghc8.html">TypeApplications</a> extension in GHC 8.</p>
+<p>As a side note, <a href="https://kseo.github.io/posts/2017-01-08-visible-type-application-ghc8.html">TypeApplications</a> extension introduced in GHC 8 provides an alternative way to fix this.</p>
 <h1 id="typeable">Typeable</h1>
 <p>Another application of <code>Proxy</code> is <code>Typeable</code>. Before kind polymorphism was introduced in GHC, there was a lot of code duplication in the way <code>Typeable</code> is implemented because <code>t</code> can represent only a specific kind.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Typeable</span> (<span class="ot">t ::</span> <span class="fu">*</span>) <span class="kw">where</span>
