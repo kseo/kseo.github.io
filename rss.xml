@@ -117,8 +117,8 @@ Head &#39;[] :: GHC.Types.*
 Map MakePair [Char,Bool,Int] :: [GHC.Types.*]
 = &#39;[(Char, Char), (Bool, Bool), (Int, Int)]</code></pre>
 <p>where the definition of <code>MakePair</code> is</p>
-<pre><code>type family MakePair (x :: *) where
-  MakePair x = (x, x)</code></pre>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">MakePair</span> (<span class="ot">x ::</span> <span class="fu">*</span>) <span class="kw">where</span>
+  <span class="dt">MakePair</span> x <span class="fu">=</span> (x, x)</code></pre></div>
 <h1 id="wrap-up">Wrap-up</h1>
 <p>So far we’ve covered only the basics of type-level datatypes and functions. Recent additions to GHC make it possible to explore the whole new world of dependent type programming in Haskell. Interested readers might want to take a look at the publications of <a href="http://cs.brynmawr.edu/~rae/">Richard A. Eisenberg</a> whose current work is to add dependent types to Haskell.</p>
 <div id="disqus_thread"></div>
