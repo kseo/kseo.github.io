@@ -8,8 +8,146 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2017-01-15T00:00:00Z</updated>
+    <updated>2017-01-16T00:00:00Z</updated>
     <entry>
+    <title>Type-level functions using closed type families</title>
+    <link href="http://kseo.github.io//posts/2017-01-16-type-level-functions-using-closed-type-families.html" />
+    <id>http://kseo.github.io//posts/2017-01-16-type-level-functions-using-closed-type-families.html</id>
+    <published>2017-01-16T00:00:00Z</published>
+    <updated>2017-01-16T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<a class="twitter-share-button"
+    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 16, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/dependent%20type.html">dependent type</a>, <a href="/tags/type-level.html">type-level</a>, <a href="/tags/list.html">list</a>
+      
+  </div>
+
+<p>In this post, we will see how to write basic type-level functions using <a href="https://github.com/ghc/ghc/commit/569b26526403df4d88fe2a6d64c7dade09d003ad">closed type families</a>.</p>
+<p>Before we start, let’s declare a bunch of GHC language extensions required to use type-level functions.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DataKinds #-}</span>
+<span class="ot">{-# LANGUAGE TypeFamilies #-}</span>
+<span class="ot">{-# LANGUAGE TypeOperators #-}</span>
+<span class="ot">{-# LANGUAGE UndecidableInstances #-}</span></code></pre></div>
+<p>Also import required modules. <code>GHC.TypeLits</code> provides type-level natural numbers and symbols.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">GHC.TypeLits</span>
+<span class="kw">import </span><span class="dt">Data.Proxy</span></code></pre></div>
+<h1 id="literals">Literals</h1>
+<p>Datatype promotion allows us to use <code>True</code> and <code>False</code> as type constructors whose kind is <code>Bool</code>. The quotes are used to emphasize the promotion, but can be omitted when syntactically unambiguous.</p>
+<pre><code>λ&gt; :set -XDataKinds
+λ&gt; :kind &#39;True
+&#39;True :: Bool
+λ&gt; :kind &#39;False
+&#39;False :: Bool</code></pre>
+<p>We can also use numbers such as <code>1</code> and <code>2</code> as types. The kind of these numbers is <code>Nat</code>.</p>
+<pre><code>λ&gt; :kind 1
+1 :: Nat</code></pre>
+<h1 id="type-level-function">Type-level Function</h1>
+<p><code>If</code> takes three arguments <code>c</code>, <code>t</code> and <code>e</code> and returns <code>t</code> if <code>c</code> is <code>True</code>, returns <code>e</code> otherwise. The kind of <code>If</code> is <code>Bool -&gt; * -&gt; * -&gt; *</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">If</span> c t e <span class="kw">where</span>
+  <span class="dt">If</span> <span class="ch">&#39;True  t e = t</span>
+  <span class="dt">If</span> <span class="ch">&#39;False t e = e</span></code></pre></div>
+<p>We can use GHCi’s <code>kind!</code> command to evaluate type functions.</p>
+<pre><code>λ&gt; :kind! If &#39;True Bool Char
+If &#39;True Bool Char :: *
+= Bool
+λ&gt; :kind! If &#39;False Int Double
+If &#39;False Int Double :: *
+= Double</code></pre>
+<h1 id="type-level-list">Type-level List</h1>
+<p>As we can promote types like <code>Bool</code>, we can also promote lists and treat <code>[]</code> as a <em>kind constructor</em>, and <code>[]</code> and <code>(:)</code> as <em>types</em>.</p>
+<p>When <code>(:)</code> is seen as a type constructor, it has kind</p>
+<pre><code>λ&gt; :kind (:)
+(:) :: a -&gt; [a] -&gt; [a]</code></pre>
+<p>It means <code>(:)</code> is <em>kind-polymorphic</em>.</p>
+<p>So we can create a type-level list of booleans as well as naturals.</p>
+<pre><code>λ&gt; :kind [True, False]
+[True, False] :: [Bool]
+λ&gt; :kind [1, 2]
+[1,2] :: [Nat]</code></pre>
+<h1 id="type-level-list-function">Type-level List Function</h1>
+<p>The definition of type-level function <code>Length</code> is the same as the value level <code>length</code> function. If it an empty list returns 0. If it not empty, add 1 to the length of the tail.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">Length</span> xs <span class="kw">where</span>
+   <span class="dt">Length</span> <span class="ch">&#39;[]       = 0</span>
+   <span class="dt">Length</span> (x <span class="ch">&#39;: xs) = 1 + Length xs</span></code></pre></div>
+<p><code>0</code> and <code>1</code> are types of <code>Nat</code> kind and <code>(+)</code> is a type-level add function defined in <code>GHC.TypeLits</code>. We can even use <code>(:)</code> as a pattern here.</p>
+<pre><code>λ&gt; :kind! Length [Char,Bool,Int]
+Length [Char,Bool,Int] :: Nat
+= 3</code></pre>
+<p>It seems <code>Length</code> is almost identical to the value level function <code>length</code>, but <code>Length</code> function is not kind-polymorphic by default. Thus passing <code>[1, 2, 3]</code> to <code>Length</code> causes an error.</p>
+<pre><code>λ&gt; :kind! Length [1,2,3]
+
+&lt;interactive&gt;:1:8: error:
+    • Expected kind ‘[*]’, but ‘&#39;[1, 2, 3]’ has kind ‘[Nat]’
+    • In the first argument of ‘Length’, namely ‘&#39;[1, 2, 3]’
+      In the type ‘Length &#39;[1, 2, 3]’</code></pre>
+<p>To make it poly-kinded, we need to turn on <code>PolyKind</code> extension. The kind is inferred automatically, but we can also specify the kind with <code>k</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">Length</span> (<span class="ot">xs ::</span> [k]) <span class="kw">where</span>
+   <span class="dt">Length</span> <span class="ch">&#39;[]       = 0</span>
+   <span class="dt">Length</span> (x <span class="ch">&#39;: xs) = 1 + Length xs</span></code></pre></div>
+<p><code>Head</code> and <code>Tail</code> are defined in a similar manner. Note that the kind of <code>xs</code> is explicitly annotated with <code>[*]</code> because they only work on type-level lists.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">Head</span> (<span class="ot">xs ::</span> [<span class="fu">*</span>]) <span class="kw">where</span>
+   <span class="dt">Head</span> (x <span class="ch">&#39;: xs) = x</span>
+
+<span class="kw">type</span> family <span class="dt">Tail</span> (<span class="ot">xs ::</span> [<span class="fu">*</span>]) <span class="kw">where</span>
+  <span class="dt">Tail</span> (x <span class="ch">&#39;: xs) = xs</span></code></pre></div>
+<p>We can see <code>Head</code> and <code>Tail</code> work as expected.</p>
+<pre><code>λ&gt; :kind! Head [Char, Bool, Int]
+Head [Char, Bool, Int] :: *
+= Char
+*Main
+λ&gt; :kind! Tail [Char, Bool, Int]
+Tail [Char, Bool, Int] :: [*]
+= &#39;[Bool, Int]</code></pre>
+<p>One notable thing here is that both <code>Head</code> and <code>Tail</code> are partially defined. What if we pass <code>'[]</code> to <code>Head</code> or <code>Tail</code>?</p>
+<pre><code>λ&gt; :kind! Head &#39;[]
+Head &#39;[] :: GHC.Types.*
+= Head &#39;[]</code></pre>
+<p>It seems GHC treats <code>Head '[]</code> as a valid type instead of emitting a type error. It is a bit mysterious, but at least we can see that type-level functions in Haskell can be partial and the behavior is not intuitive. Interested readers are referred to Richard Eisenberg’s <a href="https://typesandkinds.wordpress.com/2015/09/09/what-are-type-families/">What are type families?</a> which discusses this issue in details.</p>
+<h1 id="higher-order-type-level-list-function">Higher-order Type-level List Function</h1>
+<p>It is even possible to define type-level <em>map</em> function. <code>Map</code> takes a type-level function <code>f</code> and a type-level list <code>xs</code>. It applies <code>f</code> to every element of <code>xs</code> and returns a new type-level list containing the results.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">Map</span> (<span class="ot">f ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span>) (<span class="ot">xs ::</span> [<span class="fu">*</span>]) <span class="kw">where</span>
+   <span class="dt">Map</span> f <span class="ch">&#39;[]       = &#39;</span>[]
+   <span class="dt">Map</span> f (x <span class="ch">&#39;: xs) = f x &#39;</span><span class="fu">:</span> <span class="dt">Map</span> f xs</code></pre></div>
+<pre><code>λ&gt; :kind! Map MakePair [Char,Bool,Int]
+Map MakePair [Char,Bool,Int] :: [GHC.Types.*]
+= &#39;[(Char, Char), (Bool, Bool), (Int, Int)]</code></pre>
+<p>where the definition of <code>MakePair</code> is</p>
+<pre><code>type family MakePair (x :: *) where
+  MakePair x = (x, x)</code></pre>
+<h1 id="wrap-up">Wrap-up</h1>
+<p>So far we’ve covered only the basics of type-level datatypes and functions. Recent additions to GHC make it possible to explore the whole new world of dependent type programming in Haskell. Interested readers might want to take a look at the publications of <a href="http://cs.brynmawr.edu/~rae/">Richard A. Eisenberg</a> whose current work is to add dependent types to Haskell.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-16-type-level-functions-using-closed-type-families.html";
+    this.page.identifier = "/posts/2017-01-16-type-level-functions-using-closed-type-families.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Data.Proxy</title>
     <link href="http://kseo.github.io//posts/2017-01-15-data-proxy.html" />
     <id>http://kseo.github.io//posts/2017-01-15-data-proxy.html</id>
@@ -1029,88 +1167,6 @@ test <span class="fu">=</span> runIdentity <span class="fu">$</span> eval emptyE
 var disqus_config = function () {
     this.page.url = "https://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html";
     this.page.identifier = "/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Type defaulting in Haskell</title>
-    <link href="http://kseo.github.io//posts/2017-01-04-type-defaulting-in-haskell.html" />
-    <id>http://kseo.github.io//posts/2017-01-04-type-defaulting-in-haskell.html</id>
-    <published>2017-01-04T00:00:00Z</published>
-    <updated>2017-01-04T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January  4, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/type%20defaulting.html">type defaulting</a>
-      
-  </div>
-
-<p>Type defaulting is introduced to solve the ambiguous type problems caused by type classes.</p>
-<p>Consider the following classic example:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">show<span class="ot"> ::</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>
-read<span class="ot"> ::</span> <span class="dt">Read</span> a <span class="ot">=&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> a
-
-<span class="ot">f ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-f s <span class="fu">=</span> show (read s)</code></pre></div>
-<p><code>f</code> appears to be well-typed, but GHC complains about the ambiguous type variable. The problem is that there is nothing to specify the type of the intermediate subexpression <code>(read s)</code>. <code>read</code> can parse an <code>Int</code>, a <code>String</code> or any other type that is an instance of <code>Read</code>. The compiler can’t arbitrarily choose a type because the choice of the type affects the program behavior. We can avoid the ambiguity by specifying the type explicitly:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-f s <span class="fu">=</span> show (read<span class="ot"> s ::</span> <span class="dt">Int</span>)</code></pre></div>
-<p>However, the restriction above becomes quite cumbersome when we need to handle numeric types. For example,</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">negate<span class="ot"> ::</span> <span class="dt">Num</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a
-show<span class="ot"> ::</span> <span class="dt">Show</span> a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>
-
-(show (negate <span class="dv">4</span>))</code></pre></div>
-<p>The expression <code>(show (negate 4))</code> is ambiguous because the literal <code>4</code> is of <code>Num a =&gt; a</code> type in Haskell. <code>4</code> can be an <code>Int</code>, a <code>Float</code> or any other type that is an instance of <code>Num</code>, so the compiler can’t choose any particular type for the same reason above. But the Haskell Committee thought that this is too much restriction. After much debates, they compromised and added an ad-hoc rule for choosing a particular default type. <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/history-of-haskell/history.pdf">A History of Haskell</a> mentions the rationale behind this decision:</p>
-<blockquote>
-<p>Performing numerical calculations on constants is one of the very first things a Haskell programmer does, and furthermore there is more reason to expect numeric operations to behave in similar ways for different types than there is for non-numeric operations.</p>
-</blockquote>
-<p>The default type of <code>Num</code> is <code>Integer</code>, so the Haskell compiler infers the type of <code>(negate 4)</code> as <code>Integer</code> instead of rejecting it as an invalid program.</p>
-<p>Haskell default rule can be summarized as:</p>
-<pre><code>default Num Integer
-default Real Integer
-default Enum Integer
-default Integral Integer
-default Fractional Double
-default RealFrac Double
-default Floating Double
-default RealFloat Double</code></pre>
-<p>The type defaulting rule is very conservative. Defaults are limited to Prelude numeric classes and cannot be applied to user-defined classes. Our first example <code>f</code> is invalid because <code>Read</code> is not a numeric type class. But, sometimes, we would like to change the default type for the type classes. So Haskell lets us specify a list of types in a special top-level <em>default</em> declaration.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">default (<span class="dt">Int</span>, <span class="dt">Float</span>)</code></pre></div>
-<p>The restriction is still too tight. According to the rule, even innocuously looking <code>show []</code> is not typeable because GHC can’t decide the type of <code>[a]</code>. So compiling the following program causes an ambiguous type error.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">f <span class="fu">=</span> show []</code></pre></div>
-<p>But every Haskell programmer knows that <code>show []</code> works fine in GHCi from experience. We don’t know the exact type chosen because the output is always <code>&quot;[]&quot;</code> regardless of the type. But it works anyway. What happened here?</p>
-<pre><code>λ&gt; show []
-&quot;[]&quot;</code></pre>
-<p>In fact, GHCi extends Haskell’s type-defaulting rules by including <code>Show</code>, <code>Eq</code> and <code>Ord</code> in addition to numeric type classes. <a href="https://downloads.haskell.org/~ghc/7.8.4/docs/html/users_guide/interactive-evaluation.html">Type defaulting in GHCi</a> explains the details. It also adds the unit type <code>()</code> to the standard list of types which are tried when doing type defaulting. So the type of <code>[]</code> in <code>show []</code> becomes <code>[()]</code> according to the extended type defaulting rules in GHCi.</p>
-<p>Type defaulting in Haskell is one of the controversial language features. It is confusing to novice Haskell programmers because the defaulting rule is very ad-hoc. Interested readers might want to take a look several enhancement <a href="https://prime.haskell.org/wiki/Defaulting">proposals</a> being discussed in Haskell Prime Wiki.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-04-type-defaulting-in-haskell.html";
-    this.page.identifier = "/posts/2017-01-04-type-defaulting-in-haskell.html";
 };
 (function() { // DON'T EDIT BELOW THIS LINE
     var d = document, s = d.createElement('script');
