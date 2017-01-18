@@ -7,8 +7,107 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Mon, 16 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Wed, 18 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Natural transformations in Servant</title>
+    <link>http://kseo.github.io//posts/2017-01-18-natural-transformations-in-servant.html</link>
+    <description><![CDATA[<a class="twitter-share-button"
+    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 18, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/servant.html">servant</a>, <a href="/tags/natural%20transformation.html">natural transformation</a>, <a href="/tags/monad%20morphism.html">monad morphism</a>
+      
+  </div>
+
+<p>I’ve recently started using <a href="http://haskell-servant.readthedocs.io/en/stable/">servant</a> at work. Servant lets us declare web APIs at the type-level once and use those APIs to write servers, obtains client functions and generate documentation. It’s a real world example which shows the power of Haskell type system.</p>
+<p>The most interesting part of Servant is its <em>extensible type-level DSL</em> for describing web APIs. However, I found another interesting application of theory into practice in <a href="https://hackage.haskell.org/package/servant-server">servant-server</a> library. It is the use of <em>natural transformation</em> to convert one handler type into another handler type.</p>
+<p>In Servant, <code>Handler</code> is a type alias for <code>ExceptT ServantErr IO</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Handler</span> <span class="fu">=</span> <span class="dt">ExceptT</span> <span class="dt">ServantErr</span> <span class="dt">IO</span></code></pre></div>
+<p>Thus <code>Handler</code> monad allows us to do:</p>
+<ul>
+<li>Perform IO operations such as database query through the base monad <code>IO</code>.</li>
+<li>Throw a <code>ServantErr</code> if something went wrong.</li>
+</ul>
+<p>Here’s an example of a Servant handler.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ItemApi</span> <span class="fu">=</span>
+    <span class="st">&quot;item&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;itemId&quot;</span> <span class="dt">Integer</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[JSON] Item</span>
+
+<span class="ot">queryItemFirst ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">Item</span>)
+queryItemFirst itemId <span class="fu">=</span> <span class="fu">...</span>
+
+<span class="ot">getItemById ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> <span class="dt">Item</span>
+getItemById itemId <span class="fu">=</span> <span class="kw">do</span>
+  mItem <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> queryItemFirst itemId
+  <span class="kw">case</span> mItem <span class="kw">of</span>
+    <span class="dt">Just</span> item <span class="ot">-&gt;</span> return item
+    <span class="dt">Nothing</span>   <span class="ot">-&gt;</span> throwError err404</code></pre></div>
+<p>So far so good, but what if <code>queryItemFirst</code> needs a database connection to retrieve the item? Ideally, we would like to create a custom monad for our application such as</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">AppEnv</span> <span class="fu">=</span> <span class="dt">AppEnv</span> {<span class="ot"> db ::</span> <span class="dt">ConnectionPool</span> }
+<span class="kw">type</span> <span class="dt">MyHandler</span> <span class="fu">=</span> <span class="dt">ReaderT</span> <span class="dt">AppEnv</span> (<span class="dt">ExceptT</span> <span class="dt">ServantErr</span> <span class="dt">IO</span>)
+
+<span class="ot">queryItemFirst ::</span> <span class="dt">ConnectionPool</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">Item</span>)
+queryItemFirst cp itemId <span class="fu">=</span> <span class="fu">...</span>
+
+<span class="ot">getItemById ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">MyHandler</span> <span class="dt">Item</span>
+getItemById itemId <span class="fu">=</span> <span class="kw">do</span>
+  cp <span class="ot">&lt;-</span> db <span class="fu">&lt;$&gt;</span> ask
+  mItem <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> queryItemFirst cp itemId
+  <span class="kw">case</span> mItem <span class="kw">of</span>
+    <span class="dt">Just</span> item <span class="ot">-&gt;</span> return item
+    <span class="dt">Nothing</span>   <span class="ot">-&gt;</span> throwError err404</code></pre></div>
+<p>Unfortunately, this does not work because <a href="https://www.stackage.org/haddock/lts-7.12/servant-server-0.8.1/Servant-Server.html#v:serve">serve</a> wants <code>Handler</code> type. We need a way to transform <code>MyHandler</code> into <code>Handler</code> so that Servant can happily serve our handlers. Because both <code>MyHandler</code> and <code>Handler</code> are monads, we need a monad morphism. Or more generally, we need a <em>natural transformation</em> from <code>MyHandler</code> to <code>Handler</code>.</p>
+<p>Servant provides a newtype wrapper <code>Nat</code> which represents a natural transformation from <code>m a</code> to <code>n a</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> m <span class="fu">:~&gt;</span> n <span class="fu">=</span> <span class="dt">Nat</span> {<span class="ot"> unNat ::</span> forall a<span class="fu">.</span> m a <span class="ot">-&gt;</span> n a}</code></pre></div>
+<p>So what we want is <code>MyHandler :~&gt; Handler</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">myHandlerToHandler ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">MyHandler</span> <span class="fu">:~&gt;</span> <span class="dt">Handler</span>
+myHandlerToHandler env <span class="fu">=</span> <span class="dt">Nat</span> myHandlerToHandler&#39;
+  <span class="kw">where</span>
+<span class="ot">  myHandlerToHandler&#39; ::</span> <span class="dt">MyHandler</span> a <span class="ot">-&gt;</span> <span class="dt">Handler</span> a
+  myHandlerToHandler&#39; h <span class="fu">=</span> runReaderT h env</code></pre></div>
+<p>Okay, now we can get a natural transformation <code>MyHandler :~&gt; Handler</code> by applying an <code>AppEnv</code> to <code>myHandlerToHandler</code>. How can I tell the Servant to use this natural transformation to serve our handlers? That’s what <a href="https://www.stackage.org/haddock/lts-7.12/servant-server-0.8.1/Servant-Server.html#v:enter">enter</a> does!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">server ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">ItemApi</span>
+server env <span class="fu">=</span>
+  enter (myHandlerToHandler env) getItemById</code></pre></div>
+<p>Wrapping <code>Handler</code> with <code>ReaderT</code> is a common idiom, so Servant provides a convenient function <code>runReaderTNat</code> which is exactly the same to <code>myHandlerToHandler</code>. So we can rewrite <code>server</code> as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">server ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">ItemApi</span>
+server env <span class="fu">=</span>
+  enter (runReaderTNat env) getItemById</code></pre></div>
+<p>Servant also provides a lot of monad morphisms such as <code>hoistNat</code>, <code>embedNat</code>, <code>squashNat</code> and <code>generalizeNat</code>. Sounds familiar? These are just wrappers around <a href="https://hackage.haskell.org/package/mmorph">mmorph</a> library functions. Interested readers are referred to Gabriel Gonzalez’s article <a href="http://www.haskellforall.com/2013/03/mmorph-100-monad-morphisms.html">mmorph-1.0.0: Monad morphisms</a>.</p>
+<p>In object-oriented programming, we use <em>Adapter pattern</em> to allow the interface of an existing class to be used as another interface. In functional programming, we use <em>naturals transformations</em> (or more generally, <em>functors</em>) to do so!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-18-natural-transformations-in-servant.html";
+    this.page.identifier = "/posts/2017-01-18-natural-transformations-in-servant.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Wed, 18 Jan 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-01-18-natural-transformations-in-servant.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Type-level functions using closed type families</title>
     <link>http://kseo.github.io//posts/2017-01-16-type-level-functions-using-closed-type-families.html</link>
     <description><![CDATA[<a class="twitter-share-button"
@@ -984,200 +1083,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Sat, 07 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-07-strict-identity-monad.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Implementing a call-by-value interpreter in Haskell</title>
-    <link>http://kseo.github.io//posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January  5, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/call-by-value.html">call-by-value</a>, <a href="/tags/interpreter.html">interpreter</a>, <a href="/tags/Strict.html">Strict</a>
-      
-  </div>
-
-<p>Call-by-value is the most commonly used evaluation strategy in which all arguments to a function are reduced to normal form before they are bound inside lambda. Languages such as Java, C++, Scala and F# all use this evaluation model. A notable exception is Haskell, which uses call-by-need evaluation in which expressions are represented as <em>thunks</em> which are passed into a function unevaluated and only evaluated when needed.</p>
-<p>This difference in evaluation model poses some challenges in writing a call-by-value interpreter in Haskell. In this post, I am going to explain how we can implement a call-by-value interpreter using various methods.</p>
-<p>Let’s start the discussion by writing a lambda calculus interpreter.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span>
-  <span class="fu">=</span> <span class="dt">Var</span> <span class="dt">Int</span>
-  <span class="fu">|</span> <span class="dt">Lam</span> <span class="dt">Expr</span>
-  <span class="fu">|</span> <span class="dt">App</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
-  <span class="fu">|</span> <span class="dt">Lit</span> <span class="dt">Int</span>
-  <span class="fu">|</span> <span class="dt">Prim</span> <span class="dt">PrimOp</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
-  <span class="fu">|</span> <span class="dt">Bot</span>
-  <span class="kw">deriving</span> <span class="dt">Show</span>
-
-<span class="kw">data</span> <span class="dt">Value</span>
-  <span class="fu">=</span> <span class="dt">VInt</span> <span class="dt">Int</span>
-  <span class="fu">|</span> <span class="dt">VClosure</span> <span class="dt">Expr</span> <span class="dt">Env</span>
-
-<span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Value</span> <span class="kw">where</span>
-  show (<span class="dt">VInt</span> i) <span class="fu">=</span> show i
-  show <span class="dt">VClosure</span>{} <span class="fu">=</span> <span class="st">&quot;&lt;&lt;closure&gt;&gt;&quot;</span>
-
-<span class="kw">data</span> <span class="dt">PrimOp</span> <span class="fu">=</span> <span class="dt">Add</span> <span class="fu">|</span> <span class="dt">Mul</span>
-  <span class="kw">deriving</span> <span class="dt">Show</span>
-
-<span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> [<span class="dt">Value</span>]
-
-<span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
-eval env term <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
-  <span class="dt">Var</span> n <span class="ot">-&gt;</span> env <span class="fu">!!</span> n
-  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> <span class="dt">VClosure</span> a env
-  <span class="dt">App</span> a b <span class="ot">-&gt;</span>
-    <span class="kw">let</span> <span class="dt">VClosure</span> c env&#39; <span class="fu">=</span> eval env a <span class="kw">in</span>
-    <span class="kw">let</span> v <span class="fu">=</span> eval env b <span class="kw">in</span>
-    eval (v <span class="fu">:</span> env&#39;) c
-
-  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> <span class="dt">VInt</span> n
-  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> (evalPrim p) (eval env a) (eval env b)
-  <span class="dt">Bot</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Evaluation would not terminate&quot;</span>
-
-<span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
-evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
-evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
-
-<span class="ot">emptyEnv ::</span> <span class="dt">Env</span>
-emptyEnv <span class="fu">=</span> []
-
-<span class="co">-- (\x y -&gt; x) 10 bot</span>
-<span class="ot">test ::</span> <span class="dt">Value</span>
-test <span class="fu">=</span> eval emptyEnv <span class="fu">$</span> <span class="dt">App</span> (<span class="dt">App</span> (<span class="dt">Lam</span> (<span class="dt">Lam</span> (<span class="dt">Var</span> <span class="dv">1</span>))) (<span class="dt">Lit</span> <span class="dv">10</span>)) <span class="dt">Bot</span></code></pre></div>
-<p>Can you guess the evaluation order implemented by this interpreter? Because <code>test</code> is equivalent to <code>(\x y -&gt; x) 10 undefined</code>, it would be <code>undefined</code> in a call-by-value language.</p>
-<p>Let’s evaluate <code>test</code> on GHCi.</p>
-<pre><code>λ&gt; test
-10</code></pre>
-<p>The evaluation order implemented by our interpreter is call-by-need because the defining language, Haskell, uses the call-by-need evaluation order and our interpreter depends on this. Transforming our interpreter into a call-by-value interpreter is not trivial because we need to find and fix every place where lazy evaluation is used in our interpreter.</p>
-<p>In his seminar paper <a href="http://surface.syr.edu/cgi/viewcontent.cgi?article=1012&amp;context=lcsmith_other">Definitional interpreters for higher-order programming languages</a>, John C. Reynolds showed how to remove this order dependence by CPS transformation. <del>But in Haskell, we can use monads to enforce the evaluation order. This is not a coincidence because there is a <a href="https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/the-essence-of-functional-programming.pdf">close relationship</a> between computational monads and generalized CPS.</del></p>
-<p><strong>UPDATE: There is a technical mistake in the original article. The Identity monad does not make any difference here. I should have used either a strict variant of Identity monad or the Cont monad to force strict evaluation.</strong></p>
-<p>Here’s a monadic version of our interpreter.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.Identity</span>
-
-<span class="kw">data</span> <span class="dt">Expr</span>
-  <span class="fu">=</span> <span class="dt">Var</span> <span class="dt">Int</span>
-  <span class="fu">|</span> <span class="dt">Lam</span> <span class="dt">Expr</span>
-  <span class="fu">|</span> <span class="dt">App</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
-  <span class="fu">|</span> <span class="dt">Lit</span> <span class="dt">Int</span>
-  <span class="fu">|</span> <span class="dt">Prim</span> <span class="dt">PrimOp</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
-  <span class="fu">|</span> <span class="dt">Bot</span>
-  <span class="kw">deriving</span> <span class="dt">Show</span>
-
-<span class="kw">data</span> <span class="dt">Value</span>
-  <span class="fu">=</span> <span class="dt">VInt</span> <span class="dt">Int</span>
-  <span class="fu">|</span> <span class="dt">VClosure</span> <span class="dt">Expr</span> <span class="dt">Env</span>
-
-<span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Value</span> <span class="kw">where</span>
-  show (<span class="dt">VInt</span> i) <span class="fu">=</span> show i
-  show <span class="dt">VClosure</span>{} <span class="fu">=</span> <span class="st">&quot;&lt;&lt;closure&gt;&gt;&quot;</span>
-
-<span class="kw">data</span> <span class="dt">PrimOp</span> <span class="fu">=</span> <span class="dt">Add</span> <span class="fu">|</span> <span class="dt">Mul</span>
-  <span class="kw">deriving</span> <span class="dt">Show</span>
-
-<span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> [<span class="dt">Value</span>]
-
-<span class="ot">eval ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> m <span class="dt">Value</span>
-eval env term <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
-  <span class="dt">Var</span> n <span class="ot">-&gt;</span> return <span class="fu">$</span> env <span class="fu">!!</span> n
-  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">VClosure</span> a env
-  <span class="dt">App</span> a b <span class="ot">-&gt;</span> <span class="kw">do</span>
-    <span class="dt">VClosure</span> c env&#39; <span class="ot">&lt;-</span> eval env a
-    v <span class="ot">&lt;-</span> eval env b
-    eval (v <span class="fu">:</span> env&#39;) c
-
-  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">VInt</span> n
-  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> evalPrim p <span class="fu">&lt;$&gt;</span> eval env a <span class="fu">&lt;*&gt;</span> eval env b
-  <span class="dt">Bot</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Evaluation would not terminate&quot;</span>
-
-<span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
-evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
-evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
-
-<span class="ot">emptyEnv ::</span> <span class="dt">Env</span>
-emptyEnv <span class="fu">=</span> []
-
-<span class="co">-- (\x y -&gt; x) 10 bot</span>
-<span class="ot">test ::</span> <span class="dt">Value</span>
-test <span class="fu">=</span> runIdentity <span class="fu">$</span> eval emptyEnv <span class="fu">$</span> <span class="dt">App</span> (<span class="dt">App</span> (<span class="dt">Lam</span> (<span class="dt">Lam</span> (<span class="dt">Var</span> <span class="dv">1</span>))) (<span class="dt">Lit</span> <span class="dv">10</span>)) <span class="dt">Bot</span></code></pre></div>
-<p>Let’s evaluate <code>test</code> again.</p>
-<pre><code>λ&gt; test
-10</code></pre>
-<p>Oops. What went wrong? The problem is that our interpreter does not enforce the evaluation of the argument in <code>App a b</code> case of <code>eval</code>. <code>v &lt;- eval env b</code> just binds a thunk to <code>v</code> and it won’t be evaluated until it is actually needed. To fix the problem, we need to force the evaluation of the argument using <em>bang patterns</em>.</p>
-<p><strong>UPDATE: This bang pattern is not necessary if we used a strict monad.</strong></p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE BangPatterns #-}</span>
-
-<span class="fu">...</span>
-
-<span class="ot">eval ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> m <span class="dt">Value</span>
-eval env term <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
-  <span class="dt">Var</span> n <span class="ot">-&gt;</span> return <span class="fu">$</span> env <span class="fu">!!</span> n
-  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">VClosure</span> a env
-  <span class="dt">App</span> a b <span class="ot">-&gt;</span> <span class="kw">do</span>
-    <span class="dt">VClosure</span> c env&#39; <span class="ot">&lt;-</span> eval env a
-    <span class="fu">!</span>v <span class="ot">&lt;-</span> eval env b
-    eval (v <span class="fu">:</span> env&#39;) c
-
-  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">VInt</span> n
-  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> evalPrim p <span class="fu">&lt;$&gt;</span> eval env a <span class="fu">&lt;*&gt;</span> eval env b
-  <span class="dt">Bot</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Evaluation would not terminate&quot;</span>
-
-<span class="fu">...</span></code></pre></div>
-<p>Finally, we can see that evaluating <code>test</code> throws an error.</p>
-<pre><code>λ&gt; test
-*** Exception: Evaluation would not terminate</code></pre>
-<p>The moral of this story is that it is really hard to correctly implement a call-by-value interpreter in Haskell. There is high chance of making a mistake. For example, let’s add a division operator to our interpreter.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">PrimOp</span> <span class="fu">=</span> <span class="dt">Add</span> <span class="fu">|</span> <span class="dt">Mul</span> <span class="fu">|</span> <span class="dt">Div</span>
-  <span class="kw">deriving</span> <span class="dt">Show</span>
-
-<span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
-evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
-evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
-evalPrim <span class="dt">Div</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="ot">`div`</span> b)
-
-<span class="co">-- (\x y -&gt; x) 10 (20 / 0)</span>
-<span class="ot">test ::</span> <span class="dt">Value</span>
-test <span class="fu">=</span> runIdentity <span class="fu">$</span> eval emptyEnv <span class="fu">$</span> <span class="dt">App</span> (<span class="dt">App</span> (<span class="dt">Lam</span> (<span class="dt">Lam</span> (<span class="dt">Var</span> <span class="dv">1</span>))) (<span class="dt">Lit</span> <span class="dv">10</span>)) (<span class="dt">Prim</span> <span class="dt">Div</span> (<span class="dt">Lit</span> <span class="dv">20</span>) (<span class="dt">Lit</span> <span class="dv">0</span>))</code></pre></div>
-<p>Evaluating <code>test</code> must throw an divide-by-zero error because its second argument is <code>20 / 0</code>. But GHCi shows that we reverted back to cal-by-need.</p>
-<pre><code>λ&gt; test
-10</code></pre>
-<p>This happens because the data constructor <code>VInt</code> is not strict. <code>20 / 0</code> is evaluated to <code>VInt undefined</code> instead of <code>undefined</code>. To make it call-by-value again, we need to add another bang pattern to <code>VInt</code> data constructor as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Value</span>
-  <span class="fu">=</span> <span class="dt">VInt</span> <span class="fu">!</span><span class="dt">Int</span>
-  <span class="fu">|</span> <span class="dt">VClosure</span> <span class="dt">Expr</span> <span class="dt">Env</span></code></pre></div>
-<p>Fortunately, we can avoid this tricky business and make our first interpreter call-by-value by just adding <a href="https://ghc.haskell.org/trac/ghc/wiki/StrictPragma">Strict</a> language extension introduced in GHC 8. <code>Strict</code> pragma allows us to switch the default evaluation strategy to call-by-value on a per module basis. This saves us huge efforts because writing a call-by-value interpreter in a call-by-value language is an easy task!</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE Strict #-}</span></code></pre></div>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html";
-    this.page.identifier = "/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Thu, 05 Jan 2017 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 

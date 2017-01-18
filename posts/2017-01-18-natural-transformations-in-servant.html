@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Natural transformations in Servant</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Natural transformations in Servant</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 18, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/servant.html">servant</a>, <a href="../tags/natural%20transformation.html">natural transformation</a>, <a href="../tags/monad%20morphism.html">monad morphism</a>
+      
+  </div>
+
+<p>I’ve recently started using <a href="http://haskell-servant.readthedocs.io/en/stable/">servant</a> at work. Servant lets us declare web APIs at the type-level once and use those APIs to write servers, obtains client functions and generate documentation. It’s a real world example which shows the power of Haskell type system.</p>
+<p>The most interesting part of Servant is its <em>extensible type-level DSL</em> for describing web APIs. However, I found another interesting application of theory into practice in <a href="https://hackage.haskell.org/package/servant-server">servant-server</a> library. It is the use of <em>natural transformation</em> to convert one handler type into another handler type.</p>
+<p>In Servant, <code>Handler</code> is a type alias for <code>ExceptT ServantErr IO</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Handler</span> <span class="fu">=</span> <span class="dt">ExceptT</span> <span class="dt">ServantErr</span> <span class="dt">IO</span></code></pre></div>
+<p>Thus <code>Handler</code> monad allows us to do:</p>
+<ul>
+<li>Perform IO operations such as database query through the base monad <code>IO</code>.</li>
+<li>Throw a <code>ServantErr</code> if something went wrong.</li>
+</ul>
+<p>Here’s an example of a Servant handler.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ItemApi</span> <span class="fu">=</span>
+    <span class="st">&quot;item&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;itemId&quot;</span> <span class="dt">Integer</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] Item</span>
+
+<span class="ot">queryItemFirst ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">Item</span>)
+queryItemFirst itemId <span class="fu">=</span> <span class="fu">...</span>
+
+<span class="ot">getItemById ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> <span class="dt">Item</span>
+getItemById itemId <span class="fu">=</span> <span class="kw">do</span>
+  mItem <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> queryItemFirst itemId
+  <span class="kw">case</span> mItem <span class="kw">of</span>
+    <span class="dt">Just</span> item <span class="ot">-&gt;</span> return item
+    <span class="dt">Nothing</span>   <span class="ot">-&gt;</span> throwError err404</code></pre></div>
+<p>So far so good, but what if <code>queryItemFirst</code> needs a database connection to retrieve the item? Ideally, we would like to create a custom monad for our application such as</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">AppEnv</span> <span class="fu">=</span> <span class="dt">AppEnv</span> {<span class="ot"> db ::</span> <span class="dt">ConnectionPool</span> }
+<span class="kw">type</span> <span class="dt">MyHandler</span> <span class="fu">=</span> <span class="dt">ReaderT</span> <span class="dt">AppEnv</span> (<span class="dt">ExceptT</span> <span class="dt">ServantErr</span> <span class="dt">IO</span>)
+
+<span class="ot">queryItemFirst ::</span> <span class="dt">ConnectionPool</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">Item</span>)
+queryItemFirst cp itemId <span class="fu">=</span> <span class="fu">...</span>
+
+<span class="ot">getItemById ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">MyHandler</span> <span class="dt">Item</span>
+getItemById itemId <span class="fu">=</span> <span class="kw">do</span>
+  cp <span class="ot">&lt;-</span> db <span class="fu">&lt;$&gt;</span> ask
+  mItem <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> queryItemFirst cp itemId
+  <span class="kw">case</span> mItem <span class="kw">of</span>
+    <span class="dt">Just</span> item <span class="ot">-&gt;</span> return item
+    <span class="dt">Nothing</span>   <span class="ot">-&gt;</span> throwError err404</code></pre></div>
+<p>Unfortunately, this does not work because <a href="https://www.stackage.org/haddock/lts-7.12/servant-server-0.8.1/Servant-Server.html#v:serve">serve</a> wants <code>Handler</code> type. We need a way to transform <code>MyHandler</code> into <code>Handler</code> so that Servant can happily serve our handlers. Because both <code>MyHandler</code> and <code>Handler</code> are monads, we need a monad morphism. Or more generally, we need a <em>natural transformation</em> from <code>MyHandler</code> to <code>Handler</code>.</p>
+<p>Servant provides a newtype wrapper <code>Nat</code> which represents a natural transformation from <code>m a</code> to <code>n a</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> m <span class="fu">:~&gt;</span> n <span class="fu">=</span> <span class="dt">Nat</span> {<span class="ot"> unNat ::</span> forall a<span class="fu">.</span> m a <span class="ot">-&gt;</span> n a}</code></pre></div>
+<p>So what we want is <code>MyHandler :~&gt; Handler</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">myHandlerToHandler ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">MyHandler</span> <span class="fu">:~&gt;</span> <span class="dt">Handler</span>
+myHandlerToHandler env <span class="fu">=</span> <span class="dt">Nat</span> myHandlerToHandler'
+  <span class="kw">where</span>
+<span class="ot">  myHandlerToHandler' ::</span> <span class="dt">MyHandler</span> a <span class="ot">-&gt;</span> <span class="dt">Handler</span> a
+  myHandlerToHandler' h <span class="fu">=</span> runReaderT h env</code></pre></div>
+<p>Okay, now we can get a natural transformation <code>MyHandler :~&gt; Handler</code> by applying an <code>AppEnv</code> to <code>myHandlerToHandler</code>. How can I tell the Servant to use this natural transformation to serve our handlers? That’s what <a href="https://www.stackage.org/haddock/lts-7.12/servant-server-0.8.1/Servant-Server.html#v:enter">enter</a> does!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">server ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">ItemApi</span>
+server env <span class="fu">=</span>
+  enter (myHandlerToHandler env) getItemById</code></pre></div>
+<p>Wrapping <code>Handler</code> with <code>ReaderT</code> is a common idiom, so Servant provides a convenient function <code>runReaderTNat</code> which is exactly the same to <code>myHandlerToHandler</code>. So we can rewrite <code>server</code> as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">server ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">ItemApi</span>
+server env <span class="fu">=</span>
+  enter (runReaderTNat env) getItemById</code></pre></div>
+<p>Servant also provides a lot of monad morphisms such as <code>hoistNat</code>, <code>embedNat</code>, <code>squashNat</code> and <code>generalizeNat</code>. Sounds familiar? These are just wrappers around <a href="https://hackage.haskell.org/package/mmorph">mmorph</a> library functions. Interested readers are referred to Gabriel Gonzalez’s article <a href="http://www.haskellforall.com/2013/03/mmorph-100-monad-morphisms.html">mmorph-1.0.0: Monad morphisms</a>.</p>
+<p>In object-oriented programming, we use <em>Adapter pattern</em> to allow the interface of an existing class to be used as another interface. In functional programming, we use <em>naturals transformations</em> (or more generally, <em>functors</em>) to do so!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-18-natural-transformations-in-servant.html";
+    this.page.identifier = "/posts/2017-01-18-natural-transformations-in-servant.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
