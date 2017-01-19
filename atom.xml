@@ -85,7 +85,7 @@ server env <span class="fu">=</span>
 server env <span class="fu">=</span>
   enter (runReaderTNat env) getItemById</code></pre></div>
 <p>Servant also provides a lot of monad morphisms such as <code>hoistNat</code>, <code>embedNat</code>, <code>squashNat</code> and <code>generalizeNat</code>. Sounds familiar? These are just wrappers around <a href="https://hackage.haskell.org/package/mmorph">mmorph</a> library functions. Interested readers are referred to Gabriel Gonzalez’s article <a href="http://www.haskellforall.com/2013/03/mmorph-100-monad-morphisms.html">mmorph-1.0.0: Monad morphisms</a>.</p>
-<p>In object-oriented programming, we use <em>Adapter pattern</em> to allow the interface of an existing class to be used as another interface. In functional programming, we use <em>naturals transformations</em> (or more generally, <em>functors</em>) to do so!</p>
+<p>In object-oriented programming, we use <em>Adapter pattern</em> to allow the interface of an existing class to be used as another interface. In functional programming, we use <em>natural transformations</em> (or more generally, <em>functors</em>) to do so!</p>
 <div id="disqus_thread"></div>
 <script>
 
