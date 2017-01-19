@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Fun with hint</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Fun with hint</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 19, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/hint.html">hint</a>, <a href="../tags/dynamic%20evaluation.html">dynamic evaluation</a>, <a href="../tags/interpreter.html">interpreter</a>
+      
+  </div>
+
+<p>If you are a Haskell convert from Lisp, JavaScript or any other dynamic programming language, you might miss <a href="https://en.wikipedia.org/wiki/Eval">eval</a> function of those languages. <code>eval</code> lets us load code dynamically and execute it on the fly. It is commonly used to provide user-defined plugins and is a very handy tool for software extension.</p>
+<p>Dynamic evaluation is not limited to dynamic languages. Even Java supports dynamic class loading through class loaders. It seems Haskell does not support dynamic evaluation as it is a strictly defined language. But GHC allows us to compile and execute Haskell code dynamically through GHC API.</p>
+<p><a href="https://hackage.haskell.org/package/hint">hint</a> library provides a Haskell interpreter built on top of GHC API. It allows to load and execute Haskell expressions and even coerce them into values.</p>
+<p><em>hint</em> provides a bunch of monadic actions based on <code>InterpreterT</code> monad transformer. <code>runInterpreter</code> is used to execute the action.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">runInterpreter ::</span> (<span class="dt">MonadIO</span> m, <span class="dt">MonadMask</span> m) <span class="ot">=&gt;</span> <span class="dt">InterpreterT</span> m a <span class="ot">-&gt;</span> m (<span class="dt">Either</span> <span class="dt">InterpreterError</span> a)</code></pre></div>
+<h1 id="type-check">Type check</h1>
+<p>We can check the type of a Haskell expression using <code>typeOf</code>.</p>
+<pre><code>λ&gt; import Language.Haskell.Interpreter
+λ&gt; runInterpreter $ typeOf &quot;\&quot;foo\&quot;&quot;
+Right &quot;[GHC.Types.Char]&quot;
+λ&gt; runInterpreter $ typeOf &quot;3.14&quot;
+Right &quot;GHC.Real.Fractional t =&gt; t&quot;</code></pre>
+<h1 id="import-modules">Import modules</h1>
+<p><em>hint</em> does not import prelude implicitly. We need import modules explicitly using <code>setImport</code>. For qualified imports, use <code>setImportQ</code> instead.</p>
+<pre><code>λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; typeOf &quot;head [True, False]&quot; }
+Right &quot;Bool&quot;
+λ&gt; runInterpreter $ do { setImportsQ [(&quot;Prelude&quot;, Nothing), (&quot;Data.Map&quot;, Just &quot;M&quot;) ]; typeOf &quot;M.empty&quot; }
+Right &quot;M.Map k a&quot;</code></pre>
+<h1 id="evaluate-expressions">Evaluate expressions</h1>
+<p><code>eval</code> function lets us evaluate Haskell expressions dynamically.</p>
+<pre><code>λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; eval &quot;head [True, False]&quot; }
+Right &quot;True&quot;
+λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; eval &quot;1 + 2 * 3&quot; }
+Right &quot;7&quot;</code></pre>
+<p>The result type of evaluation is <code>String</code>. To convert the result into the type we want, use <code>interpret</code> with <code>as</code>. Here <code>as</code> provides a witness for its monomorphic type.</p>
+<pre><code>λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; interpret &quot;head [True, False]&quot; (as :: Bool) }
+Right True
+λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; interpret &quot;1 + 2 * 3&quot; (as :: Int) }
+Right 7</code></pre>
+<h1 id="load-modules">Load modules</h1>
+<p>It is also possible to load modules dynamically.</p>
+<p>Here’s a small module <code>Foo</code> stored in <code>Foo.hs</code> file.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">module</span> <span class="dt">Foo</span> <span class="kw">where</span>
+
+f <span class="fu">=</span> head
+g <span class="fu">=</span> tail</code></pre></div>
+<p>We can load <code>Foo</code> using <code>loadModules</code> function. <code>setTopLevelModules</code> ensures that all bindings of the module are in scope.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="kw">import </span><span class="dt">Language.Haskell.Interpreter</span>
+
+<span class="ot">ex ::</span> <span class="dt">Interpreter</span> ()
+ex <span class="fu">=</span> <span class="kw">do</span>
+  loadModules [<span class="st">&quot;Foo.hs&quot;</span>]
+  setTopLevelModules [<span class="st">&quot;Foo&quot;</span>]
+  setImportsQ [(<span class="st">&quot;Prelude&quot;</span>, <span class="dt">Nothing</span>)]
+
+  <span class="kw">let</span> expr1 <span class="fu">=</span> <span class="st">&quot;f [1, 2, 3]&quot;</span>
+  a <span class="ot">&lt;-</span> eval expr1
+  liftIO <span class="fu">$</span> print a
+
+  <span class="kw">let</span> expr2 <span class="fu">=</span> <span class="st">&quot;g [1, 2, 3]&quot;</span>
+  a <span class="ot">&lt;-</span> eval expr2
+  liftIO <span class="fu">$</span> print a
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  r <span class="ot">&lt;-</span> runInterpreter ex
+  <span class="kw">case</span> r <span class="kw">of</span>
+    <span class="dt">Left</span> err <span class="ot">-&gt;</span> print err
+    <span class="dt">Right</span> () <span class="ot">-&gt;</span> return ()</code></pre></div>
+<p>Executing this program prints</p>
+<pre><code>&quot;1&quot;
+&quot;[2,3]&quot;</code></pre>
+<p>because <code>f</code> is <code>head</code> and <code>g</code> is <code>tail</code>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-19-fun-with-hint.html";
+    this.page.identifier = "/posts/2017-01-19-fun-with-hint.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
