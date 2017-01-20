@@ -98,9 +98,9 @@ safeLink _ _ <span class="fu">=</span> ()</code></pre></div>
 <p>If <code>endpoint</code> does not belong to <code>api</code>, GHC can’t deduce the type and emits an type error. The actual implementation of Servant is more complicated because it needs to handle other components such as <code>Capture</code> and <code>QueryParam</code>, but the core idea is the same!</p>
 <p>Now we can test if our <code>safeLink</code> actually works.</p>
 <p><code>getItem</code> is well-typed because <code>ValidEndpoint</code> is in fact a valid endpoint of <code>Api</code> using <code>safeLink</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">getItem <span class="fu">=</span> safeLink (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Api</span>) (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">ValidEndpoint</span>)
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">getItem  <span class="fu">=</span> safeLink (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Api</span>) (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">ValidEndpoint</span>)
 postUser <span class="fu">=</span> safeLink (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">Api</span>) (<span class="dt">Proxy</span><span class="ot"> ::</span> <span class="dt">Proxy</span> <span class="dt">InvalidEndpoint1</span>)</code></pre></div>
-<p><code>postUser</code> is ill-typed because <code>InvalidEndpoint1</code> is not a valid endpoint of <code>Api</code>.</p>
+<p><code>postUser</code> is ill-typed because <code>InvalidEndpoint1</code> is not a valid endpoint of <code>Api</code>. We can see that GHC actually throws an error!</p>
 <pre><code>• Could not deduce: Or
                       (IsElem (&quot;user&quot; :&gt; &#39;Post) (&quot;item&quot; :&gt; &#39;Get))
                       (Or
