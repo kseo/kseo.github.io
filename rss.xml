@@ -79,7 +79,7 @@ test <span class="fu">=</span> mapM_ print <span class="fu">$</span> toList (exe
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Monoid</span> (<span class="dt">Endo</span> a) <span class="kw">where</span>
         mempty <span class="fu">=</span> <span class="dt">Endo</span> id
         <span class="dt">Endo</span> f <span class="ot">`mappend`</span> <span class="dt">Endo</span> g <span class="fu">=</span> <span class="dt">Endo</span> (f <span class="fu">.</span> g)</code></pre></div>
-<p>But how can I output a log? We need a function of type <code>[LogEntry] -&gt; [LogEntry]</code> to make an <code>Endo</code> value. The trick is create a section <code>([LogEntry x]&lt;&gt;)</code> which appends the given log entry to the front of the list.</p>
+<p>But how can I output a log? We need a function of type <code>[LogEntry] -&gt; [LogEntry]</code> to make an <code>Endo</code> value. The trick is to create a section <code>([LogEntry x]&lt;&gt;)</code> which appends the given log entry to the front of the list.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">calc ::</span> <span class="dt">Writer</span> (<span class="dt">Endo</span> [<span class="dt">LogEntry</span>]) <span class="dt">Integer</span>
 calc <span class="fu">=</span> <span class="fu">...</span>
 
