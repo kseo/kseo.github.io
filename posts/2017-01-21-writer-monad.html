@@ -154,6 +154,11 @@ output x <span class="fu">=</span> rmodify ([<span class="dt">LogEntry</span> x]
 
 test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execRState calc []</code></pre></div>
 <p>This performs well because list prepend is O(1).</p>
+<p>Readers who would like to know more about the backward state monads are referred to:</p>
+<ul>
+<li><a href="https://lukepalmer.wordpress.com/2008/08/10/mindfuck-the-reverse-state-monad/">Mindfuck: The Reverse State Monad</a> shows how to compute the fibonacci number using the reverse state monad.</li>
+<li><a href="https://hackage.haskell.org/package/tardis-0.4.1.0">tardis</a> package - a combination of both a forwards and a backwards state transformer.</li>
+</ul>
 <div id="disqus_thread"></div>
 <script>
 
