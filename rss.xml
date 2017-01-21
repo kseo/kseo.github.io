@@ -132,7 +132,7 @@ rmodify f <span class="fu">=</span> <span class="dt">RState</span> <span class="
 rput <span class="fu">=</span> rmodify <span class="fu">.</span> const
 
 execRState f s <span class="fu">=</span> snd (runRState f s)</code></pre></div>
-<p>In the definition of <code>&gt;&gt;=</code>, the state <code>s</code> is passed to the second expression and its result <code>s'</code> is passed back to the first expression. This seems impossible because two expressions are mutually recursive, but Haskell’s lazy evaluation makes it possible. In the backward state monad, <code>get</code> reads the state from the future!</p>
+<p>In the definition of <code>&gt;&gt;=</code>, the state <code>s</code> is passed to the second expression and its result <code>s'</code> is passed back to the first expression. This seems impossible because two expressions are mutually recursive, but Haskell’s lazy evaluation makes it possible. In the backward state monad, <code>rget</code> reads the state from the future!</p>
 <p>With this in mind, we can implement the Writer monad by prepending the log to the state. Because the state contains all the future logs, we can simply prepend our log to it.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">calc ::</span> <span class="dt">RState</span> [<span class="dt">LogEntry</span>] <span class="dt">Integer</span>
 calc <span class="fu">=</span> <span class="fu">...</span>
