@@ -115,7 +115,7 @@ test <span class="fu">=</span> mapM_ print <span class="fu">$</span> appEndo (ex
     mempty  <span class="fu">=</span> <span class="dt">DL</span> id
     mappend xs ys <span class="fu">=</span> <span class="dt">DL</span> (unDL xs <span class="fu">.</span> unDL ys)</code></pre></div>
 <h1 id="state-monad">State Monad</h1>
-<p>It is possible to implement the Writer monad in terms of the <em>State monad</em>. We can store the accumulated logs in the state and updates it by appending a new log.</p>
+<p>It is possible to implement the Writer monad in terms of the <em>State monad</em>. We can store the accumulated logs in the state and update it by appending a new log.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.Trans.State</span>
 <span class="kw">import </span><span class="dt">Data.Monoid</span> ((&lt;&gt;))
 
