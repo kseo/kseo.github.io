@@ -59,7 +59,7 @@ calc <span class="fu">=</span> <span class="kw">do</span>
 output x <span class="fu">=</span> tell [<span class="dt">LogEntry</span> x]
 
 test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execWriter calc</code></pre></div>
-<p>The code looks innocuous, but its performance deteriorates when the accumulated log gets bigger because the <code>Monoid</code> instance of <code>[]</code> uses <code>(++)</code> to append two lists.</p>
+<p>The code looks innocuous, but its performance deteriorates when the accumulated log gets bigger because the <code>Monoid</code> instance of <code>[]</code> uses <code>(++)</code> to append two lists and the concatenations are left-nested.</p>
 <pre><code>do { tell [1]; tell [2]; tell [3]; tell[4]; tell [5] }
 =&gt;
 (((([1] ++ [2]) ++ [3]) ++ [4]) ++ [5])</code></pre>
