@@ -115,7 +115,7 @@ calc <span class="fu">=</span> <span class="fu">...</span>
 output x <span class="fu">=</span> modify (<span class="fu">&lt;&gt;</span> [<span class="dt">LogEntry</span> x])
 
 test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execState calc []</code></pre></div>
-<p>Unfortunately, this version has the same performance issue with the initial version because applications of <code>(++)</code> are left nested.</p>
+<p>Unfortunately, this version has the same performance issue with the initial version because applications of <code>(++)</code> are left-nested.</p>
 <p>But there is a magical trick that can change this situation.</p>
 <h1 id="backward-state-monad">Backward State Monad</h1>
 <p>The section “2.8 Variation six: Backwards state” of Philip Wadler’s <a href="https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/the-essence-of-functional-programming.pdf">The essence of functional programming</a> briefly mentions the <em>Backwards state</em> monad (also known as <em>reverse state monad</em>). This is a strange variant of the State monad where the state is propagated backward.</p>
