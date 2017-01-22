@@ -67,10 +67,11 @@ calc <span class="fu">=</span> <span class="kw">do</span>
 output x <span class="fu">=</span> tell [<span class="dt">LogEntry</span> x]
 
 test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execWriter calc</code></pre></div>
-<p>The code looks innocuous, but its performance deteriorates when the accumulated log gets bigger because the <code>Monoid</code> instance of <code>[]</code> uses <code>(++)</code> to append two lists. <code>(++)</code> is known to perform poorly when its left operand is big because it needs to copy all the elements of the left operand to append two lists. Unfortunately, the Writer monad associates <code>(++)</code> to the left.</p>
+<p>The code looks innocuous, but its performance deteriorates when the accumulated log gets bigger because the <code>Monoid</code> instance of <code>[]</code> uses <code>(++)</code> to append two lists.</p>
 <pre><code>do { tell [1]; tell [2]; tell [3]; tell[4]; tell [5] }
 =&gt;
 (((([1] ++ [2]) ++ [3]) ++ [4]) ++ [5])</code></pre>
+<p><code>(++)</code> is <a href="http://stackoverflow.com/a/13879693/2028189">known to perform poorly</a> when applications of <code>(++)</code> are left-nested.</p>
 <h1 id="difference-list">Difference List</h1>
 <p>One well-known solution is to use <em>the difference list</em> instead of an ordinary list. <code>DList</code> provides O(1) <code>append</code> and <code>snoc</code> operations on lists.</p>
 <p>The code is almost the same except we replaced <code>[LogEntry]</code> with <code>DList LogEntry</code>, but it scales well as the accumulated log gets bigger.</p>
@@ -107,7 +108,7 @@ test <span class="fu">=</span> mapM_ print <span class="fu">$</span> appEndo (ex
 <pre><code>([1]++) . ([2]++) . ([3]++) . ([4]++) . ([5]++) $ []
 =&gt;
 [1] ++ ([2] ++ ([3] ++ ([4] ++ ([5] ++ []))))</code></pre>
-<p>We can see that <code>(++)</code> operators are associated to the right!</p>
+<p>We can see that <code>(++)</code> operators are right nested.</p>
 <p>This also explains why <code>DList</code> in the previous section performs well because <code>DList</code> is just <code>Endo</code> specialized to lists.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">DList</span> a <span class="fu">=</span> <span class="dt">DL</span> {<span class="ot"> unDL ::</span> [a] <span class="ot">-&gt;</span> [a] }
 
@@ -126,7 +127,7 @@ calc <span class="fu">=</span> <span class="fu">...</span>
 output x <span class="fu">=</span> modify (<span class="fu">&lt;&gt;</span> [<span class="dt">LogEntry</span> x])
 
 test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execState calc []</code></pre></div>
-<p>Unfortunately, this version has the same performance issue with the initial version. As the accumulated log gets bigger, list append becomes slower because we need to copy all the elements of the accumulated logs.</p>
+<p>Unfortunately, this version has the same performance issue with the initial version because applications of <code>(++)</code> are left nested.</p>
 <p>But there is a magical trick that can change this situation.</p>
 <h1 id="backward-state-monad">Backward State Monad</h1>
 <p>The section “2.8 Variation six: Backwards state” of Philip Wadler’s <a href="https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/the-essence-of-functional-programming.pdf">The essence of functional programming</a> briefly mentions the <em>Backwards state</em> monad (also known as <em>reverse state monad</em>). This is a strange variant of the State monad where the state is propagated backward.</p>
@@ -153,7 +154,7 @@ calc <span class="fu">=</span> <span class="fu">...</span>
 output x <span class="fu">=</span> rmodify ([<span class="dt">LogEntry</span> x]<span class="fu">&lt;&gt;</span>)
 
 test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execRState calc []</code></pre></div>
-<p>This performs well because logs are accumulated from the end and <code>(++)</code> operators are associated to the right.</p>
+<p>This performs well because logs are accumulated from the end and applications of <code>(++)</code> are right nested!</p>
 <p>Readers who would like to know more about the backward state monads are referred to:</p>
 <ul>
 <li><a href="https://lukepalmer.wordpress.com/2008/08/10/mindfuck-the-reverse-state-monad/">Mindfuck: The Reverse State Monad</a> shows how to compute the fibonacci number using the reverse state monad.</li>
