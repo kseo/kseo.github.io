@@ -154,7 +154,7 @@ calc <span class="fu">=</span> <span class="fu">...</span>
 output x <span class="fu">=</span> rmodify ([<span class="dt">LogEntry</span> x]<span class="fu">&lt;&gt;</span>)
 
 test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execRState calc []</code></pre></div>
-<p>This performs well because logs are accumulated from the end and applications of <code>(++)</code> are right nested!</p>
+<p>Applications of <code>(++)</code> are right nested because logs are accumulated backward from the end.</p>
 <p>Readers who would like to know more about the backward state monads are referred to:</p>
 <ul>
 <li><a href="https://lukepalmer.wordpress.com/2008/08/10/mindfuck-the-reverse-state-monad/">Mindfuck: The Reverse State Monad</a> shows how to compute the fibonacci number using the reverse state monad.</li>
