@@ -48,7 +48,7 @@
         (b, w') <span class="ot">&lt;-</span> runWriterT (k a)
         return (b, w <span class="ot">`mappend`</span> w')</code></pre></div>
 <p><code>runWriterT</code> returns a pair whose second element is the output to accumulate. Because the output value is a <code>Monoid</code> instance, we can merge two outputs <code>w</code> and <code>w'</code> using <code>mappend</code> and return the combined output.</p>
-<p>Here is a simple example of the Writer monad. It accumulates <code>LogEntry</code>s in a list. (CAUTION: Do not use <code>WriterT</code> for plain logging in real world applications. It unnecessarily keeps the entire logs in memory. I recommend [fast-logger][fast-logger] for logging.)</p>
+<p>Here is a simple example of the Writer monad. It accumulates <code>LogEntry</code>s in a list. (CAUTION: Do not use <code>WriterT</code> for plain logging in real world applications. It unnecessarily keeps the entire logs in memory. I recommend <a href="https://hackage.haskell.org/package/fast-logger">fast-logger</a> for logging.)</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>
 <span class="kw">import </span><span class="dt">Control.Monad.Trans.Writer.Strict</span>
 
