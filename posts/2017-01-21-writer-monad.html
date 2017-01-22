@@ -73,7 +73,7 @@ test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execWriter 
 (((([1] ++ [2]) ++ [3]) ++ [4]) ++ [5])</code></pre>
 <p><code>(++)</code> is <a href="http://stackoverflow.com/a/13879693/2028189">known to perform poorly</a> when applications of <code>(++)</code> are left-nested.</p>
 <h1 id="difference-list">Difference List</h1>
-<p>One well-known solution is to use <em>the difference list</em> instead of an ordinary list. <code>DList</code> provides O(1) <code>append</code> and <code>snoc</code> operations on lists.</p>
+<p>One well-known solution is to use <em>the difference list</em> instead of an ordinary list. <code>DList</code> provides O(1) <code>append</code> and <code>snoc</code> operations on lists. <a href="http://h2.jaguarpaw.co.uk/posts/demystifying-dlist/">Demystifying DList</a> explains the how <code>DLIst</code> works in details.</p>
 <p>The code is almost the same except we replaced <code>[LogEntry]</code> with <code>DList LogEntry</code>, but it scales well as the accumulated log gets bigger.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.DList</span>
 
