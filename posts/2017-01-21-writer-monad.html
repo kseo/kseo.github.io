@@ -108,7 +108,7 @@ test <span class="fu">=</span> mapM_ print <span class="fu">$</span> appEndo (ex
 <pre><code>([1]++) . ([2]++) . ([3]++) . ([4]++) . ([5]++) $ []
 =&gt;
 [1] ++ ([2] ++ ([3] ++ ([4] ++ ([5] ++ []))))</code></pre>
-<p>We can see that <code>(++)</code> operators are right nested.</p>
+<p>We can see that <code>(++)</code> operators are right-nested.</p>
 <p>This also explains why <code>DList</code> in the previous section performs well because <code>DList</code> is just <code>Endo</code> specialized to lists.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">DList</span> a <span class="fu">=</span> <span class="dt">DL</span> {<span class="ot"> unDL ::</span> [a] <span class="ot">-&gt;</span> [a] }
 
@@ -154,7 +154,7 @@ calc <span class="fu">=</span> <span class="fu">...</span>
 output x <span class="fu">=</span> rmodify ([<span class="dt">LogEntry</span> x]<span class="fu">&lt;&gt;</span>)
 
 test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execRState calc []</code></pre></div>
-<p>Applications of <code>(++)</code> are right nested because logs are accumulated backward from the end.</p>
+<p>Applications of <code>(++)</code> are right-nested because logs are accumulated backward from the end.</p>
 <p>Readers who would like to know more about the backward state monads are referred to:</p>
 <ul>
 <li><a href="https://lukepalmer.wordpress.com/2008/08/10/mindfuck-the-reverse-state-monad/">Mindfuck: The Reverse State Monad</a> shows how to compute the fibonacci number using the reverse state monad.</li>
