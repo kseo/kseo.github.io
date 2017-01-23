@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Custom connection manager for http-client</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Custom connection manager for http-client</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 23, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/http-client.html">http-client</a>, <a href="../tags/Network.HTTP.Client.html">Network.HTTP.Client</a>, <a href="../tags/Manager.html">Manager</a>
+      
+  </div>
+
+<p><a href="https://www.stackage.org/haddock/lts-7.12/http-client-0.4.31.2/Network-HTTP-Client.html">http-client</a> provides the low-level API for HTTP client. In this post, I will explain how to create custom connection managers. If you want to know the basics of the library, read <a href="https://haskell-lang.org/library/http-client">Making HTTP requests</a> first.</p>
+<p>Every HTTP request is made via a <code>Manager</code>. It handles the details of creating connections to the server such as managing a connection pool. It also allows us to configure various settings and setup secure connections (HTTPS).</p>
+<p>The easiest way to create one is to use <code>newManager defaultManagerSettings</code> as follows.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.HTTP.Client</span>
+<span class="kw">import </span><span class="dt">Network.HTTP.Types.Status</span> (statusCode)
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  manager <span class="ot">&lt;-</span> newManager defaultManagerSettings
+
+  request <span class="ot">&lt;-</span> parseRequest <span class="st">&quot;http://httpbin.org/post&quot;</span>
+  response <span class="ot">&lt;-</span> httpLbs request manager
+
+  putStrLn <span class="fu">$</span> <span class="st">&quot;The status code was: &quot;</span> <span class="fu">++</span> (show <span class="fu">$</span> statusCode <span class="fu">$</span> responseStatus response)
+  print <span class="fu">$</span> responseBody response</code></pre></div>
+<p>But the default connection manager is not enough for some cases. One such case is the <em>docker remote API</em>. Because Docker listens on the unix domain socket by default for security reasons, we can’t access to the API using the default connection manager which directly connects using tcp.</p>
+<p>But we are not out of luck. We can configure the connection manager to create a <em>unix domain socket</em> instead of a <em>tcp socket</em> by setting a custom <code>managerRawConnection</code> field.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">managerRawConnection ::</span> <span class="dt">ManagerSettings</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">HostAddress</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Connection</span>)</code></pre></div>
+<p>It is used by <code>Manager</code> to create a new <code>Connection</code> from the host and port. So we can make the connection manager to create a unix socket by replacing the default implementation with <code>openUnixSocket</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Network.Socket</span> <span class="kw">as</span> <span class="dt">S</span>
+<span class="kw">import qualified</span> <span class="dt">Network.Socket.ByteString</span> <span class="kw">as</span> <span class="dt">SBS</span>
+<span class="kw">import </span><span class="dt">Network.HTTP.Client</span>
+<span class="kw">import </span><span class="dt">Network.HTTP.Client.Internal</span> (makeConnection)
+<span class="kw">import </span><span class="dt">Network.HTTP.Types.Status</span> (statusCode)
+
+<span class="ot">newUnixDomainSocketManager ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Manager</span>
+newUnixDomainSocketManager path <span class="fu">=</span> <span class="kw">do</span>
+  <span class="kw">let</span> mSettings <span class="fu">=</span> defaultManagerSettings { managerRawConnection <span class="fu">=</span> return <span class="fu">$</span> openUnixSocket path }
+  newManager mSettings
+  <span class="kw">where</span>
+    openUnixSocket filePath _ _ _ <span class="fu">=</span> <span class="kw">do</span>
+      s <span class="ot">&lt;-</span> S.socket <span class="dt">S.AF_UNIX</span> <span class="dt">S.Stream</span> S.defaultProtocol
+      S.connect s (<span class="dt">S.SockAddrUnix</span> filePath)
+      makeConnection (SBS.recv s <span class="dv">8096</span>)
+                     (SBS.sendAll s)
+                     (S.close s)</code></pre></div>
+<p>By creating a connection manager with “/var/run/docker.sock”, we can make a request to the docker. The code below returns the version of the docker.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  manager <span class="ot">&lt;-</span> newUnixDomainSocketManager
+   <span class="st">&quot;/var/run/docker.sock&quot;</span>
+  request <span class="ot">&lt;-</span> parseRequest <span class="st">&quot;http://192.168.99.100:2376/v1.25/version&quot;</span>
+  response <span class="ot">&lt;-</span> httpLbs request manager
+
+  putStrLn <span class="fu">$</span> <span class="st">&quot;The status code was: &quot;</span> <span class="fu">++</span> (show <span class="fu">$</span> statusCode <span class="fu">$</span> responseStatus response)
+  print <span class="fu">$</span> responseBody response</code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-23-custom-connection-manager-for-http-client.html";
+    this.page.identifier = "/posts/2017-01-23-custom-connection-manager-for-http-client.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>

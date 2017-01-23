@@ -8,8 +8,98 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2017-01-21T00:00:00Z</updated>
+    <updated>2017-01-23T00:00:00Z</updated>
     <entry>
+    <title>Custom connection manager for http-client</title>
+    <link href="http://kseo.github.io//posts/2017-01-23-custom-connection-manager-for-http-client.html" />
+    <id>http://kseo.github.io//posts/2017-01-23-custom-connection-manager-for-http-client.html</id>
+    <published>2017-01-23T00:00:00Z</published>
+    <updated>2017-01-23T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<a class="twitter-share-button"
+    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 23, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/http-client.html">http-client</a>, <a href="/tags/Network.HTTP.Client.html">Network.HTTP.Client</a>, <a href="/tags/Manager.html">Manager</a>
+      
+  </div>
+
+<p><a href="https://www.stackage.org/haddock/lts-7.12/http-client-0.4.31.2/Network-HTTP-Client.html">http-client</a> provides the low-level API for HTTP client. In this post, I will explain how to create custom connection managers. If you want to know the basics of the library, read <a href="https://haskell-lang.org/library/http-client">Making HTTP requests</a> first.</p>
+<p>Every HTTP request is made via a <code>Manager</code>. It handles the details of creating connections to the server such as managing a connection pool. It also allows us to configure various settings and setup secure connections (HTTPS).</p>
+<p>The easiest way to create one is to use <code>newManager defaultManagerSettings</code> as follows.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.HTTP.Client</span>
+<span class="kw">import </span><span class="dt">Network.HTTP.Types.Status</span> (statusCode)
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  manager <span class="ot">&lt;-</span> newManager defaultManagerSettings
+
+  request <span class="ot">&lt;-</span> parseRequest <span class="st">&quot;http://httpbin.org/post&quot;</span>
+  response <span class="ot">&lt;-</span> httpLbs request manager
+
+  putStrLn <span class="fu">$</span> <span class="st">&quot;The status code was: &quot;</span> <span class="fu">++</span> (show <span class="fu">$</span> statusCode <span class="fu">$</span> responseStatus response)
+  print <span class="fu">$</span> responseBody response</code></pre></div>
+<p>But the default connection manager is not enough for some cases. One such case is the <em>docker remote API</em>. Because Docker listens on the unix domain socket by default for security reasons, we can’t access to the API using the default connection manager which directly connects using tcp.</p>
+<p>But we are not out of luck. We can configure the connection manager to create a <em>unix domain socket</em> instead of a <em>tcp socket</em> by setting a custom <code>managerRawConnection</code> field.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">managerRawConnection ::</span> <span class="dt">ManagerSettings</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">HostAddress</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Connection</span>)</code></pre></div>
+<p>It is used by <code>Manager</code> to create a new <code>Connection</code> from the host and port. So we can make the connection manager to create a unix socket by replacing the default implementation with <code>openUnixSocket</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import qualified</span> <span class="dt">Network.Socket</span> <span class="kw">as</span> <span class="dt">S</span>
+<span class="kw">import qualified</span> <span class="dt">Network.Socket.ByteString</span> <span class="kw">as</span> <span class="dt">SBS</span>
+<span class="kw">import </span><span class="dt">Network.HTTP.Client</span>
+<span class="kw">import </span><span class="dt">Network.HTTP.Client.Internal</span> (makeConnection)
+<span class="kw">import </span><span class="dt">Network.HTTP.Types.Status</span> (statusCode)
+
+<span class="ot">newUnixDomainSocketManager ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">Manager</span>
+newUnixDomainSocketManager path <span class="fu">=</span> <span class="kw">do</span>
+  <span class="kw">let</span> mSettings <span class="fu">=</span> defaultManagerSettings { managerRawConnection <span class="fu">=</span> return <span class="fu">$</span> openUnixSocket path }
+  newManager mSettings
+  <span class="kw">where</span>
+    openUnixSocket filePath _ _ _ <span class="fu">=</span> <span class="kw">do</span>
+      s <span class="ot">&lt;-</span> S.socket <span class="dt">S.AF_UNIX</span> <span class="dt">S.Stream</span> S.defaultProtocol
+      S.connect s (<span class="dt">S.SockAddrUnix</span> filePath)
+      makeConnection (SBS.recv s <span class="dv">8096</span>)
+                     (SBS.sendAll s)
+                     (S.close s)</code></pre></div>
+<p>By creating a connection manager with “/var/run/docker.sock”, we can make a request to the docker. The code below returns the version of the docker.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  manager <span class="ot">&lt;-</span> newUnixDomainSocketManager
+   <span class="st">&quot;/var/run/docker.sock&quot;</span>
+  request <span class="ot">&lt;-</span> parseRequest <span class="st">&quot;http://192.168.99.100:2376/v1.25/version&quot;</span>
+  response <span class="ot">&lt;-</span> httpLbs request manager
+
+  putStrLn <span class="fu">$</span> <span class="st">&quot;The status code was: &quot;</span> <span class="fu">++</span> (show <span class="fu">$</span> statusCode <span class="fu">$</span> responseStatus response)
+  print <span class="fu">$</span> responseBody response</code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-23-custom-connection-manager-for-http-client.html";
+    this.page.identifier = "/posts/2017-01-23-custom-connection-manager-for-http-client.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></summary>
+</entry>
+<entry>
     <title>Writer monad</title>
     <link href="http://kseo.github.io//posts/2017-01-21-writer-monad.html" />
     <id>http://kseo.github.io//posts/2017-01-21-writer-monad.html</id>
@@ -1093,95 +1183,6 @@ c <span class="fu">=</span> <span class="kw">do</span>
 var disqus_config = function () {
     this.page.url = "https://kseo.github.io/posts/2017-01-12-indexed-monads.html";
     this.page.identifier = "/posts/2017-01-12-indexed-monads.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></summary>
-</entry>
-<entry>
-    <title>Double-barrelled Continuation Passing Style Interpreter</title>
-    <link href="http://kseo.github.io//posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html" />
-    <id>http://kseo.github.io//posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html</id>
-    <published>2017-01-10T00:00:00Z</published>
-    <updated>2017-01-10T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 10, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/double-barrelled.html">double-barrelled</a>, <a href="/tags/CPS.html">CPS</a>, <a href="/tags/interpreter.html">interpreter</a>
-      
-  </div>
-
-<p>In the <a href="https://kseo.github.io/posts/2017-01-09-continuation-passing-style-interpreter.html">Continuation Passing Style Interpreter</a>, we wrote a continuation-passing style interpreter for a small functional language and implemented the <em>escape expression</em> which is the binder form of Scheme’s <em>call/cc</em>.</p>
-<p>Though <em>call/cc</em> is a powerful control operator, it is generally considered as a <a href="http://okmij.org/ftp/continuations/against-callcc.html">bad abstraction</a> as a core language feature. So, in this post, we will drop escape expressions and add ML-style exceptions.</p>
-<p>Exceptions can be used to effect non-local transfers of control. By using an <em>exception handler</em> we may “catch” a raised exception and continue evaluation. For example,</p>
-<pre><code>1 + (raise 2)
-handle \x -&gt; x + 3</code></pre>
-<p>evaluates to <code>5</code> because <code>2</code> raised by <code>raise 2</code> is passed to the exception handler <code>\x -&gt; x + 3</code>.</p>
-<p>To support exceptions in our interpreter, <code>eval</code> function is modified to take two continuations: an exception-handler continuation, and a return continuation. This is the so-called <em>double-barrelled continuation-passing style</em> introduced in <a href="http://www.cs.bham.ac.uk/~hxt/research/HOSC-double-barrel.pdf">Comparing Control Constructs by Double-barrelled CPS</a>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
-eval env term h k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
-  <span class="dt">Var</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> env <span class="fu">!!</span> n
-  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VClosure</span> (\v k&#39; <span class="ot">-&gt;</span> eval (v <span class="fu">:</span> env) a h k&#39;)
-  <span class="dt">App</span> a b <span class="ot">-&gt;</span>
-    eval env a h <span class="fu">$</span> \(<span class="dt">VClosure</span> c) <span class="ot">-&gt;</span>
-    eval env b h <span class="fu">$</span> \v <span class="ot">-&gt;</span>
-    c v k
-
-  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VInt</span> n
-  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> eval env a h <span class="fu">$</span> \v1 <span class="ot">-&gt;</span>
-                eval env b h <span class="fu">$</span> \v2 <span class="ot">-&gt;</span>
-                k <span class="fu">$</span> evalPrim p v1 v2
-
-<span class="ot">evalExpr ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
-evalExpr e <span class="fu">=</span> eval emptyEnv e (\x <span class="ot">-&gt;</span> error <span class="st">&quot;uncaught exception&quot;</span>) id</code></pre></div>
-<p><code>h</code> is the exception-handler continuation and it is simply passed along the application of <code>eval</code>. <code>evalExpr</code> is also modified to handle an uncaught exception.</p>
-<p>Once our interpreter is transformed into a double-barrelled continuation-passing style, it is easy to add handle and raise expressions. First, let’s extend <code>Expr</code> with <code>Handle</code> and <code>Raise</code> nodes.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span>
-  <span class="fu">=</span> <span class="fu">...</span>
-  <span class="fu">|</span> <span class="dt">Handle</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
-  <span class="fu">|</span> <span class="dt">Raise</span> <span class="dt">Expr</span>
-  <span class="fu">...</span></code></pre></div>
-<p>Then extend <code>eval</code> function with two additional AST nodes.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
-eval env term h k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
-  <span class="fu">...</span>
-  <span class="dt">Raise</span> a <span class="ot">-&gt;</span> eval env a h h
-  <span class="dt">Handle</span> a b <span class="ot">-&gt;</span>
-    <span class="kw">let</span> h&#39; x <span class="fu">=</span> eval (x <span class="fu">:</span> env) b h k
-    <span class="kw">in</span> eval env a h&#39; k</code></pre></div>
-<p><code>Raise</code> evaluates <code>a</code> with both continuations set to the error-handler continuation <code>h</code>. So the value is passed to the current error-handler.</p>
-<p><code>Handle</code> sets up a new error-handler <code>h'</code> which evaluates <code>b</code> with the environment extended with the raised value <code>x</code>. Note that <code>a</code> is evaluated with the error-handler set to <code>h'</code> so that any exception raised while evaluating <code>a</code> is passed to <code>h'</code>.</p>
-<p>Let’s run the example above!</p>
-<pre><code>λ&gt; evalExpr $ (Prim Add (Lit 1) (Raise (Lit 2))) `Handle` (Prim Add (Var 0) (Lit 3))
-5</code></pre>
-<p>Yay, it works again!</p>
-<p>If you would like to know why we can’t implement exceptions using <em>call/cc</em> alone, please read Oleg Kiselyov’s article <a href="http://okmij.org/ftp/continuations/undelimited.html#delim-vs-undelim">Vast difference between delimited and undelimited continuations</a>.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html";
-    this.page.identifier = "/posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html";
 };
 (function() { // DON'T EDIT BELOW THIS LINE
     var d = document, s = d.createElement('script');
