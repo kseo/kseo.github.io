@@ -7,8 +7,176 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Mon, 23 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Tue, 24 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Generating the Docker client with servant-client</title>
+    <link>http://kseo.github.io//posts/2017-01-24-generating-the-docker-client-with-servant-client.html</link>
+    <description><![CDATA[<a class="twitter-share-button"
+    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 24, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/docker.html">docker</a>, <a href="/tags/API.html">API</a>, <a href="/tags/servant.html">servant</a>, <a href="/tags/servant-client.html">servant-client</a>
+      
+  </div>
+
+<p><a href="http://haskell-servant.readthedocs.io/en/stable/">Servant</a> provides a type-level DSL for declaring web APIs. Once we write the specification with the DSL, we can do various things including:</p>
+<ul>
+<li>Write servers (this part of servant can be considered a web framework),</li>
+<li>Obtain client functions (in Haskell),</li>
+<li>Generate client functions for other programming languages,</li>
+<li>Generate documentation for your web applications</li>
+</ul>
+<p>The primary use case of Servant is to write servers, but we can use <a href="https://hackage.haskell.org/package/servant-client">servant-client</a> to generate client functions for the pre-existing web servers too! In this post, I will show you how we can generate client functions for the <a href="https://docs.docker.com/engine/api/">Docket remote API</a> automatically with servant-client.</p>
+<h1 id="api-specification">API specification</h1>
+<p>To make the exposition simple, we will specify only three APIs: <code>ping</code>, <code>version</code> and <code>containerList</code>.</p>
+<p>The simplest API is <a href="https://docs.docker.com/engine/api/v1.25/#operation/SystemPing">Ping</a> which tests if the server is accessible. Its path is <code>/v1.25/_ping</code> and it returns <code>OK</code> as a plain text with status code 200. We can succinctly describe this endpoint with Servant’s type-level DSL.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Ping</span> <span class="fu">=</span> <span class="st">&quot;_ping&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[PlainText] Text</span></code></pre></div>
+<p><a href="https://docs.docker.com/engine/api/v1.25/#operation/SystemVersion">Version</a> is a slightly more complex API which returns the version information as JSON. <code>Version</code> data type has the required fields and it declares an instance of <code>FromJSON</code> for unmarshalling JSON data into <code>Version</code>. <code>fieldLabelModifier</code> is used to bridge JSON field names to <code>Version</code> field names.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Version</span> <span class="fu">=</span> <span class="st">&quot;version&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[JSON] Version</span>
+
+<span class="kw">data</span> <span class="dt">Version</span> <span class="fu">=</span> <span class="dt">Version</span>
+  {<span class="ot"> versionVersion       ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionApiVersion    ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionMinAPIVersion ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionGitCommit     ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionGoVersion     ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionOs            ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionArch          ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionKernelVersion ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionExperimental  ::</span> <span class="dt">Bool</span>
+  ,<span class="ot"> versionBuildTime     ::</span> <span class="dt">Text</span>
+  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Generic</span>)
+
+<span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Version</span> <span class="kw">where</span>
+  parseJSON <span class="fu">=</span> genericParseJSON opts
+    <span class="kw">where</span> opts <span class="fu">=</span> defaultOptions { fieldLabelModifier <span class="fu">=</span> stripPrefix <span class="st">&quot;version&quot;</span> }
+
+<span class="ot">stripPrefix ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+stripPrefix prefix <span class="fu">=</span> fromJust <span class="fu">.</span> DL.stripPrefix prefix</code></pre></div>
+<p>Finally, <a href="https://docs.docker.com/engine/api/v1.25/#operation/ContainerList">ContainerList</a> returns the list of containers. The API takes optional query parameters such as <code>all</code>, <code>limit</code>, <code>size</code> and <code>filters</code> as specified follows. We created a newtype wrapper for <code>ContainerID</code> and declared <code>FromJSON</code> instances for <code>ContainerID</code> and <code>Container</code>. Some fields are omitted for brevity.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ContainerList</span> <span class="fu">=</span> <span class="st">&quot;containers&quot;</span> <span class="fu">:&gt;</span> <span class="st">&quot;json&quot;</span> <span class="fu">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;all&quot;</span> <span class="dt">Bool</span>
+                                            <span class="fu">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;limit&quot;</span> <span class="dt">Int</span>
+                                            <span class="fu">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;size&quot;</span> <span class="dt">Bool</span>
+                                            <span class="fu">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;filters&quot;</span> <span class="dt">Text</span>
+                                            <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[JSON] [Container]</span>
+
+<span class="kw">newtype</span> <span class="dt">ContainerID</span> <span class="fu">=</span> <span class="dt">ContainerID</span> <span class="dt">Text</span>
+  <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)
+
+<span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">ContainerID</span>
+
+<span class="kw">data</span> <span class="dt">Container</span> <span class="fu">=</span> <span class="dt">Container</span>
+  {<span class="ot"> containerId               ::</span> <span class="dt">ContainerID</span>
+  ,<span class="ot"> containerNames            ::</span> [<span class="dt">Text</span>]
+  ,<span class="ot"> containerImage            ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> containerImageID          ::</span> <span class="dt">ImageID</span>
+  ,<span class="ot"> containerCommand          ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> containerCreated          ::</span> <span class="dt">Int</span>
+  <span class="co">-- FIXME: Add Ports</span>
+  ,<span class="ot"> containerSizeRw           ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span>
+  ,<span class="ot"> containerSizeRootFs       ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span>
+  <span class="co">-- FIXME: Add Labels</span>
+  ,<span class="ot"> containerState            ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> containerStatus           ::</span> <span class="dt">Text</span>
+  <span class="co">-- FIXME: Add HostConfig</span>
+  <span class="co">-- FIXME: Add NetworkSettings</span>
+  <span class="co">-- FIXME: Add Mounts</span>
+  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Generic</span>)</code></pre></div>
+<p>Our API is just the combination of these endpoints.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Api</span> <span class="fu">=</span> <span class="dt">Ping</span> <span class="fu">:&lt;|&gt;</span> <span class="dt">Version</span> <span class="fu">:&lt;|&gt;</span> <span class="dt">ContainerList</span></code></pre></div>
+<h1 id="api-versioning">API Versioning</h1>
+<p>Because the Docker remote API has many versions, it adds a version prefix in the path. Servant allows us to expression this version scheme by declaring a new Api with the version prefix.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ApiV1_25</span> <span class="fu">=</span> <span class="st">&quot;v1.25&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Api</span></code></pre></div>
+<p>We can also mix-and-match many endpoints as the Docker remote API changes. Let’a assume that the docker API version v1.26 changed the specification of the Version endpoint. We can reuse unchanged endpoints by replacing only the changed endpoints with new ones.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Version1_26</span> <span class="fu">=</span> <span class="fu">...</span>
+<span class="kw">type</span> <span class="dt">ApiV1_26</span> <span class="fu">=</span> <span class="st">&quot;v1.26&quot;</span> <span class="fu">:&gt;</span> (<span class="dt">Ping</span> <span class="fu">:&lt;|&gt;</span> <span class="dt">Version1_26</span> <span class="fu">:&lt;|&gt;</span> <span class="dt">ContainerList</span>)</code></pre></div>
+<h1 id="generating-client-functions">Generating Client Functions</h1>
+<p>Now it’s time to generate client functions from the specification. It’s super easy! We can simply pass our API to <code>client</code> function.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">ping ::</span> <span class="dt">ClientM</span> <span class="dt">Text</span>
+<span class="ot">version ::</span> <span class="dt">ClientM</span> <span class="dt">Version</span>
+<span class="ot">containerList&#39; ::</span> <span class="dt">Maybe</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">ClientM</span> [<span class="dt">Container</span>]
+
+ping
+  <span class="fu">:&lt;|&gt;</span> version
+  <span class="fu">:&lt;|&gt;</span> containerList&#39; <span class="fu">=</span> client apiV1_25</code></pre></div>
+<p><code>ping</code> and <code>version</code> functions are okay, but the signature <code>containerList'</code> is a bit confusing. We have to pass four <code>Maybe</code> values and two of them have the <code>Bool</code> type and it is not easy to remember the order of the arguments. We can improve the function by declaring a wrapper function <code>containerList</code>. It takes a <code>ContainerListOptions</code>, and the users of the function can pass <code>defaultContainerListOptions</code> as the default value.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">ContainerListOptions</span> <span class="fu">=</span> <span class="dt">ContainerListOptions</span>
+  {<span class="ot"> containerListOptionAll     ::</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>
+  ,<span class="ot"> containerListOptionLimit   ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span>
+  ,<span class="ot"> containerListOptionSize    ::</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>
+  ,<span class="ot"> containerListOptionFilters ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>
+  } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
+
+<span class="ot">defaultContainerListOptions ::</span> <span class="dt">ContainerListOptions</span>
+defaultContainerListOptions <span class="fu">=</span> <span class="dt">ContainerListOptions</span>
+  { containerListOptionAll     <span class="fu">=</span> <span class="dt">Just</span> <span class="dt">False</span>
+  , containerListOptionLimit   <span class="fu">=</span> <span class="dt">Nothing</span>
+  , containerListOptionSize    <span class="fu">=</span> <span class="dt">Just</span> <span class="dt">False</span>
+  , containerListOptionFilters <span class="fu">=</span> <span class="dt">Nothing</span>
+  }
+
+<span class="ot">containerList ::</span> <span class="dt">ContainerListOptions</span> <span class="ot">-&gt;</span> <span class="dt">ClientM</span> [<span class="dt">Container</span>]
+containerList opt <span class="fu">=</span> containerList&#39; (containerListOptionAll opt)
+                                   (containerListOptionLimit opt)
+                                   (containerListOptionSize opt)
+                                   (containerListOptionFilters opt)</code></pre></div>
+<p>Because the expressiveness of Haskell is much more powerful than that of the REST API specification, these wrappings are somewhat unavoidable to make our client functions more Haskell-friendly.</p>
+<h1 id="using-client-functions">Using Client Functions</h1>
+<p>Now our client functions for the Docker API is ready. We need to prepare a <code>ClientEnv</code> by passing the host, port and url prefix of the server. We also created a custom connection manager which uses the domain socket for communication because the Docker server listens on the domain socket by default. Interested readers are referred to my previous article <a href="https://kseo.github.io/posts/2017-01-23-custom-connection-manager-for-http-client.html">Custom connection manager for http-client</a> for the implementation details of <code>newUnixSocketManager</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">query ::</span> <span class="dt">ClientM</span> [<span class="dt">Container</span>]
+query <span class="fu">=</span> <span class="kw">do</span>
+  ok <span class="ot">&lt;-</span> ping
+  liftIO <span class="fu">$</span>  print ok
+  version <span class="ot">&lt;-</span> version
+  liftIO <span class="fu">$</span> print (versionVersion version)
+  containerList defaultContainerListOptions
+
+<span class="ot">app ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+app host port <span class="fu">=</span> <span class="kw">do</span>
+  manager <span class="ot">&lt;-</span> newUnixSocketManager <span class="st">&quot;/var/run/docker.sock&quot;</span>
+  res <span class="ot">&lt;-</span> runClientM query (<span class="dt">ClientEnv</span> manager (<span class="dt">BaseUrl</span> <span class="dt">Http</span> host port <span class="st">&quot;&quot;</span>))
+  <span class="kw">case</span> res <span class="kw">of</span>
+    <span class="dt">Left</span> err          <span class="ot">-&gt;</span> putStrLn <span class="fu">$</span> <span class="st">&quot;Error: &quot;</span> <span class="fu">++</span> show err
+    <span class="dt">Right</span> containers  <span class="ot">-&gt;</span> mapM_ print containers</code></pre></div>
+<p>Because <code>ClientM</code> is a monad, we can combine multiple monadic actions into one. <code>query</code> function pings the server, queries the version information and then request the list of containers.</p>
+<h1 id="swagger">Swagger</h1>
+<p>So far I manually specified the API with Servant’s DSL, but if the server has the <a href="http://swagger.io/">Swagger</a> specification we can even generate the Servant DSL from the Swagger specification. <a href="https://github.com/swagger-api/swagger-codegen">swagger-codegen</a> has the <a href="https://github.com/swagger-api/swagger-codegen/blob/master/modules/swagger-codegen/src/main/java/io/swagger/codegen/languages/HaskellServantCodegen.java">HaskellServantCodegen</a>, so we can use it! (I haven’t tried it yet.)</p>
+<h1 id="wrap-up">Wrap-up</h1>
+<p>Writing client functions for existing servers are boring and repetitive. With <em>servant-client</em>, we no longer need to write these functions. We just specify the API and Servant writes the client functions for us. Have fun with Servant!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-24-generating-the-docker-client-with-servant-client.html";
+    this.page.identifier = "/posts/2017-01-24-generating-the-docker-client-with-servant-client.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Tue, 24 Jan 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-01-24-generating-the-docker-client-with-servant-client.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Custom connection manager for http-client</title>
     <link>http://kseo.github.io//posts/2017-01-23-custom-connection-manager-for-http-client.html</link>
     <description><![CDATA[<a class="twitter-share-button"
@@ -1059,140 +1227,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Fri, 13 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-13-constraint-kinds.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Indexed Monads</title>
-    <link>http://kseo.github.io//posts/2017-01-12-indexed-monads.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 12, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/indexed.html">indexed</a>, <a href="/tags/monad.html">monad</a>
-      
-  </div>
-
-<p>In this post, I am going to introduce <em>indexed monads</em>, which generalize monads with additional type parameters carrying the information about the computational effects.</p>
-<h1 id="motivation">Motivation</h1>
-<p>The State monad represents computations with a state that can be queried and updated. For example, an <code>Int</code> state is queried and updated during the computation of <code>c</code> in the following example. While the value of the state is changed from <code>0</code> to <code>1</code>, the type of the state remains the same during the entire computation.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.State</span>
-
-test1 <span class="fu">=</span> runState c (<span class="dv">0</span><span class="ot">::</span><span class="dt">Int</span>) <span class="kw">where</span>
-         c <span class="fu">=</span> <span class="kw">do</span>
-             v <span class="ot">&lt;-</span> get
-             put (succ v)
-             return v
-<span class="co">-- (0, 1)</span></code></pre></div>
-<p>This is okay in most cases, but we sometimes want to express a computation where not only the value but also the type of the state can be changed. The vanilla State monad is not general enough to express this requirement.</p>
-<h1 id="indexed-monads">Indexed Monads</h1>
-<p>Indexed monads are a generalization of monads that index each monadic type by an initial (type)state and a final (type)state. <code>m</code> is a type constructor for three type arguments, <code>p</code>, <code>q</code> and <code>a</code>. The argument <code>a</code> is the type of values produced by the monadic computation. <code>p</code> and <code>q</code> represent the types of the state before and after the computation.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">IxMonad</span> m <span class="kw">where</span>
-<span class="ot">    ireturn ::</span> a <span class="ot">-&gt;</span> m p p a
-<span class="ot">    ibind ::</span> m p q a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m q r b) <span class="ot">-&gt;</span> m p r b</code></pre></div>
-<p><code>ireturn</code> and <code>ibind</code> must meet the monad laws as the ordinary monads do. <code>ibind</code> is required to be associative and <code>ireturn</code> to be the left and the right unit of <code>ibind</code>.</p>
-<p>All ordinary monads can be injected into <code>IxMonad</code> with a newtype wrapper <code>MW</code>. It is a <em>phantom type</em> as the type parameters <code>p</code> and <code>q</code> are not used on the right hand-side of <code>MW</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">MW</span> m p q a <span class="fu">=</span> <span class="dt">MW</span> {<span class="ot"> unMW::</span> m a }
-
-<span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxMonad</span> (<span class="dt">MW</span> m) <span class="kw">where</span>
-    ireturn <span class="fu">=</span> <span class="dt">MW</span> <span class="fu">.</span> return
-    ibind (<span class="dt">MW</span> m) f <span class="fu">=</span> <span class="dt">MW</span> (m <span class="fu">&gt;&gt;=</span> unMW <span class="fu">.</span> f)</code></pre></div>
-<p>Here is an example of using the ordinary <code>State</code> monad wrapped with <code>MW</code>. <code>iget</code> and <code>iput</code> wraps the result with <code>MW</code> newtype wrapper.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">iget ::</span> (<span class="dt">MonadState</span> s m) <span class="ot">=&gt;</span> <span class="dt">MW</span> m s s s
-iget <span class="fu">=</span> <span class="dt">MW</span> get
-
-<span class="ot">iput ::</span> (<span class="dt">MonadState</span> s m) <span class="ot">=&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">MW</span> m s s ()
-iput <span class="fu">=</span> <span class="dt">MW</span> <span class="fu">.</span> put
-
-test2 <span class="fu">=</span> runState (unMW c) (<span class="dv">0</span><span class="ot">::</span><span class="dt">Int</span>) <span class="kw">where</span>
-         c <span class="fu">=</span> iget <span class="ot">`ibind`</span> (
-               \v <span class="ot">-&gt;</span> iput (succ v) <span class="ot">`ibind`</span> (
-                 \_ <span class="ot">-&gt;</span> ireturn v))
-<span class="co">-- (0, 1)</span></code></pre></div>
-<h1 id="indexed-state-monad">Indexed State Monad</h1>
-<p><code>IxStateT</code> defines an indexed state monad where <code>si</code> and <code>so</code> represents the input and the output state type respectively. The definition of <code>IxStateT</code> is similar to that of <code>StateT</code> except that the type of the state can be changed during the computation.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">IxStateT</span> m si so v <span class="fu">=</span> <span class="dt">IxStateT</span> {<span class="ot"> runIxStateT::</span> si <span class="ot">-&gt;</span> m (so,v) }
-
-<span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxMonad</span> (<span class="dt">IxStateT</span> m) <span class="kw">where</span>
-  ireturn x <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (si,x))
-  ibind (<span class="dt">IxStateT</span> m) f <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> m si <span class="fu">&gt;&gt;=</span> (\ (sm,x) <span class="ot">-&gt;</span> runIxStateT (f x) sm))
-
-<span class="ot">vsget ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m si si si
-vsget <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (si,si))
-
-<span class="ot">vsput ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> so <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m si so ()
-vsput x <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (x,()))</code></pre></div>
-<p>The following example gets an <code>Int</code> from the state and puts a <code>String</code> into the state. We can see that the type of the state is changed from <code>Int</code> to <code>String</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">test3 <span class="fu">=</span> runIxStateT c (<span class="dv">0</span><span class="ot">::</span><span class="dt">Int</span>) <span class="fu">&gt;&gt;=</span> print <span class="kw">where</span>
-         c <span class="fu">=</span> vsget <span class="ot">`ibind`</span> (
-               \v <span class="ot">-&gt;</span> vsput (show v) <span class="ot">`ibind`</span> (
-                 \_ <span class="ot">-&gt;</span> vsget <span class="ot">`ibind`</span> (
-                   \v&#39; <span class="ot">-&gt;</span> ireturn (v,v&#39;))))
-<span class="co">-- (&quot;0&quot;,(0,&quot;0&quot;))</span></code></pre></div>
-<h1 id="do-notation">Do notation</h1>
-<p>The <code>IxMonad</code> examples above looks ugly as we couldn’t use the do notation. Fortunately, <code>-XRebindableSyntax</code> extension allows us to overload the do-notation by providing alternative definitions that are local to the module.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE RebindableSyntax #-}</span>
-
-<span class="kw">import </span><span class="dt">Prelude</span> <span class="kw">hiding</span> ((&gt;&gt;=), (&gt;&gt;), return)
-<span class="kw">import </span><span class="dt">IxState</span>
-
-return<span class="ot"> ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m si si a
-return <span class="fu">=</span> ireturn
-
-<span class="ot">(&gt;&gt;=) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m p q a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m q r b) <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m p r b
-(<span class="fu">&gt;&gt;=</span>) <span class="fu">=</span> ibind
-
-<span class="ot">(&gt;&gt;) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m p q a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m q r b <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m p r b
-v <span class="fu">&gt;&gt;</span> w <span class="fu">=</span> v <span class="fu">&gt;&gt;=</span> \_ <span class="ot">-&gt;</span> w
-
-<span class="ot">c ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m <span class="dt">Int</span> <span class="dt">String</span> (<span class="dt">Int</span>, <span class="dt">String</span>)
-c <span class="fu">=</span> <span class="kw">do</span>
-  v <span class="ot">&lt;-</span> vsget
-  vsput (show v)
-  v&#39; <span class="ot">&lt;-</span> vsget
-  return (v, v&#39;)</code></pre></div>
-<h1 id="other-definitions">Other definitions</h1>
-<p>There are multiple ways to define indexed monads. The one used here is from Robert Atkey’s <a href="http://bentnib.org/paramnotions-jfp.pdf">Parameterised Notions of Computation</a>.</p>
-<p>Other definitions include:</p>
-<ul>
-<li>McBride: <a href="https://personal.cis.strath.ac.uk/conor.mcbride/Kleisli.pdf">Kleisli Arrows of Outrageous Fortune</a></li>
-<li>Orchard: <a href="http://www.cl.cam.ac.uk/~dao29/ixmonad/ixmonad-fita14.pdf">Fun with indexed monads</a></li>
-</ul>
-<h1 id="references">References</h1>
-<ol style="list-style-type: decimal">
-<li>Oleg Kiselyov’s <a href="http://okmij.org/ftp/Computation/monads.html#param-monad">Parameterized `monad’</a></li>
-<li><a href="http://dev.stephendiehl.com/hask/#indexed-monads">Indexed Monad section</a> of Stephen Diehl’s What I Wish I Knew When Learning Haskell</li>
-</ol>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-12-indexed-monads.html";
-    this.page.identifier = "/posts/2017-01-12-indexed-monads.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Thu, 12 Jan 2017 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2017-01-12-indexed-monads.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
