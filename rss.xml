@@ -7,8 +7,122 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Tue, 24 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Wed, 25 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Write your own stream processing library Part1</title>
+    <link>http://kseo.github.io//posts/2017-01-25-write-your-own-stream-processing-library-part1.html</link>
+    <description><![CDATA[<a class="twitter-share-button"
+    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 25, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="/tags/coroutine.html">coroutine</a>, <a href="/tags/generator.html">generator</a>, <a href="/tags/iteratee.html">iteratee</a>, <a href="/tags/pipeline.html">pipeline</a>, <a href="/tags/conduit.html">conduit</a>, <a href="/tags/pipes.html">pipes</a>
+      
+  </div>
+
+<p><a href="https://hackage.haskell.org/package/pipes">pipes</a> and <a href="https://hackage.haskell.org/package/conduit">conduit</a> are two competing libraries for handling stream data processing in Haskell. Though both libraries provide excellent tutorials on the usage of the libraries, the implementation details are impenetrable to most Haskell programmers.</p>
+<p>The best way to understand how these streaming libraries work is to write a minimalistic version by ourselves. In this post, I will show you how we can write a small streaming data library with <em>coroutine</em>. Our implementation is based on Mario Blazevic’s excellent article <a href="https://themonadreader.files.wordpress.com/2011/10/issue19.pdf">Coroutine Pipelines</a>.</p>
+<h1 id="generator">Generator</h1>
+<p><code>Generator</code> is a monad transformer which allows the base monad to pause its computation and yields a value. This corresponds to <code>Producer</code> of pipes or <code>Source</code> of conduit.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE LambdaCase #-}</span>
+
+<span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="kw">import </span><span class="dt">Control.Monad.Trans.Class</span>
+
+<span class="kw">newtype</span> <span class="dt">Generator</span> a m x <span class="fu">=</span>
+  <span class="dt">Generator</span> {<span class="ot"> bounceGen ::</span> m (<span class="dt">Either</span> (a, <span class="dt">Generator</span> a m x) x) }</code></pre></div>
+<p><code>Generator a m x</code> represents a computation which yields values of type <code>a</code> on top of the base monad <code>m</code> and returns a value of type <code>x</code>.</p>
+<p><code>Either</code> indicates that <code>Generator</code> has two cases:</p>
+<ul>
+<li><code>(a, Generator a m x)</code>: A pair of a yielded value and a suspension to be resumed.</li>
+<li><code>x</code>: A return value <code>x</code>.</li>
+</ul>
+<p>The enclosing <code>m</code> allows us to perform monadic actions while running the generator.</p>
+<p>The definition of <code>Monad</code> instance for <code>Generator</code> is as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Monad</span> (<span class="dt">Generator</span> a m) <span class="kw">where</span>
+  return  <span class="fu">=</span> <span class="dt">Generator</span> <span class="fu">.</span> return <span class="fu">.</span> <span class="dt">Right</span>
+  t <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Generator</span> <span class="fu">$</span> bounceGen t
+                      <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span> <span class="dt">Left</span> (a, cont) <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">Left</span> (a, cont <span class="fu">&gt;&gt;=</span> f)
+                                <span class="dt">Right</span> x <span class="ot">-&gt;</span> bounceGen (f x)
+
+<span class="kw">instance</span> <span class="dt">MonadTrans</span> (<span class="dt">Generator</span> a) <span class="kw">where</span>
+  lift <span class="fu">=</span> <span class="dt">Generator</span> <span class="fu">.</span> liftM <span class="dt">Right</span>
+
+<span class="ot">yield ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Generator</span> a m ()
+yield a <span class="fu">=</span> <span class="dt">Generator</span> (return <span class="fu">$</span> <span class="dt">Left</span> (a, return ()))</code></pre></div>
+<p><code>&gt;&gt;=</code> operator has two cases to consider. If <code>t</code> is a suspension (<code>Left</code> case), it yields <code>a</code> and combines the remaining computation <code>cont</code> with <code>f</code>. If <code>t</code> is a value <code>x</code> (<code>Right</code> case), it continues the computation by passing the value to <code>f</code>. Once we define <code>&gt;&gt;=</code> this way, the definition of <code>yield</code> is straightforward. It yields a value and does nothing more.</p>
+<p>To run a <code>Generator</code>, we need <code>runGenerator</code> function which collects the yielded values while executing the generator. <code>run'</code> uses a <a href="https://wiki.haskell.org/Difference_list">difference list</a> to collect yielded values and converts it to the normal list by applying <code>[]</code> at the end.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">runGenerator ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Generator</span> a m x <span class="ot">-&gt;</span> m ([a], x)
+runGenerator <span class="fu">=</span> run&#39; id <span class="kw">where</span>
+  run&#39; f g <span class="fu">=</span> bounceGen g
+             <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span> <span class="dt">Left</span> (a, cont) <span class="ot">-&gt;</span> run&#39; (f<span class="fu">.</span>(a<span class="fu">:</span>)) cont
+                       <span class="dt">Right</span> x <span class="ot">-&gt;</span> return (f [], x)</code></pre></div>
+<p>Now we are ready to create generators. <code>triple</code> is a generator which yields the given value three times.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">triple ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Generator</span> a m ()
+triple x <span class="fu">=</span> <span class="kw">do</span>
+    yield x
+    yield x
+    yield x</code></pre></div>
+<p>Running <code>triple 3</code> returns <code>([3, 3, 3], ())</code> as expected.</p>
+<pre><code>λ&gt; runGenerator $ triple 3
+([3,3,3],())</code></pre>
+<p>When the base monad is <code>IO</code>, we can interleave IO actions. For example, <code>loop</code> yields the line input from the stdin until an empty string is read.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">loop ::</span> <span class="dt">Generator</span> <span class="dt">String</span> <span class="dt">IO</span> ()
+loop <span class="fu">=</span> <span class="kw">do</span>
+    str <span class="ot">&lt;-</span> lift getLine
+    when (str <span class="fu">/=</span> <span class="st">&quot;&quot;</span>) <span class="fu">$</span> <span class="kw">do</span>
+      yield str
+      loop</code></pre></div>
+<pre><code>λ&gt; runGenerator loop
+Hello
+world!
+
+([&quot;Hello&quot;,&quot;world!&quot;],())</code></pre>
+<p>It is even possible to mix two generators by alternating each generator.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">alternate ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Generator</span> a m () <span class="ot">-&gt;</span> <span class="dt">Generator</span> a m () <span class="ot">-&gt;</span> <span class="dt">Generator</span> a m ()
+alternate g1 g2 <span class="fu">=</span> <span class="dt">Generator</span> <span class="fu">$</span> liftM2 go (bounceGen g1) (bounceGen g2)
+  <span class="kw">where</span>
+    go (<span class="dt">Left</span> (a, cont)) (<span class="dt">Left</span> (b, cont&#39;)) <span class="fu">=</span> <span class="dt">Left</span>  (a, <span class="dt">Generator</span> <span class="fu">$</span> return <span class="fu">$</span> <span class="dt">Left</span> (b, alternate cont cont&#39;))
+    go (<span class="dt">Left</span> (a, cont)) (<span class="dt">Right</span> _)         <span class="fu">=</span> <span class="dt">Left</span>  (a, cont)
+    go (<span class="dt">Right</span> _)        (<span class="dt">Left</span> (b, cont))  <span class="fu">=</span> <span class="dt">Left</span>  (b, cont)
+    go (<span class="dt">Right</span> _)        (<span class="dt">Right</span> _)         <span class="fu">=</span> <span class="dt">Right</span> ()</code></pre></div>
+<p>We can see that the outputs of <code>triple 1</code> and <code>triple 2</code> are intermingled.</p>
+<pre><code>λ&gt; runGenerator $ alternate (triple 1) (triple 2)
+([1,2,1,2,1,2],())</code></pre>
+<p>Part 2 of this post will continue the discussion with <em>Iteratees</em>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-25-write-your-own-stream-processing-library-part1.html";
+    this.page.identifier = "/posts/2017-01-25-write-your-own-stream-processing-library-part1.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+]]></description>
+    <pubDate>Wed, 25 Jan 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-01-25-write-your-own-stream-processing-library-part1.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Generating the Docker client with servant-client</title>
     <link>http://kseo.github.io//posts/2017-01-24-generating-the-docker-client-with-servant-client.html</link>
     <description><![CDATA[<a class="twitter-share-button"
@@ -1110,123 +1224,6 @@ var disqus_config = function () {
 ]]></description>
     <pubDate>Sat, 14 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Constraint Kinds</title>
-    <link>http://kseo.github.io//posts/2017-01-13-constraint-kinds.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 13, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/constraints.html">constraints</a>, <a href="/tags/kinds.html">kinds</a>
-      
-  </div>
-
-<p>In this blog post, I will show some examples of using the <a href="https://downloads.haskell.org/~ghc/8.0.2/docs/html/users_guide/glasgow_exts.html#the-constraint-kind">ConstraintKinds</a> GHC extension.</p>
-<h1 id="constraints">Constraints</h1>
-<p>Constraints in Haskell mean one of the following things:</p>
-<ul>
-<li>Class constraints, e.g. <code>Show a</code></li>
-<li><em>Implicit parameter constraints</em>, e.g. <code>?x::Int</code> (with the <code>-XImplicitParams</code> flag)</li>
-<li><em>Equality constraints</em>, e.g. <code>a ~ Int</code> (with the <code>-XTypeFamilies</code> or <code>-XGADTs</code> flag)</li>
-<li>Tuples of any of the above, e.g., <code>(Show a, a ~ Int)</code></li>
-</ul>
-<p>These constraints can only occur to the left of =&gt; arrow in standard Haskell.</p>
-<h1 id="kinds">Kinds</h1>
-<p>In Haskell, types have types which are called <em>kinds</em>.</p>
-<ul>
-<li>The kind <code>*</code> is for types that have terms (even though not every type of kind <code>*</code> needs be inhabited if we exclude ⊥).</li>
-<li><code>k -&gt; l</code> forms a function kind to indicate types of kind <code>l</code> that are parameterized over types of kind <code>k</code>.</li>
-</ul>
-<p>Examples:</p>
-<ul>
-<li>kind <code>*</code>: <code>Char</code>, <code>Bool</code>, <code>Char -&gt; Bool</code>, <code>Maybe Int</code>, <code>[Int]</code></li>
-<li>kind <code>* -&gt; *</code>: <code>Maybe</code>, <code>[]</code></li>
-<li>kind <code>* -&gt; * -&gt; *</code>: <code>Either</code>, <code>(,)</code></li>
-</ul>
-<p>While <em>data</em> introduces types of kind <code>*</code>, <em>classes</em> introduce types of kind <code>Constraint</code>.</p>
-<ul>
-<li>Classes such as <code>Show</code>, <code>Eq</code> or <code>Ord</code> are of kind <code>* -&gt; Constraint</code>. They form a class constraint when applied to types of kind <code>*</code>.</li>
-<li>Classes such as <code>Functor</code> or <code>Monad</code> are of kind <code>(* -&gt; *) -&gt; Constraint</code>. They form a class constraint when applied to type constructors of kind <code>* -&gt; *</code>.</li>
-</ul>
-<p>We can use tuple syntax to create empty constraints and combine constraints.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">NoConstraint</span> <span class="fu">=</span> (<span class="ot">() ::</span> <span class="dt">Constraint</span>)
-<span class="kw">type</span> <span class="dt">Text</span> a <span class="fu">=</span> (<span class="dt">Read</span> a, <span class="dt">Show</span> a)</code></pre></div>
-<h1 id="constraintkinds">ConstraintKinds</h1>
-<p>Classes and contexts were not first-class citizens in Haskell, but the introduction of the <em>Constraint kind</em> has changed this and allows them to be used as parameters of types.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE ConstraintKinds #-}</span></code></pre></div>
-<p>With this extension, constraints can be used in new ways:</p>
-<ul>
-<li>Aliases of classes, partially applied classes, and contexts can be defined using type declarations</li>
-<li>Families of classes, partially applied classes, and contexts can be defined using type synonym families</li>
-</ul>
-<p>Let’s visit each use case with concrete examples.</p>
-<h1 id="constraint-synonyms">Constraint synonyms</h1>
-<p>Since constraints are now just types, type synonyms can be reused on constraints.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Text</span> a <span class="fu">=</span> (<span class="dt">Show</span> a, <span class="dt">Read</span> a)</code></pre></div>
-<p>Here is a real world example of constraint synonyms defined in the <a href="https://github.com/commercialhaskell/stack/blob/master/src/Stack/Types/StackT.hs#L67">Haskell Tool Stack</a>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Constraint synonym for all of the common environment instances</span>
-<span class="kw">type</span> <span class="dt">HasEnv</span> r <span class="fu">=</span> (<span class="dt">HasLogOptions</span> r, <span class="dt">HasTerminal</span> r, <span class="dt">HasReExec</span> r, <span class="dt">HasSticky</span> r)
-
-<span class="co">-- | Constraint synonym for constraints commonly satisifed by monads used in stack.</span>
-<span class="kw">type</span> <span class="dt">StackM</span> r m <span class="fu">=</span>
-    (<span class="dt">MonadReader</span> r m, <span class="dt">MonadIO</span> m, <span class="dt">MonadBaseControl</span> <span class="dt">IO</span> m, <span class="dt">MonadLoggerIO</span> m, <span class="dt">MonadMask</span> m, <span class="dt">HasEnv</span> r)</code></pre></div>
-<p>Or we can define <code>Func</code> in terms of two type arguments <code>ctx</code> and <code>a</code> where <code>ctx</code> is a context of kind <code>* -&gt; Constraint</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Func</span> cxt a <span class="fu">=</span> cxt a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> a
-
-<span class="ot">inc ::</span> <span class="dt">Func</span> <span class="dt">Num</span> a
-inc <span class="fu">=</span> (<span class="fu">+</span><span class="dv">1</span>)</code></pre></div>
-<h1 id="constraint-families">Constraint families</h1>
-<p>Constraint families allow constraints to be indexed by a type in the same way that type families and data families allow types to be indexed by types.</p>
-<p>For example, constraint families let us define a generalized version of the <code>Monad</code> class where we can impose some constraints on the element it can contain. Wolfgang Jeltsch’s <a href="https://jeltsch.wordpress.com/2013/02/14/the-constraint-kind/">The Constraint kind</a> and Max Bolingbroke’s <a href="http://blog.omega-prime.co.uk/?p=127">Constraint Kinds for GHC</a> explain this classic example in details.</p>
-<p><a href="https://hackage.haskell.org/package/rmonad">rmonad</a> provides a collection of restricted monads based on associated datatypes.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">RMonad</span> m <span class="kw">where</span>
-  <span class="kw">type</span> <span class="dt">RMonadCtxt</span> m<span class="ot"> a ::</span> <span class="dt">Constraint</span>
-  <span class="kw">type</span> <span class="dt">RMonadCtxt</span> m a <span class="fu">=</span> ()
-
-<span class="ot">  return ::</span> <span class="dt">RMonadCtxt</span> m a <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> m a
-<span class="ot">  (&gt;&gt;=) ::</span> (<span class="dt">RMonadCtxt</span> m a, <span class="dt">RMonadCtxt</span> m b) <span class="ot">=&gt;</span> m a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m b) <span class="ot">-&gt;</span> m b
-
-<span class="kw">instance</span> <span class="dt">RMonad</span> <span class="dt">S.Set</span> <span class="kw">where</span>
-  <span class="kw">type</span> <span class="dt">RMonadCtxt</span> <span class="dt">S.Set</span> a <span class="fu">=</span> <span class="dt">Ord</span> a
-  return <span class="fu">=</span> S.singleton
-  mx <span class="fu">&gt;&gt;=</span> fxmy <span class="fu">=</span> S.fromList [y <span class="fu">|</span> x <span class="ot">&lt;-</span> S.toList mx, y <span class="ot">&lt;-</span> S.toList (fxmy x)]      
-
-<span class="kw">instance</span> <span class="dt">RMonad</span> [] <span class="kw">where</span>
-  return x <span class="fu">=</span> [x]
-  (<span class="fu">&gt;&gt;=</span>) <span class="fu">=</span> flip concatMap</code></pre></div>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-13-constraint-kinds.html";
-    this.page.identifier = "/posts/2017-01-13-constraint-kinds.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
-    <pubDate>Fri, 13 Jan 2017 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2017-01-13-constraint-kinds.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
