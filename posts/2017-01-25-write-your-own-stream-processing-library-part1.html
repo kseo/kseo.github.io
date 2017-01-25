@@ -42,7 +42,7 @@
 <p><a href="https://hackage.haskell.org/package/pipes">pipes</a> and <a href="https://hackage.haskell.org/package/conduit">conduit</a> are two competing libraries for handling stream data processing in Haskell. Though both libraries provide excellent tutorials on the usage of the libraries, the implementation details are impenetrable to most Haskell programmers.</p>
 <p>The best way to understand how these streaming libraries work is to write a minimalistic version by ourselves. In this post, I will show you how we can write a small streaming data library with <em>coroutine</em>. Our implementation is based on Mario Blazevic’s excellent article <a href="https://themonadreader.files.wordpress.com/2011/10/issue19.pdf">Coroutine Pipelines</a>.</p>
 <h1 id="generator">Generator</h1>
-<p><code>Generator</code> is a monad transformer which allows the base monad to pause its computation and yields a value. This corresponds to <code>Producer</code> of pipes or <code>Source</code> of conduit.</p>
+<p><code>Generator</code> is a monad transformer which allows the base monad to pause its computation and yield a value. This corresponds to <code>Producer</code> of pipes or <code>Source</code> of conduit.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE LambdaCase #-}</span>
 
 <span class="kw">import </span><span class="dt">Control.Monad</span>
