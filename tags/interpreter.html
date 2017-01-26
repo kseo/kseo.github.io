@@ -24,33 +24,1068 @@
         <div id="content">
             <h1>Posts tagged "interpreter"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2017-01-19-fun-with-hint.html">Fun with hint</a> - January 19, 2017
-        </li>
-    
-        <li>
-            <a href="../posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html">Double-barrelled Continuation Passing Style Interpreter</a> - January 10, 2017
-        </li>
-    
-        <li>
-            <a href="../posts/2017-01-09-continuation-passing-style-interpreter.html">Continuation Passing Style Interpreter</a> - January  9, 2017
-        </li>
-    
-        <li>
-            <a href="../posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Implementing a call-by-value interpreter in Haskell</a> - January  5, 2017
-        </li>
-    
-        <li>
-            <a href="../posts/2017-01-03-writing-an-interpreter-using-fold.html">Writing an interpreter using fold</a> - January  3, 2017
-        </li>
-    
-        <li>
-            <a href="../posts/2016-12-30-write-you-an-interpreter.html">Write you an interpreter</a> - December 30, 2016
-        </li>
-    
+            
+<h4><a href="../posts/2017-01-19-fun-with-hint.html">Fun with hint</a></h4> - January 19, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Fun with hint</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Fun with hint</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 19, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/hint.html">hint</a>, <a href="../tags/dynamic%20evaluation.html">dynamic evaluation</a>, <a href="../tags/interpreter.html">interpreter</a>
+      
+  </div>
+
+<p>If you are a Haskell convert from Lisp, JavaScript or any other dynamic programming language, you might miss <a href="https://en.wikipedia.org/wiki/Eval">eval</a> function of those languages. <code>eval</code> lets us load code dynamically and execute it on the fly. It is commonly used to provide user-defined plugins and is a very handy tool for software extension.</p>
+<p>Dynamic evaluation is not limited to dynamic languages. Even Java supports dynamic class loading through class loaders. It seems Haskell does not support dynamic evaluation as it is a strictly defined language. But GHC allows us to compile and execute Haskell code dynamically through GHC API.</p>
+<p><a href="https://hackage.haskell.org/package/hint">hint</a> library provides a Haskell interpreter built on top of GHC API. It allows to load and execute Haskell expressions and even coerce them into values.</p>
+<p><em>hint</em> provides a bunch of monadic actions based on <code>InterpreterT</code> monad transformer. <code>runInterpreter</code> is used to execute the action.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">runInterpreter ::</span> (<span class="dt">MonadIO</span> m, <span class="dt">MonadMask</span> m) <span class="ot">=&gt;</span> <span class="dt">InterpreterT</span> m a <span class="ot">-&gt;</span> m (<span class="dt">Either</span> <span class="dt">InterpreterError</span> a)</code></pre></div>
+<h1 id="type-check">Type check</h1>
+<p>We can check the type of a Haskell expression using <code>typeOf</code>.</p>
+<pre><code>λ&gt; import Language.Haskell.Interpreter
+λ&gt; runInterpreter $ typeOf &quot;\&quot;foo\&quot;&quot;
+Right &quot;[GHC.Types.Char]&quot;
+λ&gt; runInterpreter $ typeOf &quot;3.14&quot;
+Right &quot;GHC.Real.Fractional t =&gt; t&quot;</code></pre>
+<h1 id="import-modules">Import modules</h1>
+<p><em>hint</em> does not import prelude implicitly. We need import modules explicitly using <code>setImport</code>. For qualified imports, use <code>setImportQ</code> instead.</p>
+<pre><code>λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; typeOf &quot;head [True, False]&quot; }
+Right &quot;Bool&quot;
+λ&gt; runInterpreter $ do { setImportsQ [(&quot;Prelude&quot;, Nothing), (&quot;Data.Map&quot;, Just &quot;M&quot;) ]; typeOf &quot;M.empty&quot; }
+Right &quot;M.Map k a&quot;</code></pre>
+<h1 id="evaluate-expressions">Evaluate expressions</h1>
+<p><code>eval</code> function lets us evaluate Haskell expressions dynamically.</p>
+<pre><code>λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; eval &quot;head [True, False]&quot; }
+Right &quot;True&quot;
+λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; eval &quot;1 + 2 * 3&quot; }
+Right &quot;7&quot;</code></pre>
+<p>The result type of evaluation is <code>String</code>. To convert the result into the type we want, use <code>interpret</code> with <code>as</code>. Here <code>as</code> provides a witness for its monomorphic type.</p>
+<pre><code>λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; interpret &quot;head [True, False]&quot; (as :: Bool) }
+Right True
+λ&gt; runInterpreter $ do { setImports [&quot;Prelude&quot;]; interpret &quot;1 + 2 * 3&quot; (as :: Int) }
+Right 7</code></pre>
+<h1 id="load-modules">Load modules</h1>
+<p>It is also possible to load modules dynamically.</p>
+<p>Here’s a small module <code>Foo</code> stored in <code>Foo.hs</code> file.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">module</span> <span class="dt">Foo</span> <span class="kw">where</span>
+
+f <span class="fu">=</span> head
+g <span class="fu">=</span> tail</code></pre></div>
+<p>We can load <code>Foo</code> using <code>loadModules</code> function. <code>setTopLevelModules</code> ensures that all bindings of the module are in scope.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="kw">import </span><span class="dt">Language.Haskell.Interpreter</span>
+
+<span class="ot">ex ::</span> <span class="dt">Interpreter</span> ()
+ex <span class="fu">=</span> <span class="kw">do</span>
+  loadModules [<span class="st">&quot;Foo.hs&quot;</span>]
+  setTopLevelModules [<span class="st">&quot;Foo&quot;</span>]
+  setImportsQ [(<span class="st">&quot;Prelude&quot;</span>, <span class="dt">Nothing</span>)]
+
+  <span class="kw">let</span> expr1 <span class="fu">=</span> <span class="st">&quot;f [1, 2, 3]&quot;</span>
+  a <span class="ot">&lt;-</span> eval expr1
+  liftIO <span class="fu">$</span> print a
+
+  <span class="kw">let</span> expr2 <span class="fu">=</span> <span class="st">&quot;g [1, 2, 3]&quot;</span>
+  a <span class="ot">&lt;-</span> eval expr2
+  liftIO <span class="fu">$</span> print a
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  r <span class="ot">&lt;-</span> runInterpreter ex
+  <span class="kw">case</span> r <span class="kw">of</span>
+    <span class="dt">Left</span> err <span class="ot">-&gt;</span> print err
+    <span class="dt">Right</span> () <span class="ot">-&gt;</span> return ()</code></pre></div>
+<p>Executing this program prints</p>
+<pre><code>&quot;1&quot;
+&quot;[2,3]&quot;</code></pre>
+<p>because <code>f</code> is <code>head</code> and <code>g</code> is <code>tail</code>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-19-fun-with-hint.html";
+    this.page.identifier = "/posts/2017-01-19-fun-with-hint.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-19-fun-with-hint.html">Read more</a>
+
+<h4><a href="../posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html">Double-barrelled Continuation Passing Style Interpreter</a></h4> - January 10, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Double-barrelled Continuation Passing Style Interpreter</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Double-barrelled Continuation Passing Style Interpreter</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 10, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/double-barrelled.html">double-barrelled</a>, <a href="../tags/CPS.html">CPS</a>, <a href="../tags/interpreter.html">interpreter</a>
+      
+  </div>
+
+<p>In the <a href="https://kseo.github.io/posts/2017-01-09-continuation-passing-style-interpreter.html">Continuation Passing Style Interpreter</a>, we wrote a continuation-passing style interpreter for a small functional language and implemented the <em>escape expression</em> which is the binder form of Scheme’s <em>call/cc</em>.</p>
+<p>Though <em>call/cc</em> is a powerful control operator, it is generally considered as a <a href="http://okmij.org/ftp/continuations/against-callcc.html">bad abstraction</a> as a core language feature. So, in this post, we will drop escape expressions and add ML-style exceptions.</p>
+<p>Exceptions can be used to effect non-local transfers of control. By using an <em>exception handler</em> we may “catch” a raised exception and continue evaluation. For example,</p>
+<pre><code>1 + (raise 2)
+handle \x -&gt; x + 3</code></pre>
+<p>evaluates to <code>5</code> because <code>2</code> raised by <code>raise 2</code> is passed to the exception handler <code>\x -&gt; x + 3</code>.</p>
+<p>To support exceptions in our interpreter, <code>eval</code> function is modified to take two continuations: an exception-handler continuation, and a return continuation. This is the so-called <em>double-barrelled continuation-passing style</em> introduced in <a href="http://www.cs.bham.ac.uk/~hxt/research/HOSC-double-barrel.pdf">Comparing Control Constructs by Double-barrelled CPS</a>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term h k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="dt">Var</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> env <span class="fu">!!</span> n
+  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VClosure</span> (\v k' <span class="ot">-&gt;</span> eval (v <span class="fu">:</span> env) a h k')
+  <span class="dt">App</span> a b <span class="ot">-&gt;</span>
+    eval env a h <span class="fu">$</span> \(<span class="dt">VClosure</span> c) <span class="ot">-&gt;</span>
+    eval env b h <span class="fu">$</span> \v <span class="ot">-&gt;</span>
+    c v k
+
+  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VInt</span> n
+  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> eval env a h <span class="fu">$</span> \v1 <span class="ot">-&gt;</span>
+                eval env b h <span class="fu">$</span> \v2 <span class="ot">-&gt;</span>
+                k <span class="fu">$</span> evalPrim p v1 v2
+
+<span class="ot">evalExpr ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalExpr e <span class="fu">=</span> eval emptyEnv e (\x <span class="ot">-&gt;</span> error <span class="st">&quot;uncaught exception&quot;</span>) id</code></pre></div>
+<p><code>h</code> is the exception-handler continuation and it is simply passed along the application of <code>eval</code>. <code>evalExpr</code> is also modified to handle an uncaught exception.</p>
+<p>Once our interpreter is transformed into a double-barrelled continuation-passing style, it is easy to add handle and raise expressions. First, let’s extend <code>Expr</code> with <code>Handle</code> and <code>Raise</code> nodes.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span>
+  <span class="fu">=</span> <span class="fu">...</span>
+  <span class="fu">|</span> <span class="dt">Handle</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Raise</span> <span class="dt">Expr</span>
+  <span class="fu">...</span></code></pre></div>
+<p>Then extend <code>eval</code> function with two additional AST nodes.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term h k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="fu">...</span>
+  <span class="dt">Raise</span> a <span class="ot">-&gt;</span> eval env a h h
+  <span class="dt">Handle</span> a b <span class="ot">-&gt;</span>
+    <span class="kw">let</span> h' x <span class="fu">=</span> eval (x <span class="fu">:</span> env) b h k
+    <span class="kw">in</span> eval env a h' k</code></pre></div>
+<p><code>Raise</code> evaluates <code>a</code> with both continuations set to the error-handler continuation <code>h</code>. So the value is passed to the current error-handler.</p>
+<p><code>Handle</code> sets up a new error-handler <code>h'</code> which evaluates <code>b</code> with the environment extended with the raised value <code>x</code>. Note that <code>a</code> is evaluated with the error-handler set to <code>h'</code> so that any exception raised while evaluating <code>a</code> is passed to <code>h'</code>.</p>
+<p>Let’s run the example above!</p>
+<pre><code>λ&gt; evalExpr $ (Prim Add (Lit 1) (Raise (Lit 2))) `Handle` (Prim Add (Var 0) (Lit 3))
+5</code></pre>
+<p>Yay, it works again!</p>
+<p>If you would like to know why we can’t implement exceptions using <em>call/cc</em> alone, please read Oleg Kiselyov’s article <a href="http://okmij.org/ftp/continuations/undelimited.html#delim-vs-undelim">Vast difference between delimited and undelimited continuations</a>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html";
+    this.page.identifier = "/posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-10-double-barrelled-continuation-passing-style-interpreter.html">Read more</a>
+
+<h4><a href="../posts/2017-01-09-continuation-passing-style-interpreter.html">Continuation Passing Style Interpreter</a></h4> - January  9, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Continuation Passing Style Interpreter</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Continuation Passing Style Interpreter</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January  9, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/CPS.html">CPS</a>, <a href="../tags/interpreter.html">interpreter</a>
+      
+  </div>
+
+<p>Lisp programmers learn Lisp by writing various flavors of Lisp interpreters. Two famous Lisp books, <a href="https://www.amazon.com/Lisp-Small-Pieces-Christian-Queinnec/dp/0521545668">Lisp in Small Pieces</a> and <a href="http://www.eopl3.com/">Essentials of Programming Languages</a>, teach us how to write Lisp interpreters in Lisp. Both books start with a direct style interpreter which is easy to implement. But they soon rewrite the interpreter in a continuation passing style because advanced control structures such as <em>abort</em> and <em>call/cc</em> can be implemented more easily in this style.</p>
+<p>In this post, we will follow the tradition of Lisp and will write a continuation passing style interpreter for a small functional language in Haskell. Then we will see how easily we can add <em>escape expression</em> to the language by extending the interpreter.</p>
+<h1 id="direct-style-interpreter">Direct-style Interpreter</h1>
+<p>Our first interpreter is a straightforward implementation of the enriched lambda calculus <code>Expr</code>. It extends the lambda calculus with integer literals and primitive operators.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span>
+  <span class="fu">=</span> <span class="dt">Var</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">Lam</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">App</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Lit</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">Prim</span> <span class="dt">PrimOp</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="kw">deriving</span> <span class="dt">Show</span>
+
+<span class="kw">data</span> <span class="dt">PrimOp</span> <span class="fu">=</span> <span class="dt">Add</span> <span class="fu">|</span> <span class="dt">Mul</span>
+  <span class="kw">deriving</span> <span class="dt">Show</span></code></pre></div>
+<p>The central component of our interpreter is a function <code>eval</code> that produces the value of an expression <code>term</code> in an environment <code>env</code>. <code>n</code> in <code>Var n</code> is the <a href="https://en.wikipedia.org/wiki/De_Bruijn_index">De Bruijn index</a>. The <a href="http://dev.stephendiehl.com/fun/005_evaluation.html">Evaluation</a> chapter of Stephen Diehl’s <a href="http://dev.stephendiehl.com/fun/index.html">Write You a Haskell</a> explains the details of this direct-style interpreter. There is one difference here. Our version uses a higher-order function to represent lambda expression (<code>VClosure</code>).</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Value</span>
+  <span class="fu">=</span> <span class="dt">VInt</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">VClosure</span> (<span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>)
+
+<span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Value</span> <span class="kw">where</span>
+  show (<span class="dt">VInt</span> i) <span class="fu">=</span> show i
+  show <span class="dt">VClosure</span>{} <span class="fu">=</span> <span class="st">&quot;&lt;&lt;closure&gt;&gt;&quot;</span>
+
+<span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> [<span class="dt">Value</span>]
+
+<span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="dt">Var</span> n <span class="ot">-&gt;</span> env <span class="fu">!!</span> n
+  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> <span class="dt">VClosure</span> (\v <span class="ot">-&gt;</span> eval (v <span class="fu">:</span> env) a)
+  <span class="dt">App</span> a b <span class="ot">-&gt;</span>
+    <span class="kw">let</span> <span class="dt">VClosure</span> c <span class="fu">=</span> eval env a <span class="kw">in</span>
+    <span class="kw">let</span> v <span class="fu">=</span> eval env b <span class="kw">in</span>
+    c v
+
+  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> <span class="dt">VInt</span> n
+  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> (evalPrim p) (eval env a) (eval env b)
+
+<span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
+evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
+
+<span class="ot">emptyEnv ::</span> <span class="dt">Env</span>
+emptyEnv <span class="fu">=</span> []
+
+<span class="ot">evalExpr ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalExpr <span class="fu">=</span> eval emptyEnv</code></pre></div>
+<h1 id="continuation-passing-style-interpreter">Continuation-passing-style Interpreter</h1>
+<p>We can think of a continuation as what to do next in a program. In direct-style, a callee returns a value to the caller. Thus the caller of the function determines what to do next and the continuation is implicitly present in the caller. In continuation-passing-style, the continuation is passed as an argument of a function and the callee determines what to do next by invoking the continuation. A function in continuation-passing-style never returns.</p>
+<p>We can transform our interpreter into a continuation-passing-style by adding a continuation argument <code>Cont</code> to <code>eval</code> and <code>VClosure</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Cont</span> <span class="fu">=</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+
+<span class="kw">data</span> <span class="dt">Value</span>
+  <span class="fu">=</span> <span class="fu">...</span>
+  <span class="fu">|</span> <span class="dt">VClosure</span> (<span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>)
+
+<span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="dt">Var</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> env <span class="fu">!!</span> n
+  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VClosure</span> (\v k' <span class="ot">-&gt;</span> eval (v <span class="fu">:</span> env) a k')
+  <span class="dt">App</span> a b <span class="ot">-&gt;</span>
+    eval env a <span class="fu">$</span> \(<span class="dt">VClosure</span> c) <span class="ot">-&gt;</span>
+    eval env b <span class="fu">$</span> \v <span class="ot">-&gt;</span>
+    c v k
+
+  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> k <span class="fu">$</span> <span class="dt">VInt</span> n
+  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> eval env a <span class="fu">$</span> \v1 <span class="ot">-&gt;</span>
+                eval env b <span class="fu">$</span> \v2 <span class="ot">-&gt;</span>
+                k <span class="fu">$</span> evalPrim p v1 v2
+
+<span class="ot">evalExpr ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalExpr e <span class="fu">=</span> eval emptyEnv e id</code></pre></div>
+<p>In <code>Var</code>, <code>Lit</code> and <code>Lam</code> cases, <code>eval</code> simply applies the value to the continuation. In <code>App</code> case, <code>eval</code> evaluates the function first and then subsequently evaluates the argument. The evaluation order is enforced as only one value can be passed to the continuation. <code>c v</code> applies the argument to the function and its result is passed to the original continuation <code>k</code>. <code>Prim</code> case similarly enforces the left-to-right evaluation order.</p>
+<p><code>evalExpr</code> passes <code>id</code> as the initial continuation which merely returns the value back.</p>
+<h1 id="escape-expression">Escape Expression</h1>
+<p>Because all the control paths are explicit in continuation-passing-style, we can easily add control operators to our interpreter. Let’s extend our interpreter with <em>escape expressions</em> that was first introduced in <a href="http://surface.syr.edu/cgi/viewcontent.cgi?article=1012&amp;context=lcsmith_other">Definitional interpreters for higher-order programming languages</a>.</p>
+<pre><code>escape x in r</code></pre>
+<p>is an escape expression, whose <em>escape variable</em> is <code>x</code> and whose <em>body</em> is <code>r</code>. If <code>x</code> is applied to <code>a</code> in <code>r</code>, the body is aborted and <code>a</code> is returned. Otherwise, the evaluation of <code>r</code> proceeds normally.</p>
+<pre><code>escape x in (1 + 3) * (4 + x 10)</code></pre>
+<p>evaluates to <code>10</code> because <code>x</code> is applied to <code>10</code> inside the escape expression.</p>
+<p>The implementation of the escape expression is one-liner. <code>eval</code> of <code>Escape a</code> adds a closure to the environment and then evaluates the expression. This closure is a reified continuation which ignores the current continuation and passes the argument as a value to the saved continuation of the escape expression.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span>
+  <span class="fu">=</span> <span class="fu">...</span>
+  <span class="fu">|</span> <span class="dt">Escape</span> <span class="dt">Expr</span>
+  <span class="fu">...</span>
+
+<span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Cont</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term k <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="fu">...</span>
+  <span class="dt">Escape</span> a <span class="ot">-&gt;</span> eval (<span class="dt">VClosure</span> (\v _ <span class="ot">-&gt;</span> k v) <span class="fu">:</span> env) a k</code></pre></div>
+<pre><code>λ&gt; evalExpr $ Escape (Prim Mul (Prim Add (Lit 1) (Lit 3)) (Prim Add (Lit 4) (App (Var 0) (Lit 10))))
+10</code></pre>
+<p>Yay, it works!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-09-continuation-passing-style-interpreter.html";
+    this.page.identifier = "/posts/2017-01-09-continuation-passing-style-interpreter.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-09-continuation-passing-style-interpreter.html">Read more</a>
+
+<h4><a href="../posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Implementing a call-by-value interpreter in Haskell</a></h4> - January  5, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Implementing a call-by-value interpreter in Haskell</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Implementing a call-by-value interpreter in Haskell</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January  5, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/call-by-value.html">call-by-value</a>, <a href="../tags/interpreter.html">interpreter</a>, <a href="../tags/Strict.html">Strict</a>
+      
+  </div>
+
+<p>Call-by-value is the most commonly used evaluation strategy in which all arguments to a function are reduced to normal form before they are bound inside lambda. Languages such as Java, C++, Scala and F# all use this evaluation model. A notable exception is Haskell, which uses call-by-need evaluation in which expressions are represented as <em>thunks</em> which are passed into a function unevaluated and only evaluated when needed.</p>
+<p>This difference in evaluation model poses some challenges in writing a call-by-value interpreter in Haskell. In this post, I am going to explain how we can implement a call-by-value interpreter using various methods.</p>
+<p>Let’s start the discussion by writing a lambda calculus interpreter.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Expr</span>
+  <span class="fu">=</span> <span class="dt">Var</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">Lam</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">App</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Lit</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">Prim</span> <span class="dt">PrimOp</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Bot</span>
+  <span class="kw">deriving</span> <span class="dt">Show</span>
+
+<span class="kw">data</span> <span class="dt">Value</span>
+  <span class="fu">=</span> <span class="dt">VInt</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">VClosure</span> <span class="dt">Expr</span> <span class="dt">Env</span>
+
+<span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Value</span> <span class="kw">where</span>
+  show (<span class="dt">VInt</span> i) <span class="fu">=</span> show i
+  show <span class="dt">VClosure</span>{} <span class="fu">=</span> <span class="st">&quot;&lt;&lt;closure&gt;&gt;&quot;</span>
+
+<span class="kw">data</span> <span class="dt">PrimOp</span> <span class="fu">=</span> <span class="dt">Add</span> <span class="fu">|</span> <span class="dt">Mul</span>
+  <span class="kw">deriving</span> <span class="dt">Show</span>
+
+<span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> [<span class="dt">Value</span>]
+
+<span class="ot">eval ::</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+eval env term <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="dt">Var</span> n <span class="ot">-&gt;</span> env <span class="fu">!!</span> n
+  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> <span class="dt">VClosure</span> a env
+  <span class="dt">App</span> a b <span class="ot">-&gt;</span>
+    <span class="kw">let</span> <span class="dt">VClosure</span> c env' <span class="fu">=</span> eval env a <span class="kw">in</span>
+    <span class="kw">let</span> v <span class="fu">=</span> eval env b <span class="kw">in</span>
+    eval (v <span class="fu">:</span> env') c
+
+  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> <span class="dt">VInt</span> n
+  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> (evalPrim p) (eval env a) (eval env b)
+  <span class="dt">Bot</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Evaluation would not terminate&quot;</span>
+
+<span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
+evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
+
+<span class="ot">emptyEnv ::</span> <span class="dt">Env</span>
+emptyEnv <span class="fu">=</span> []
+
+<span class="co">-- (\x y -&gt; x) 10 bot</span>
+<span class="ot">test ::</span> <span class="dt">Value</span>
+test <span class="fu">=</span> eval emptyEnv <span class="fu">$</span> <span class="dt">App</span> (<span class="dt">App</span> (<span class="dt">Lam</span> (<span class="dt">Lam</span> (<span class="dt">Var</span> <span class="dv">1</span>))) (<span class="dt">Lit</span> <span class="dv">10</span>)) <span class="dt">Bot</span></code></pre></div>
+<p>Can you guess the evaluation order implemented by this interpreter? Because <code>test</code> is equivalent to <code>(\x y -&gt; x) 10 undefined</code>, it would be <code>undefined</code> in a call-by-value language.</p>
+<p>Let’s evaluate <code>test</code> on GHCi.</p>
+<pre><code>λ&gt; test
+10</code></pre>
+<p>The evaluation order implemented by our interpreter is call-by-need because the defining language, Haskell, uses the call-by-need evaluation order and our interpreter depends on this. Transforming our interpreter into a call-by-value interpreter is not trivial because we need to find and fix every place where lazy evaluation is used in our interpreter.</p>
+<p>In his seminar paper <a href="http://surface.syr.edu/cgi/viewcontent.cgi?article=1012&amp;context=lcsmith_other">Definitional interpreters for higher-order programming languages</a>, John C. Reynolds showed how to remove this order dependence by CPS transformation. <del>But in Haskell, we can use monads to enforce the evaluation order. This is not a coincidence because there is a <a href="https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/the-essence-of-functional-programming.pdf">close relationship</a> between computational monads and generalized CPS.</del></p>
+<p><strong>UPDATE: There is a technical mistake in the original article. The Identity monad does not make any difference here. I should have used either a strict variant of Identity monad or the Cont monad to force strict evaluation.</strong></p>
+<p>Here’s a monadic version of our interpreter.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.Identity</span>
+
+<span class="kw">data</span> <span class="dt">Expr</span>
+  <span class="fu">=</span> <span class="dt">Var</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">Lam</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">App</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Lit</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">Prim</span> <span class="dt">PrimOp</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Bot</span>
+  <span class="kw">deriving</span> <span class="dt">Show</span>
+
+<span class="kw">data</span> <span class="dt">Value</span>
+  <span class="fu">=</span> <span class="dt">VInt</span> <span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">VClosure</span> <span class="dt">Expr</span> <span class="dt">Env</span>
+
+<span class="kw">instance</span> <span class="dt">Show</span> <span class="dt">Value</span> <span class="kw">where</span>
+  show (<span class="dt">VInt</span> i) <span class="fu">=</span> show i
+  show <span class="dt">VClosure</span>{} <span class="fu">=</span> <span class="st">&quot;&lt;&lt;closure&gt;&gt;&quot;</span>
+
+<span class="kw">data</span> <span class="dt">PrimOp</span> <span class="fu">=</span> <span class="dt">Add</span> <span class="fu">|</span> <span class="dt">Mul</span>
+  <span class="kw">deriving</span> <span class="dt">Show</span>
+
+<span class="kw">type</span> <span class="dt">Env</span> <span class="fu">=</span> [<span class="dt">Value</span>]
+
+<span class="ot">eval ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> m <span class="dt">Value</span>
+eval env term <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="dt">Var</span> n <span class="ot">-&gt;</span> return <span class="fu">$</span> env <span class="fu">!!</span> n
+  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">VClosure</span> a env
+  <span class="dt">App</span> a b <span class="ot">-&gt;</span> <span class="kw">do</span>
+    <span class="dt">VClosure</span> c env' <span class="ot">&lt;-</span> eval env a
+    v <span class="ot">&lt;-</span> eval env b
+    eval (v <span class="fu">:</span> env') c
+
+  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">VInt</span> n
+  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> evalPrim p <span class="fu">&lt;$&gt;</span> eval env a <span class="fu">&lt;*&gt;</span> eval env b
+  <span class="dt">Bot</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Evaluation would not terminate&quot;</span>
+
+<span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
+evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
+
+<span class="ot">emptyEnv ::</span> <span class="dt">Env</span>
+emptyEnv <span class="fu">=</span> []
+
+<span class="co">-- (\x y -&gt; x) 10 bot</span>
+<span class="ot">test ::</span> <span class="dt">Value</span>
+test <span class="fu">=</span> runIdentity <span class="fu">$</span> eval emptyEnv <span class="fu">$</span> <span class="dt">App</span> (<span class="dt">App</span> (<span class="dt">Lam</span> (<span class="dt">Lam</span> (<span class="dt">Var</span> <span class="dv">1</span>))) (<span class="dt">Lit</span> <span class="dv">10</span>)) <span class="dt">Bot</span></code></pre></div>
+<p>Let’s evaluate <code>test</code> again.</p>
+<pre><code>λ&gt; test
+10</code></pre>
+<p>Oops. What went wrong? The problem is that our interpreter does not enforce the evaluation of the argument in <code>App a b</code> case of <code>eval</code>. <code>v &lt;- eval env b</code> just binds a thunk to <code>v</code> and it won’t be evaluated until it is actually needed. To fix the problem, we need to force the evaluation of the argument using <em>bang patterns</em>.</p>
+<p><strong>UPDATE: This bang pattern is not necessary if we used a strict monad.</strong></p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE BangPatterns #-}</span>
+
+<span class="fu">...</span>
+
+<span class="ot">eval ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">Env</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> m <span class="dt">Value</span>
+eval env term <span class="fu">=</span> <span class="kw">case</span> term <span class="kw">of</span>
+  <span class="dt">Var</span> n <span class="ot">-&gt;</span> return <span class="fu">$</span> env <span class="fu">!!</span> n
+  <span class="dt">Lam</span> a <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">VClosure</span> a env
+  <span class="dt">App</span> a b <span class="ot">-&gt;</span> <span class="kw">do</span>
+    <span class="dt">VClosure</span> c env' <span class="ot">&lt;-</span> eval env a
+    <span class="fu">!</span>v <span class="ot">&lt;-</span> eval env b
+    eval (v <span class="fu">:</span> env') c
+
+  <span class="dt">Lit</span> n <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">VInt</span> n
+  <span class="dt">Prim</span> p a b <span class="ot">-&gt;</span> evalPrim p <span class="fu">&lt;$&gt;</span> eval env a <span class="fu">&lt;*&gt;</span> eval env b
+  <span class="dt">Bot</span> <span class="ot">-&gt;</span> error <span class="st">&quot;Evaluation would not terminate&quot;</span>
+
+<span class="fu">...</span></code></pre></div>
+<p>Finally, we can see that evaluating <code>test</code> throws an error.</p>
+<pre><code>λ&gt; test
+*** Exception: Evaluation would not terminate</code></pre>
+<p>The moral of this story is that it is really hard to correctly implement a call-by-value interpreter in Haskell. There is high chance of making a mistake. For example, let’s add a division operator to our interpreter.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">PrimOp</span> <span class="fu">=</span> <span class="dt">Add</span> <span class="fu">|</span> <span class="dt">Mul</span> <span class="fu">|</span> <span class="dt">Div</span>
+  <span class="kw">deriving</span> <span class="dt">Show</span>
+
+<span class="ot">evalPrim ::</span> <span class="dt">PrimOp</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span> <span class="ot">-&gt;</span> <span class="dt">Value</span>
+evalPrim <span class="dt">Add</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">+</span> b)
+evalPrim <span class="dt">Mul</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="fu">*</span> b)
+evalPrim <span class="dt">Div</span> (<span class="dt">VInt</span> a) (<span class="dt">VInt</span> b) <span class="fu">=</span> <span class="dt">VInt</span> (a <span class="ot">`div`</span> b)
+
+<span class="co">-- (\x y -&gt; x) 10 (20 / 0)</span>
+<span class="ot">test ::</span> <span class="dt">Value</span>
+test <span class="fu">=</span> runIdentity <span class="fu">$</span> eval emptyEnv <span class="fu">$</span> <span class="dt">App</span> (<span class="dt">App</span> (<span class="dt">Lam</span> (<span class="dt">Lam</span> (<span class="dt">Var</span> <span class="dv">1</span>))) (<span class="dt">Lit</span> <span class="dv">10</span>)) (<span class="dt">Prim</span> <span class="dt">Div</span> (<span class="dt">Lit</span> <span class="dv">20</span>) (<span class="dt">Lit</span> <span class="dv">0</span>))</code></pre></div>
+<p>Evaluating <code>test</code> must throw an divide-by-zero error because its second argument is <code>20 / 0</code>. But GHCi shows that we reverted back to cal-by-need.</p>
+<pre><code>λ&gt; test
+10</code></pre>
+<p>This happens because the data constructor <code>VInt</code> is not strict. <code>20 / 0</code> is evaluated to <code>VInt undefined</code> instead of <code>undefined</code>. To make it call-by-value again, we need to add another bang pattern to <code>VInt</code> data constructor as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">Value</span>
+  <span class="fu">=</span> <span class="dt">VInt</span> <span class="fu">!</span><span class="dt">Int</span>
+  <span class="fu">|</span> <span class="dt">VClosure</span> <span class="dt">Expr</span> <span class="dt">Env</span></code></pre></div>
+<p>Fortunately, we can avoid this tricky business and make our first interpreter call-by-value by just adding <a href="https://ghc.haskell.org/trac/ghc/wiki/StrictPragma">Strict</a> language extension introduced in GHC 8. <code>Strict</code> pragma allows us to switch the default evaluation strategy to call-by-value on a per module basis. This saves us huge efforts because writing a call-by-value interpreter in a call-by-value language is an easy task!</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE Strict #-}</span></code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html";
+    this.page.identifier = "/posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-05-implementing-a-call-by-value-interpreter-in-haskell.html">Read more</a>
+
+<h4><a href="../posts/2017-01-03-writing-an-interpreter-using-fold.html">Writing an interpreter using fold</a></h4> - January  3, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Writing an interpreter using fold</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Writing an interpreter using fold</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January  3, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/fold.html">fold</a>, <a href="../tags/interpreter.html">interpreter</a>, <a href="../tags/catamorphism.html">catamorphism</a>
+      
+  </div>
+
+<p><em>fold</em> is a Swiss Army knife in functional programming. It is <a href="http://www.cs.nott.ac.uk/~pszgmh/fold.pdf">expressive</a> enough to write an interpreter for a simple functional programming language.</p>
+<p>Let’s start with a simple arithmetic language.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">Expr</span> <span class="fu">=</span> <span class="dt">Const</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span>           <span class="fu">|</span> <span class="dt">Add</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+<span class="ot">&gt;</span>           <span class="fu">|</span> <span class="dt">Mul</span> <span class="dt">Expr</span> <span class="dt">Expr</span></code></pre></div>
+<p>Writing an interpreter for this language is trivial.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interp ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> interp (<span class="dt">Const</span> x) <span class="fu">=</span> x
+<span class="ot">&gt;</span> interp (<span class="dt">Add</span> e1 e2) <span class="fu">=</span> interp e1 <span class="fu">+</span> interp e2
+<span class="ot">&gt;</span> interp (<span class="dt">Mul</span> e1 e2) <span class="fu">=</span> interp e1 <span class="fu">*</span> interp e2</code></pre></div>
+<p>Writing a pretty printer is also easy.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; pretty ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+<span class="ot">&gt;</span> pretty (<span class="dt">Const</span> x) <span class="fu">=</span> show x
+<span class="ot">&gt;</span> pretty (<span class="dt">Add</span> e1 e2) <span class="fu">=</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> pretty e1 <span class="fu">++</span> <span class="st">&quot; + &quot;</span> <span class="fu">++</span> pretty e2 <span class="fu">++</span> <span class="st">&quot;)&quot;</span>
+<span class="ot">&gt;</span> pretty (<span class="dt">Mul</span> e1 e2) <span class="fu">=</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> pretty e1 <span class="fu">++</span> <span class="st">&quot; * &quot;</span> <span class="fu">++</span> pretty e2 <span class="fu">++</span> <span class="st">&quot;)&quot;</span></code></pre></div>
+<p>Sensitive readers might have noticed the duplication of code in <code>interp</code> and <code>pretty</code>. Yes, recursion on the structure of <code>Expr</code> is repeated.</p>
+<p>We can extract recursion as <code>foldExpr</code> and algorithms as <code>ExprA</code>. <code>foldExpr</code> does recursion on the structure of <code>Expr</code> regardless of the algorithm being used.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ExprA</span> a <span class="fu">=</span> <span class="dt">ExprA</span>
+<span class="ot">&gt;</span>   {<span class="ot"> val ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> a
+<span class="ot">&gt;</span>   ,<span class="ot"> add ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a
+<span class="ot">&gt;</span>   ,<span class="ot"> mul ::</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a
+<span class="ot">&gt;</span>   }
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; foldExpr ::</span> <span class="dt">ExprA</span> a <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> a
+<span class="ot">&gt;</span> foldExpr alg (<span class="dt">Const</span> i)   <span class="fu">=</span> val alg i
+<span class="ot">&gt;</span> foldExpr alg (<span class="dt">Add</span> e1 e2) <span class="fu">=</span> add alg (foldExpr alg e1) (foldExpr alg e2)
+<span class="ot">&gt;</span> foldExpr alg (<span class="dt">Mul</span> e1 e2) <span class="fu">=</span> mul alg (foldExpr alg e1) (foldExpr alg e2)</code></pre></div>
+<p>Now it is possible to define the interpreter just by giving <code>val</code>, <code>add</code> and <code>mul</code> functions.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interpA ::</span> <span class="dt">ExprA</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> interpA <span class="fu">=</span> <span class="dt">ExprA</span>
+<span class="ot">&gt;</span>   { val <span class="fu">=</span> id
+<span class="ot">&gt;</span>   , add <span class="fu">=</span> (<span class="fu">+</span>)
+<span class="ot">&gt;</span>   , mul <span class="fu">=</span> (<span class="fu">*</span>)
+<span class="ot">&gt;</span>   }</code></pre></div>
+<p>The same goes for pretty printer.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; prettyA ::</span> <span class="dt">ExprA</span> <span class="dt">String</span>
+<span class="ot">&gt;</span> prettyA <span class="fu">=</span> <span class="dt">ExprA</span>
+<span class="ot">&gt;</span>   { val <span class="fu">=</span> show
+<span class="ot">&gt;</span>   , add <span class="fu">=</span> \a b <span class="ot">-&gt;</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> a <span class="fu">++</span> <span class="st">&quot; + &quot;</span> <span class="fu">++</span> b <span class="fu">++</span> <span class="st">&quot;)&quot;</span>
+<span class="ot">&gt;</span>   , mul <span class="fu">=</span> \a b <span class="ot">-&gt;</span> <span class="st">&quot;(&quot;</span> <span class="fu">++</span> a <span class="fu">++</span> <span class="st">&quot; * &quot;</span> <span class="fu">++</span> b <span class="fu">++</span> <span class="st">&quot;)&quot;</span>
+<span class="ot">&gt;</span>   }</code></pre></div>
+<p>Here is our <code>interp'</code> function defined in terms of <code>foldExpr</code> and <code>interpA</code>.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; interp' ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> interp' <span class="fu">=</span> foldExpr interpA</code></pre></div>
+<p>We successfully isolated algorithms from recursion, but we are still not satisfied. <code>ExprA</code> is mostly duplication of <code>Expr</code> and defining <code>foldExpr</code> is boilerplate.</p>
+<p>We can fix this by introducing <em>F-algebras</em> and <em>catamorphisms</em>. Interested readers might want to take a look at Bartosz Milewski’s <a href="https://bartoszmilewski.com/2013/06/10/understanding-f-algebras/">Understanding F-Algebras</a> article.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-03-writing-an-interpreter-using-fold.html";
+    this.page.identifier = "/posts/2017-01-03-writing-an-interpreter-using-fold.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-03-writing-an-interpreter-using-fold.html">Read more</a>
+
+<h4><a href="../posts/2016-12-30-write-you-an-interpreter.html">Write you an interpreter</a></h4> - December 30, 2016
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Write you an interpreter</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Write you an interpreter</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on December 30, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/interpreter.html">interpreter</a>
+      
+  </div>
+
+<p>Writing an interpreter for a functional language is a good exercise in Haskell. There are several tutorials on this topic.</p>
+<ul>
+<li><a href="https://en.wikibooks.org/wiki/Write_Yourself_a_Scheme_in_48_Hours">Write Yourself a Scheme in 48 Hours</a></li>
+<li><a href="http://dev.stephendiehl.com/fun/">Write You a Haskell</a></li>
 </ul>
+<p>Implementation techniques used in these tutorials are similar even though their source languages are distinct. They all compile the source language into a small core language based on lambda calculus, and evaluate the program with a context (or an environment).</p>
+<p>In this post, I am not going to revisit this common technique. Instead, I will show you how to compile a program to a finite, fixed set of combinators (SKI), and then evaluate these combinators as normal Haskell function. This technique was introduced in Matthew Naylor’s <a href="https://wiki.haskell.org/wikiupload/0/0a/TMR-Issue10.pdf">Evaluating Haskell in Haskell</a>.</p>
+<p>The source code is available <a href="https://github.com/kseo/poly">here</a>.</p>
+<h1 id="poly">Poly</h1>
+<p>We are going to borrow the parser and type checker from Stephen Diehls’s <a href="https://github.com/sdiehl/write-you-a-haskell/tree/master/chapter7/poly_constraints">Poly</a>, a simple ML dialect with definitions, let polymorphism and a fixpoint operator.</p>
+<p>An example of Poly:</p>
+<div class="sourceCode"><pre class="sourceCode ocaml"><code class="sourceCode ocaml"><span class="kw">let</span> <span class="kw">rec</span> factorial n = <span class="kw">if</span> (n == <span class="dv">0</span>) <span class="kw">then</span> <span class="dv">1</span> <span class="kw">else</span> (n * (factorial (n<span class="dv">-1</span>)));</code></pre></div>
+<p>The core language of Poly is a variant of lambda calculus. <code>Let</code>, <code>If</code>, <code>Fix</code> and <code>Op</code> are added as additional constructs.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Name</span> <span class="fu">=</span> <span class="dt">String</span>
+
+<span class="kw">data</span> <span class="dt">Expr</span>
+  <span class="fu">=</span> <span class="dt">Var</span> <span class="dt">Name</span>
+  <span class="fu">|</span> <span class="dt">App</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Lam</span> <span class="dt">Name</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Let</span> <span class="dt">Name</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Lit</span> <span class="dt">Lit</span>
+  <span class="fu">|</span> <span class="dt">If</span> <span class="dt">Expr</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Fix</span> <span class="dt">Expr</span>
+  <span class="fu">|</span> <span class="dt">Op</span> <span class="dt">Binop</span> <span class="dt">Expr</span> <span class="dt">Expr</span>
+  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Ord</span>)
+
+<span class="kw">data</span> <span class="dt">Lit</span>
+  <span class="fu">=</span> <span class="dt">LInt</span> <span class="dt">Integer</span>
+  <span class="fu">|</span> <span class="dt">LBool</span> <span class="dt">Bool</span>
+  <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Ord</span>)
+
+<span class="kw">data</span> <span class="dt">Binop</span> <span class="fu">=</span> <span class="dt">Add</span> <span class="fu">|</span> <span class="dt">Sub</span> <span class="fu">|</span> <span class="dt">Mul</span> <span class="fu">|</span> <span class="dt">Eql</span>
+  <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Ord</span>, <span class="dt">Show</span>)</code></pre></div>
+<h1 id="desugar">Desugar</h1>
+<p>Our first task is to desugar <code>Let</code>, <code>If</code>, <code>Fix</code> and <code>Op</code> to simplify the later stage of compilation.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">desugar ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span>
+desugar (<span class="dt">App</span> fun arg) <span class="fu">=</span> <span class="dt">App</span> (desugar fun) (desugar arg)
+desugar (<span class="dt">Lam</span> x body) <span class="fu">=</span> <span class="dt">Lam</span> x (desugar body)
+desugar (<span class="dt">Let</span> x e body) <span class="fu">=</span> <span class="dt">App</span> (<span class="dt">Lam</span> x (desugar body)) (desugar e)
+desugar (<span class="dt">If</span> cond tr fl) <span class="fu">=</span> foldl <span class="dt">App</span> (<span class="dt">Var</span> <span class="st">&quot;$IF&quot;</span>) args
+   <span class="kw">where</span> args <span class="fu">=</span> map desugar [cond, tr, fl]
+desugar (<span class="dt">Fix</span> e) <span class="fu">=</span> <span class="dt">App</span> (<span class="dt">Var</span> <span class="st">&quot;$FIX&quot;</span>) (desugar e)
+desugar (<span class="dt">Op</span> op a b) <span class="fu">=</span> foldl <span class="dt">App</span> (<span class="dt">Var</span> n) args
+  <span class="kw">where</span>
+    args <span class="fu">=</span> map desugar [a, b]
+    n <span class="fu">=</span> <span class="kw">case</span> op <span class="kw">of</span>
+      <span class="dt">Add</span> <span class="ot">-&gt;</span> <span class="st">&quot;$ADD&quot;</span>
+      <span class="dt">Sub</span> <span class="ot">-&gt;</span> <span class="st">&quot;$SUB&quot;</span>
+      <span class="dt">Mul</span> <span class="ot">-&gt;</span> <span class="st">&quot;$MUL&quot;</span>
+      <span class="dt">Eql</span> <span class="ot">-&gt;</span> <span class="st">&quot;$EQL&quot;</span>
+desugar e <span class="fu">=</span> e</code></pre></div>
+<p><code>desugar</code> function converts <code>let x = e in body</code> into <code>(\x -&gt; body) e</code>. <code>If</code>, <code>Fix</code> are <code>Op</code> are desugared into function applications. <code>$IF</code>, <code>$FIX</code>, <code>$ADD</code>, <code>$SUB</code>, <code>$MUL</code>, <code>$EQL</code> will be provided as primitive functions. (Note that <code>$IF</code> can be a function because we piggy back on the lazy evaluation of the host language, Haskell.)</p>
+<h1 id="compilation-to-ski-combinators">Compilation to SKI combinators</h1>
+<p>The next step is to compile expressions into a fixed, finite combinators. The key idea is to replace <code>Lam</code> and <code>Ap</code> constructors with Haskell’s built-in lambda and application constructs. The original interpreter of Poly is slow because it emulates beta reduction on top of Haskell, but our implementation avoids this overhead by utilizing the host system’s support for beta-reduction.</p>
+<p>For example,</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Lam</span> <span class="st">&quot;f&quot;</span> (<span class="dt">Lam</span> <span class="st">&quot;a&quot;</span> (<span class="dt">Lam</span> <span class="st">&quot;b&quot;</span> (<span class="dt">App</span> (<span class="dt">App</span> (<span class="dt">Var</span> <span class="st">&quot;f&quot;</span>) (<span class="dt">Var</span> <span class="st">&quot;b&quot;</span>) (<span class="dt">Var</span> <span class="st">&quot;a&quot;</span>)))</code></pre></div>
+<p>is compiled to</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">CLam</span> (\f <span class="ot">-&gt;</span> <span class="dt">CLam</span> (\a <span class="ot">-&gt;</span> <span class="dt">CLam</span> (\b <span class="ot">-&gt;</span> ap (ap f b) a)))</code></pre></div>
+<p>Here’s the definition of <code>CExpr</code>. You can see that <code>CLam</code> contains a Haskell function <code>CExpr -&gt; CExpr</code>. No variable in the lambda abstraction is necessary.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">CExpr</span>
+  <span class="fu">=</span> <span class="dt">CVar</span> <span class="dt">Name</span>
+  <span class="fu">|</span> <span class="dt">CApp</span> <span class="dt">CExpr</span> <span class="dt">CExpr</span>
+  <span class="fu">|</span> <span class="dt">CLam</span> (<span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>)
+  <span class="fu">|</span> <span class="dt">CBool</span> <span class="dt">Bool</span>
+  <span class="fu">|</span> <span class="dt">CInt</span> <span class="dt">Integer</span></code></pre></div>
+<p><code>compile</code> transforms a lambda calculus expression into an expression involving only <code>S</code>, <code>K</code>, <code>I</code> and constants. The SK compilation algorithm is well described in Simon Peyton Jones’s <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">The Implementation of Functional Programming Languages</a>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">compile ::</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+compile (<span class="dt">Var</span> n) <span class="fu">=</span> <span class="dt">CVar</span> n
+compile (<span class="dt">App</span> fun arg) <span class="fu">=</span> <span class="dt">CApp</span> (compile fun) (compile arg)
+compile (<span class="dt">Lam</span> x body) <span class="fu">=</span> abstract x (compile body)
+compile (<span class="dt">Lit</span> (<span class="dt">LInt</span> k)) <span class="fu">=</span> <span class="dt">CInt</span> k
+compile (<span class="dt">Lit</span> (<span class="dt">LBool</span> k)) <span class="fu">=</span> <span class="dt">CBool</span> k
+
+<span class="ot">abstract ::</span> <span class="dt">Name</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+abstract x (<span class="dt">CApp</span> fun arg) <span class="fu">=</span> combS (abstract x fun) (abstract x arg)
+abstract x (<span class="dt">CVar</span> n) <span class="fu">|</span> x <span class="fu">==</span> n <span class="fu">=</span> combI
+abstract _ k <span class="fu">=</span> combK k
+
+<span class="ot">combS ::</span> <span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+combS f <span class="fu">=</span> <span class="dt">CApp</span> (<span class="dt">CApp</span> (<span class="dt">CVar</span> <span class="st">&quot;$S&quot;</span>) f)
+
+<span class="ot">combK ::</span> <span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+combK <span class="fu">=</span> <span class="dt">CApp</span> (<span class="dt">CVar</span> <span class="st">&quot;$K&quot;</span>)
+
+<span class="ot">combI ::</span> <span class="dt">CExpr</span>
+combI <span class="fu">=</span> <span class="dt">CVar</span> <span class="st">&quot;$I&quot;</span></code></pre></div>
+<p>For example, <code>(\x -&gt; + x x) 5</code> is transformed as follows:</p>
+<pre><code>S --&gt; S (\x -&gt; + x) (\x -&gt; x) 5
+S --&gt; S (S (\x -&gt; +) (\x -&gt; x)) (\x -&gt; x) 5
+I --&gt; S (S (\x -&gt; +) I) (\x -&gt; x) 5
+I --&gt; S (S (\x -&gt; +) I) I 5
+K --&gt; S (S (K +) I) I 5</code></pre>
+<h1 id="primitives">Primitives</h1>
+<p>Here’s the definition of our primitive functions:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">infixl</span> <span class="dv">0</span> <span class="fu">!</span>
+<span class="ot">(!) ::</span> <span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+(<span class="dt">CLam</span> f) <span class="fu">!</span> x <span class="fu">=</span> f x
+
+<span class="ot">primitives ::</span> [(<span class="dt">String</span>, <span class="dt">CExpr</span>)]
+primitives <span class="fu">=</span>
+  [ (<span class="st">&quot;$I&quot;</span>, <span class="dt">CLam</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> x)
+  , (<span class="st">&quot;$K&quot;</span>, <span class="dt">CLam</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> <span class="dt">CLam</span> <span class="fu">$</span> \_ <span class="ot">-&gt;</span> x)
+  , (<span class="st">&quot;$S&quot;</span>, <span class="dt">CLam</span> <span class="fu">$</span> \f <span class="ot">-&gt;</span> <span class="dt">CLam</span> <span class="fu">$</span> \g <span class="ot">-&gt;</span> <span class="dt">CLam</span> <span class="fu">$</span> \x <span class="ot">-&gt;</span> f<span class="fu">!</span>x<span class="fu">!</span>(g<span class="fu">!</span>x))
+  , (<span class="st">&quot;$IF&quot;</span>, <span class="dt">CLam</span> <span class="fu">$</span> \(<span class="dt">CBool</span> cond) <span class="ot">-&gt;</span> <span class="dt">CLam</span> <span class="fu">$</span> \tr <span class="ot">-&gt;</span> <span class="dt">CLam</span> <span class="fu">$</span> \fl <span class="ot">-&gt;</span> <span class="kw">if</span> cond <span class="kw">then</span> tr <span class="kw">else</span> fl)
+  , (<span class="st">&quot;$FIX&quot;</span>, <span class="dt">CLam</span> <span class="fu">$</span> \(<span class="dt">CLam</span> f) <span class="ot">-&gt;</span> fix f)
+  , (<span class="st">&quot;$ADD&quot;</span>, arith (<span class="fu">+</span>))
+  , (<span class="st">&quot;$SUB&quot;</span>, arith (<span class="fu">-</span>))
+  , (<span class="st">&quot;$MUL&quot;</span>, arith (<span class="fu">*</span>))
+  , (<span class="st">&quot;$EQL&quot;</span>, logical (<span class="fu">==</span>))
+  ]
+
+<span class="ot">arith ::</span> (<span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>) <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+arith op <span class="fu">=</span> <span class="dt">CLam</span> <span class="fu">$</span> \(<span class="dt">CInt</span> a) <span class="ot">-&gt;</span> <span class="dt">CLam</span> <span class="fu">$</span> \(<span class="dt">CInt</span> b) <span class="ot">-&gt;</span> <span class="dt">CInt</span> (op a b)
+
+<span class="ot">logical ::</span> (<span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Bool</span>) <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+logical op <span class="fu">=</span> <span class="dt">CLam</span> <span class="fu">$</span> \(<span class="dt">CInt</span> a) <span class="ot">-&gt;</span> <span class="dt">CLam</span> <span class="fu">$</span> \(<span class="dt">CInt</span> b) <span class="ot">-&gt;</span> <span class="kw">if</span> op a b <span class="kw">then</span> true <span class="kw">else</span> false
+
+true,<span class="ot"> false ::</span> <span class="dt">CExpr</span>
+true <span class="fu">=</span> <span class="dt">CBool</span> <span class="dt">True</span>
+false <span class="fu">=</span> <span class="dt">CBool</span> <span class="dt">False</span></code></pre></div>
+<h1 id="link">Link</h1>
+<p>The final step is link our compiled program with other functions and primitives in the environment. <code>link</code> traverses the structure of <code>CExpr</code> and replaces <code>CVar</code> node with the actual function definition.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">TermEnv</span> <span class="fu">=</span> <span class="dt">Map.Map</span> <span class="dt">String</span> <span class="dt">CExpr</span>
+
+<span class="ot">emptyTmenv ::</span> <span class="dt">TermEnv</span>
+emptyTmenv <span class="fu">=</span> Map.fromList primitives
+
+<span class="ot">link ::</span> <span class="dt">TermEnv</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+link bs (<span class="dt">CApp</span> fun arg) <span class="fu">=</span> link bs fun <span class="fu">!</span> link bs arg
+link bs (<span class="dt">CVar</span> n) <span class="fu">=</span> fromJust (Map.lookup n bs)
+link _ e <span class="fu">=</span> e</code></pre></div>
+<h1 id="eval">Eval</h1>
+<p>Finally, <code>eval</code> is just a composition of <code>desugar</code>, <code>compile</code> and <code>link env</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">eval ::</span> <span class="dt">TermEnv</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> <span class="dt">CExpr</span>
+eval env <span class="fu">=</span> link env <span class="fu">.</span> compile <span class="fu">.</span> desugar
+
+<span class="ot">runEval ::</span> <span class="dt">TermEnv</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Expr</span> <span class="ot">-&gt;</span> (<span class="dt">CExpr</span>, <span class="dt">TermEnv</span>)
+runEval env nm ex <span class="fu">=</span>
+  <span class="kw">let</span> res <span class="fu">=</span> eval env ex <span class="kw">in</span>
+  (res, Map.insert nm res env)</code></pre></div>
+<h1 id="optimization">Optimization</h1>
+<p>The basic compilation algorithm shown above tends to produce large combinator expressions. New combinators such as <code>B</code>, <code>C</code>, <code>S'</code>, <code>B'</code> and <code>C'</code> can optimize both execution speed and program size.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2016-12-30-write-you-an-interpreter.html";
+    this.page.identifier = "/posts/2016-12-30-write-you-an-interpreter.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2016-12-30-write-you-an-interpreter.html">Read more</a>
+
 
 
         </div>

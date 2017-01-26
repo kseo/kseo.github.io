@@ -24,13 +24,219 @@
         <div id="content">
             <h1>Posts tagged "servant-client"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2017-01-24-generating-the-docker-client-with-servant-client.html">Generating the Docker client with servant-client</a> - January 24, 2017
-        </li>
-    
+            
+<h4><a href="../posts/2017-01-24-generating-the-docker-client-with-servant-client.html">Generating the Docker client with servant-client</a></h4> - January 24, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Generating the Docker client with servant-client</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Generating the Docker client with servant-client</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 24, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/docker.html">docker</a>, <a href="../tags/API.html">API</a>, <a href="../tags/servant.html">servant</a>, <a href="../tags/servant-client.html">servant-client</a>
+      
+  </div>
+
+<p><a href="http://haskell-servant.readthedocs.io/en/stable/">Servant</a> provides a type-level DSL for declaring web APIs. Once we write the specification with the DSL, we can do various things including:</p>
+<ul>
+<li>Write servers (this part of servant can be considered a web framework),</li>
+<li>Obtain client functions (in Haskell),</li>
+<li>Generate client functions for other programming languages,</li>
+<li>Generate documentation for your web applications</li>
 </ul>
+<p>The primary use case of Servant is to write servers, but we can use <a href="https://hackage.haskell.org/package/servant-client">servant-client</a> to generate client functions for the pre-existing web servers too! In this post, I will show you how we can generate client functions for the <a href="https://docs.docker.com/engine/api/">Docket remote API</a> automatically with servant-client.</p>
+<!--more-->
+<h1 id="api-specification">API specification</h1>
+<p>To make the exposition simple, we will specify only three APIs: <code>ping</code>, <code>version</code> and <code>containerList</code>.</p>
+<p>The simplest API is <a href="https://docs.docker.com/engine/api/v1.25/#operation/SystemPing">Ping</a> which tests if the server is accessible. Its path is <code>/v1.25/_ping</code> and it returns <code>OK</code> as a plain text with status code 200. We can succinctly describe this endpoint with Servant’s type-level DSL.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Ping</span> <span class="fu">=</span> <span class="st">&quot;_ping&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[PlainText] Text</span></code></pre></div>
+<p><a href="https://docs.docker.com/engine/api/v1.25/#operation/SystemVersion">Version</a> is a slightly more complex API which returns the version information as JSON. <code>Version</code> data type has the required fields and it declares an instance of <code>FromJSON</code> for unmarshalling JSON data into <code>Version</code>. <code>fieldLabelModifier</code> is used to bridge JSON field names to <code>Version</code> field names.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Version</span> <span class="fu">=</span> <span class="st">&quot;version&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] Version</span>
+
+<span class="kw">data</span> <span class="dt">Version</span> <span class="fu">=</span> <span class="dt">Version</span>
+  {<span class="ot"> versionVersion       ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionApiVersion    ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionMinAPIVersion ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionGitCommit     ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionGoVersion     ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionOs            ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionArch          ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionKernelVersion ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> versionExperimental  ::</span> <span class="dt">Bool</span>
+  ,<span class="ot"> versionBuildTime     ::</span> <span class="dt">Text</span>
+  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Generic</span>)
+
+<span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">Version</span> <span class="kw">where</span>
+  parseJSON <span class="fu">=</span> genericParseJSON opts
+    <span class="kw">where</span> opts <span class="fu">=</span> defaultOptions { fieldLabelModifier <span class="fu">=</span> stripPrefix <span class="st">&quot;version&quot;</span> }
+
+<span class="ot">stripPrefix ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
+stripPrefix prefix <span class="fu">=</span> fromJust <span class="fu">.</span> DL.stripPrefix prefix</code></pre></div>
+<p>Finally, <a href="https://docs.docker.com/engine/api/v1.25/#operation/ContainerList">ContainerList</a> returns the list of containers. The API takes optional query parameters such as <code>all</code>, <code>limit</code>, <code>size</code> and <code>filters</code> as specified follows. We created a newtype wrapper for <code>ContainerID</code> and declared <code>FromJSON</code> instances for <code>ContainerID</code> and <code>Container</code>. Some fields are omitted for brevity.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ContainerList</span> <span class="fu">=</span> <span class="st">&quot;containers&quot;</span> <span class="fu">:&gt;</span> <span class="st">&quot;json&quot;</span> <span class="fu">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;all&quot;</span> <span class="dt">Bool</span>
+                                            <span class="fu">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;limit&quot;</span> <span class="dt">Int</span>
+                                            <span class="fu">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;size&quot;</span> <span class="dt">Bool</span>
+                                            <span class="fu">:&gt;</span> <span class="dt">QueryParam</span> <span class="st">&quot;filters&quot;</span> <span class="dt">Text</span>
+                                            <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">'[JSON] [Container]</span>
+
+<span class="kw">newtype</span> <span class="dt">ContainerID</span> <span class="fu">=</span> <span class="dt">ContainerID</span> <span class="dt">Text</span>
+  <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>, <span class="dt">Generic</span>)
+
+<span class="kw">instance</span> <span class="dt">FromJSON</span> <span class="dt">ContainerID</span>
+
+<span class="kw">data</span> <span class="dt">Container</span> <span class="fu">=</span> <span class="dt">Container</span>
+  {<span class="ot"> containerId               ::</span> <span class="dt">ContainerID</span>
+  ,<span class="ot"> containerNames            ::</span> [<span class="dt">Text</span>]
+  ,<span class="ot"> containerImage            ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> containerImageID          ::</span> <span class="dt">ImageID</span>
+  ,<span class="ot"> containerCommand          ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> containerCreated          ::</span> <span class="dt">Int</span>
+  <span class="co">-- FIXME: Add Ports</span>
+  ,<span class="ot"> containerSizeRw           ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span>
+  ,<span class="ot"> containerSizeRootFs       ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span>
+  <span class="co">-- FIXME: Add Labels</span>
+  ,<span class="ot"> containerState            ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> containerStatus           ::</span> <span class="dt">Text</span>
+  <span class="co">-- FIXME: Add HostConfig</span>
+  <span class="co">-- FIXME: Add NetworkSettings</span>
+  <span class="co">-- FIXME: Add Mounts</span>
+  } <span class="kw">deriving</span> (<span class="dt">Show</span>, <span class="dt">Eq</span>, <span class="dt">Generic</span>)</code></pre></div>
+<p>Our API is just the combination of these endpoints.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Api</span> <span class="fu">=</span> <span class="dt">Ping</span> <span class="fu">:&lt;|&gt;</span> <span class="dt">Version</span> <span class="fu">:&lt;|&gt;</span> <span class="dt">ContainerList</span></code></pre></div>
+<h1 id="api-versioning">API Versioning</h1>
+<p>Because the Docker remote API has many versions, it adds a version prefix in the path. Servant allows us to expression this version scheme by declaring a new Api with the version prefix.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ApiV1_25</span> <span class="fu">=</span> <span class="st">&quot;v1.25&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Api</span></code></pre></div>
+<p>We can also mix-and-match many endpoints as the Docker remote API changes. Let’a assume that the docker API version v1.26 changed the specification of the Version endpoint. We can reuse unchanged endpoints by replacing only the changed endpoints with new ones.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Version1_26</span> <span class="fu">=</span> <span class="fu">...</span>
+<span class="kw">type</span> <span class="dt">ApiV1_26</span> <span class="fu">=</span> <span class="st">&quot;v1.26&quot;</span> <span class="fu">:&gt;</span> (<span class="dt">Ping</span> <span class="fu">:&lt;|&gt;</span> <span class="dt">Version1_26</span> <span class="fu">:&lt;|&gt;</span> <span class="dt">ContainerList</span>)</code></pre></div>
+<h1 id="generating-client-functions">Generating Client Functions</h1>
+<p>Now it’s time to generate client functions from the specification. It’s super easy! We can simply pass our API to <code>client</code> function.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">ping ::</span> <span class="dt">ClientM</span> <span class="dt">Text</span>
+<span class="ot">version ::</span> <span class="dt">ClientM</span> <span class="dt">Version</span>
+<span class="ot">containerList' ::</span> <span class="dt">Maybe</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Bool</span> <span class="ot">-&gt;</span> <span class="dt">Maybe</span> <span class="dt">Text</span> <span class="ot">-&gt;</span> <span class="dt">ClientM</span> [<span class="dt">Container</span>]
+
+ping
+  <span class="fu">:&lt;|&gt;</span> version
+  <span class="fu">:&lt;|&gt;</span> containerList' <span class="fu">=</span> client apiV1_25</code></pre></div>
+<p><code>ping</code> and <code>version</code> functions are okay, but the signature <code>containerList'</code> is a bit confusing. We have to pass four <code>Maybe</code> values and two of them have the <code>Bool</code> type and it is not easy to remember the order of the arguments. We can improve the function by declaring a wrapper function <code>containerList</code>. It takes a <code>ContainerListOptions</code>, and the users of the function can pass <code>defaultContainerListOptions</code> as the default value.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">ContainerListOptions</span> <span class="fu">=</span> <span class="dt">ContainerListOptions</span>
+  {<span class="ot"> containerListOptionAll     ::</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>
+  ,<span class="ot"> containerListOptionLimit   ::</span> <span class="dt">Maybe</span> <span class="dt">Int</span>
+  ,<span class="ot"> containerListOptionSize    ::</span> <span class="dt">Maybe</span> <span class="dt">Bool</span>
+  ,<span class="ot"> containerListOptionFilters ::</span> <span class="dt">Maybe</span> <span class="dt">Text</span>
+  } <span class="kw">deriving</span> (<span class="dt">Eq</span>, <span class="dt">Show</span>)
+
+<span class="ot">defaultContainerListOptions ::</span> <span class="dt">ContainerListOptions</span>
+defaultContainerListOptions <span class="fu">=</span> <span class="dt">ContainerListOptions</span>
+  { containerListOptionAll     <span class="fu">=</span> <span class="dt">Just</span> <span class="dt">False</span>
+  , containerListOptionLimit   <span class="fu">=</span> <span class="dt">Nothing</span>
+  , containerListOptionSize    <span class="fu">=</span> <span class="dt">Just</span> <span class="dt">False</span>
+  , containerListOptionFilters <span class="fu">=</span> <span class="dt">Nothing</span>
+  }
+
+<span class="ot">containerList ::</span> <span class="dt">ContainerListOptions</span> <span class="ot">-&gt;</span> <span class="dt">ClientM</span> [<span class="dt">Container</span>]
+containerList opt <span class="fu">=</span> containerList' (containerListOptionAll opt)
+                                   (containerListOptionLimit opt)
+                                   (containerListOptionSize opt)
+                                   (containerListOptionFilters opt)</code></pre></div>
+<p>Because the expressiveness of Haskell is much more powerful than that of the REST API specification, these wrappings are somewhat unavoidable to make our client functions more Haskell-friendly.</p>
+<h1 id="using-client-functions">Using Client Functions</h1>
+<p>Now our client functions for the Docker API is ready. We need to prepare a <code>ClientEnv</code> by passing the host, port and url prefix of the server. We also created a custom connection manager which uses the domain socket for communication because the Docker server listens on the domain socket by default. Interested readers are referred to my previous article <a href="https://kseo.github.io/posts/2017-01-23-custom-connection-manager-for-http-client.html">Custom connection manager for http-client</a> for the implementation details of <code>newUnixSocketManager</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">query ::</span> <span class="dt">ClientM</span> [<span class="dt">Container</span>]
+query <span class="fu">=</span> <span class="kw">do</span>
+  ok <span class="ot">&lt;-</span> ping
+  liftIO <span class="fu">$</span>  print ok
+  version <span class="ot">&lt;-</span> version
+  liftIO <span class="fu">$</span> print (versionVersion version)
+  containerList defaultContainerListOptions
+
+<span class="ot">app ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+app host port <span class="fu">=</span> <span class="kw">do</span>
+  manager <span class="ot">&lt;-</span> newUnixSocketManager <span class="st">&quot;/var/run/docker.sock&quot;</span>
+  res <span class="ot">&lt;-</span> runClientM query (<span class="dt">ClientEnv</span> manager (<span class="dt">BaseUrl</span> <span class="dt">Http</span> host port <span class="st">&quot;&quot;</span>))
+  <span class="kw">case</span> res <span class="kw">of</span>
+    <span class="dt">Left</span> err          <span class="ot">-&gt;</span> putStrLn <span class="fu">$</span> <span class="st">&quot;Error: &quot;</span> <span class="fu">++</span> show err
+    <span class="dt">Right</span> containers  <span class="ot">-&gt;</span> mapM_ print containers</code></pre></div>
+<p>Because <code>ClientM</code> is a monad, we can combine multiple monadic actions into one. <code>query</code> function pings the server, queries the version information and then request the list of containers.</p>
+<h1 id="swagger">Swagger</h1>
+<p>So far I manually specified the API with Servant’s DSL, but if the server has the <a href="http://swagger.io/">Swagger</a> specification we can even generate the Servant DSL from the Swagger specification. <a href="https://github.com/swagger-api/swagger-codegen">swagger-codegen</a> has the <a href="https://github.com/swagger-api/swagger-codegen/blob/master/modules/swagger-codegen/src/main/java/io/swagger/codegen/languages/HaskellServantCodegen.java">HaskellServantCodegen</a>, so we can use it! (I haven’t tried it yet.)</p>
+<h1 id="wrap-up">Wrap-up</h1>
+<p>Writing client functions for existing servers are boring and repetitive. With <em>servant-client</em>, we no longer need to write these functions. We just specify the API and Servant writes the client functions for us. Have fun with Servant!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-24-generating-the-docker-client-with-servant-client.html";
+    this.page.identifier = "/posts/2017-01-24-generating-the-docker-client-with-servant-client.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-24-generating-the-docker-client-with-servant-client.html">Read more</a>
+
 
 
         </div>

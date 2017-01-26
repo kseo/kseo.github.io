@@ -24,17 +24,241 @@
         <div id="content">
             <h1>Posts tagged "category theory"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2016-12-12-unfold-and-fold.html">unfold and fold</a> - December 12, 2016
-        </li>
-    
-        <li>
-            <a href="../posts/2016-06-01-learn-haskell-to-be-a-better-programmer.html">Learn Haskell to be a better programmer</a> - June  1, 2016
-        </li>
-    
-</ul>
+            
+<h4><a href="../posts/2016-12-12-unfold-and-fold.html">unfold and fold</a></h4> - December 12, 2016
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - unfold and fold</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>unfold and fold</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on December 12, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/unfold.html">unfold</a>, <a href="../tags/fold.html">fold</a>, <a href="../tags/category%20theory.html">category theory</a>
+      
+  </div>
+
+<h1 id="unfold">unfold</h1>
+<p>Every functional programmer loves <em>fold</em>. fold is <a href="http://www.cs.nott.ac.uk/~pszgmh/fold.pdf">universal and expressive</a>. But <em>fold</em> has a secret twin brother named <em>unfold</em> which undoes what <em>fold</em> does. In this post, we will see what <em>unfold</em> is and how it is related to <em>fold</em>.</p>
+<p><code>unfoldr</code> builds a list from a seed value while <code>foldr</code> reduces a list to a summary value.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a]</code></pre></div>
+<p><code>unfoldr</code> takes the element and returns <code>Nothing</code> if it is done producing the list or returns <code>Just (a, b)</code>, in which case, <code>a</code> is a prepended to the list and <code>b</code> is used as the next element in a recursive call.</p>
+<p>For example, we can define <code>iterate</code> as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">iterate f <span class="fu">==</span> unfoldr (\x <span class="ot">-&gt;</span> <span class="dt">Just</span> (x, f x))</code></pre></div>
+<p>Another simple use of <code>unfoldr</code>:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">&gt;</span> unfoldr (\b <span class="ot">-&gt;</span> <span class="kw">if</span> b <span class="fu">==</span> <span class="dv">0</span> <span class="kw">then</span> <span class="dt">Nothing</span> <span class="kw">else</span> <span class="dt">Just</span> (b, b<span class="fu">-</span><span class="dv">1</span>)) <span class="dv">10</span>
+[<span class="dv">10</span>,<span class="dv">9</span>,<span class="dv">8</span>,<span class="dv">7</span>,<span class="dv">6</span>,<span class="dv">5</span>,<span class="dv">4</span>,<span class="dv">3</span>,<span class="dv">2</span>,<span class="dv">1</span>]</code></pre></div>
+<p>As the name suggests, <em>unfold</em> is the categorical dual of <em>fold</em>. (Maybe it should be <em>cofold</em> instead of <em>unfold</em>.) It means we can get the signature of <code>foldr</code> by reversing the arrows of <code>unfoldr</code>, and vice versa.</p>
+<p>Let’s try this.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])
+foldr<span class="ot">   ::</span> (<span class="dt">Maybe</span> (a, b) <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> ([a] <span class="ot">-&gt;</span> b)</code></pre></div>
+<p>Oops! It is not our beloved <code>foldr</code> function whose signature is:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">foldr<span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> b</code></pre></div>
+<h1 id="type-isomorphisms">Type isomorphisms</h1>
+<p>But don’t be disappointed! We can show that they represent the same thing by using type isomorphisms:</p>
+<pre><code>(a → b → b) → b → ([a] → b)</code></pre>
+<blockquote>
+<p>by a -&gt; b -&gt; c ~= (a, b) -&gt; c</p>
+</blockquote>
+<pre><code>((a, b) → b) → b → ([a] → b)</code></pre>
+<blockquote>
+<p>by a ~= () -&gt; a</p>
+</blockquote>
+<pre><code>((a, b) → b) → (() -&gt; b) → ([a] → b)</code></pre>
+<blockquote>
+<p>by a -&gt; b -&gt; c ~= (a, b) -&gt; c</p>
+</blockquote>
+<pre><code>(((a, b) → b), (() -&gt; b)) → ([a] → b)</code></pre>
+<blockquote>
+<p>by ((a -&gt; c), (b -&gt; c)) ~= Either a b -&gt; c</p>
+</blockquote>
+<pre><code>((Either (a, b) ()) → b) → ([a] → b)</code></pre>
+<blockquote>
+<p>by Either a () ~= Maybe a</p>
+</blockquote>
+<pre><code>(Maybe (a, b) -&gt; b) → ([a] → b)</code></pre>
+<p>Now we can clearly see that <em>unfold</em> is the dual of <em>fold</em>. If you want to learn more on the relationship between <em>fold</em> and <em>unfold</em>, see Conal Elliott’s <a href="http://conal.net/talks/folds-and-unfolds.pdf">Folds and unfolds all around us</a>.</p>
+<h1 id="implementation">Implementation</h1>
+<p>Here’s an implementation of <code>unfoldr</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">unfoldr ::</span> (b <span class="ot">-&gt;</span> <span class="dt">Maybe</span> (a, b)) <span class="ot">-&gt;</span> (b <span class="ot">-&gt;</span> [a])
+unfoldr f b <span class="fu">=</span> <span class="kw">case</span> f b <span class="kw">of</span>
+                <span class="dt">Just</span> (a, b') <span class="ot">-&gt;</span> a <span class="fu">:</span> unfoldr f b'
+                <span class="dt">Nothing</span> <span class="ot">-&gt;</span> []</code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2016-12-12-unfold-and-fold.html";
+    this.page.identifier = "/posts/2016-12-12-unfold-and-fold.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2016-12-12-unfold-and-fold.html">Read more</a>
+
+<h4><a href="../posts/2016-06-01-learn-haskell-to-be-a-better-programmer.html">Learn Haskell to be a better programmer</a></h4> - June  1, 2016
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Learn Haskell to be a better programmer</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Learn Haskell to be a better programmer</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on June  1, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/category%20theory.html">category theory</a>, <a href="../tags/composition.html">composition</a>
+      
+  </div>
+
+<p>Haskell is notorious for being hard to learn. Pure functions, lazy evaluation, Haskell type system are just start.</p>
+<p>To use Haskell effectively, it is necessary to learn the abstract concepts borrowed from the category theory such as Functor, Applicative Functor and Monad. You need to understand these concepts throughly because most of Haskell code is written using these abstract non-sense.</p>
+<p>Of course, it is still possible to write IO code and use <code>Maybe</code>, <code>Either</code> and <code>List</code> types without understanding Monad. But then why do you want to learn Haskell anyway? If you avoid learning these concpets, you can’t learn much from Haskell. It would be much beneficial to learn other more practical languages.</p>
+<p>Before explaining why you should learn Haskell, let’s ask a question. What’s the essence of programming?</p>
+<p>Programming is basically instructing the computer to some labor. For example, “Load the value at memory x into the register, add 1 to it, and store the value back to the memory” is a program.</p>
+<p>But a program is not just a sequence of instructions. It is a solution to our real problem. What makes programming interesting is that the problems we solve as a programmer is much bigger in size than simply loading a value from the memory and doing some arithmetic.</p>
+<p>So programming is to divide a big problem that can’t be solved at once into many small problems, solve them independently, and compose the resulting small programs into a program that solves the original problem. In other words, the essence of programming is recomposition after decomposition. See Bartosz Milewski’s <a href="https://bartoszmilewski.com/2014/11/04/category-the-essence-of-composition/">Category: The Essence of Composition</a>.</p>
+<p>Here comes the most important property of programming, which is called <em>composability</em>. We need to solve many complex problems which are similar but not exactly same. If we can compose small reusable programs into a new program which solves the new problem, the productivity of a programmer will be dramatically increased.</p>
+<p>The changes of programming paradigm in the history can be explained as our continous endeavor to enhance the composability. For example, the shift from assembly programming with goto to structure programming emphasizing subroutine and loop was necessary as the problem size increases. We desparately needed a better way to compose programs.</p>
+<p>But as the complexity of problem drastically increased again in 80-90s, we needed a new programming paradigm called object-oriented programming. Classes and objects, encapsulation and information hiding were another endeavor to imporve the composability of programs.</p>
+<p>Now in 2010s, functional programming is gaining attention. The complexity of problems we have today is enormous and we need new tools and concepts to cope with ever increasing complexity. Classes are not enough. We need more composability.</p>
+<p>Haskell provides new tools and concepts which can help organize code better. Concepts like Functor, Applicative Functor, Monad, Arrow and Lense all provide new means to compose programs. See Gabriel Gonzalez’s <a href="http://www.haskellforall.com/2012/08/the-category-design-pattern.html">The category design pattern</a>.</p>
+<p>In fact, you already know some of these concepts. For example, ES6’s Promise, C#’s null propagation operator, Python’s list comprehension all share the same monadic structure. But you probably never noticed the common structure lying behind these different language features. After you learn Haskell, you will begin to see the common structure you’ve never imagined before.</p>
+<p>In summary, the essence of programming is <em>composition</em>. Haskell provides new tools and concepts to compose programs. Learning Haskell improves your code organizational skills and make you prepared to handle more complex problems. <a href="http://learnyouahaskell.com/chapters">Learn you a Haskell for great good!</a></p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2016-06-01-learn-haskell-to-be-a-better-programmer.html";
+    this.page.identifier = "/posts/2016-06-01-learn-haskell-to-be-a-better-programmer.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2016-06-01-learn-haskell-to-be-a-better-programmer.html">Read more</a>
+
 
 
         </div>

@@ -24,13 +24,113 @@
         <div id="content">
             <h1>Posts tagged "von Neumann"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2013-12-26-defects-of-von-neumann-languages.html">Defects of von Neumann languages</a> - December 26, 2013
-        </li>
-    
+            
+<h4><a href="../posts/2013-12-26-defects-of-von-neumann-languages.html">Defects of von Neumann languages</a></h4> - December 26, 2013
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Defects of von Neumann languages</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Defects of von Neumann languages</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on December 26, 2013
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/von%20Neumann.html">von Neumann</a>, <a href="../tags/John%20Backus.html">John Backus</a>, <a href="../tags/FP.html">FP</a>
+      
+  </div>
+
+<p><a href="https://en.wikipedia.org/wiki/John_Backus">John Backus</a>, the inventor of Fortran criticized the defects of von Neumann languages (aka, imperative languages) in his <a href="http://worrydream.com/refs/Backus-CanProgrammingBeLiberated.pdf">1977 Turing Award Lecture</a>. Most of his points still remain valid until today!</p>
+<p>The defects can be summarized:</p>
+<ul>
+<li>close coupling of semantics to state transitions</li>
+<li>division of programming into a world of expressions and a world of statements</li>
+<li>inability to effectively use powerful combining forms for building new programs from existing ones</li>
+<li>lack of mathematical properties for reasoning about programs</li>
 </ul>
+<p>He described conventional programming languages as <em>fat and flabby</em> because each successive programming language adds more and more features with little cleaning up. Even though most conventional languages are similar as they simply add higher level constructs to the same underlying von Neumann computing model, learning a new language still takes long time due to many subtle corner cases in their semantics.</p>
+<p>He evaluated von Neumann model with 4 criteria:</p>
+<ul>
+<li><em>Foundations</em>: complex, bulky, not useful compared to Turing machines, various automata, Church’s lambda calculus or Curry’s system of combinators</li>
+<li><em>History sensitivity</em>: have storage, are history sensitive</li>
+<li><em>Type of semantics</em>: state transition with complex states (not simple as in automata)</li>
+<li><em>Clarity and conceptual usefulness of programs</em>: programs can be moderately clear, are not very useful conceptually</li>
+</ul>
+<p>What’s the von Neumann computer? It has three parts: CPU, a store and a connecting tube that can transmit a single word between the CPU and the store. Programming on this machine is to change the contents of the store by repeatedly transferring single words between CPU and the store through the tube. So he called this tube the von Neumann bottleneck.</p>
+<p>By the von Neumann bottleneck, he does not mean the limited bandwidth of the tunnel (bus). The real problem is that it becomes an intellectual bottleneck that keeps us tied to word-at-a-time thinking instead of larger conceptual thinking. The assignment statement in von Neumann languages corresponds to the von Neumann bottleneck which keeps us thinking in word-at-a-time terms in much the same way the computer’s bottleneck does.</p>
+<p>So he proposed Functional Programming (FP) system as an alternative to von Neumann languages. FP is a functional programming language in point-free style. Please read the original paper for the details of the language. If you are interested in the implementation of FP, <a href="https://github.com/kseo/fp">FP</a> is my Haksell implementation of FP.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2013-12-26-defects-of-von-neumann-languages.html";
+    this.page.identifier = "/posts/2013-12-26-defects-of-von-neumann-languages.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2013-12-26-defects-of-von-neumann-languages.html">Read more</a>
+
 
 
         </div>

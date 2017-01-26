@@ -24,54 +24,63 @@
         <div id="content">
             <h1>Home</h1>
 
-            <h2>Welcome to Kwang Yul Seo's Haskell Blog</h2>
+            <img src="./images/haskell-logo.png" style="float: right; margin: 10px;" />
 
-<img src="./images/haskell-logo.png" style="float: right; margin: 10px;" />
 
-<h2>Recent Posts</h2>
+<h4><a href="./posts/2017-01-25-write-your-own-stream-processing-library-part1.html">Write your own stream processing library Part1</a></h4> - January 25, 2017
+<article>
+
+    <p><a href="https://hackage.haskell.org/package/pipes">pipes</a> and <a href="https://hackage.haskell.org/package/conduit">conduit</a> are two competing libraries for handling stream data processing in Haskell. Though both libraries provide excellent tutorials on the usage of the libraries, the implementation details are impenetrable to most Haskell programmers.</p>
+<p>The best way to understand how these streaming libraries work is to write a minimalistic version by ourselves. In this post, I will show you how we can write a small streaming data library with <em>coroutine</em>. Our implementation is based on Mario Blazevic’s excellent article <a href="https://themonadreader.files.wordpress.com/2011/10/issue19.pdf">Coroutine Pipelines</a>.</p>
+
+
+</article>
+<a href="./posts/2017-01-25-write-your-own-stream-processing-library-part1.html">Read more</a>
+
+<h4><a href="./posts/2017-01-24-generating-the-docker-client-with-servant-client.html">Generating the Docker client with servant-client</a></h4> - January 24, 2017
+<article>
+
+    <p><a href="http://haskell-servant.readthedocs.io/en/stable/">Servant</a> provides a type-level DSL for declaring web APIs. Once we write the specification with the DSL, we can do various things including:</p>
 <ul>
-    
-        <li>
-            <a href="./posts/2017-01-25-write-your-own-stream-processing-library-part1.html">Write your own stream processing library Part1</a> - January 25, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-24-generating-the-docker-client-with-servant-client.html">Generating the Docker client with servant-client</a> - January 24, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-23-custom-connection-manager-for-http-client.html">Custom connection manager for http-client</a> - January 23, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-21-writer-monad.html">Writer monad</a> - January 21, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-20-how-servant%27s-type-safe-links-work.html">How Servant's type-safe links work</a> - January 20, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-19-fun-with-hint.html">Fun with hint</a> - January 19, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-18-natural-transformations-in-servant.html">Natural transformations in Servant</a> - January 18, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-16-type-level-functions-using-closed-type-families.html">Type-level functions using closed type families</a> - January 16, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-15-data-proxy.html">Data.Proxy</a> - January 15, 2017
-        </li>
-    
-        <li>
-            <a href="./posts/2017-01-14-memoization-in-hasekll.html">Memoization in Haskell</a> - January 14, 2017
-        </li>
-    
+<li>Write servers (this part of servant can be considered a web framework),</li>
+<li>Obtain client functions (in Haskell),</li>
+<li>Generate client functions for other programming languages,</li>
+<li>Generate documentation for your web applications</li>
 </ul>
+<p>The primary use case of Servant is to write servers, but we can use <a href="https://hackage.haskell.org/package/servant-client">servant-client</a> to generate client functions for the pre-existing web servers too! In this post, I will show you how we can generate client functions for the <a href="https://docs.docker.com/engine/api/">Docket remote API</a> automatically with servant-client.</p>
+
+
+</article>
+<a href="./posts/2017-01-24-generating-the-docker-client-with-servant-client.html">Read more</a>
+
+<h4><a href="./posts/2017-01-23-custom-connection-manager-for-http-client.html">Custom connection manager for http-client</a></h4> - January 23, 2017
+<article>
+
+    <p><a href="https://www.stackage.org/haddock/lts-7.12/http-client-0.4.31.2/Network-HTTP-Client.html">http-client</a> provides the low-level API for HTTP client. In this post, I will explain how to create custom connection managers. If you want to know the basics of the library, read <a href="https://haskell-lang.org/library/http-client">Making HTTP requests</a> first.</p>
+
+
+</article>
+<a href="./posts/2017-01-23-custom-connection-manager-for-http-client.html">Read more</a>
+
+<h4><a href="./posts/2017-01-21-writer-monad.html">Writer monad</a></h4> - January 21, 2017
+<article>
+
+    <p>The <em>Writer monad</em> represents computations which produce a stream of data in addition to the computed values. It is commonly used by code generators to emit code.</p>
+
+
+</article>
+<a href="./posts/2017-01-21-writer-monad.html">Read more</a>
+
+<h4><a href="./posts/2017-01-20-how-servant%27s-type-safe-links-work.html">How Servant's type-safe links work</a></h4> - January 20, 2017
+<article>
+
+    <p>Many Haskell web frameworks provide so called <em>type-safe links</em>. Servant is no exception and it provides one of the strongest safety check. It statically guarantees that all links are valid endpoints of the server!</p>
+<p>In servant, we can create a type-safe URI using <code>safeLink</code> function. It takes both <em>the whole API</em> and <em>the API endpoint</em> we would like to point to. It signals a type error if the endpoint does not belong to the whole api.</p>
+
+
+</article>
+<a href="./posts/2017-01-20-how-servant%27s-type-safe-links-work.html">Read more</a>
+
 
 
 <p>…or you can find more in the <a href="./archive.html">archives</a>.</p>

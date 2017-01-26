@@ -24,13 +24,124 @@
         <div id="content">
             <h1>Posts tagged "quasiquotation"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2014-02-06-multi-line-strings-in-haskell.html">Multi-line strings in Haskell</a> - February  6, 2014
-        </li>
-    
-</ul>
+            
+<h4><a href="../posts/2014-02-06-multi-line-strings-in-haskell.html">Multi-line strings in Haskell</a></h4> - February  6, 2014
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Multi-line strings in Haskell</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Multi-line strings in Haskell</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on February  6, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/multi-line%20string.html">multi-line string</a>, <a href="../tags/quasiquotation.html">quasiquotation</a>
+      
+  </div>
+
+<p>Haskell supports multi-line string literals in several ways.</p>
+<h2 id="unlines">unlines</h2>
+<p><a href="http://hackage.haskell.org/package/base-4.6.0.1/docs/Prelude.html#v:unlines">unlines</a> joins lines, after appending a terminating newline to each.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">multi <span class="fu">=</span> unlines [<span class="st">&quot;line1&quot;</span>, <span class="st">&quot;line2&quot;</span>, <span class="st">&quot;line3&quot;</span>]</code></pre></div>
+<h2 id="multi-line-string-literal">Multi-line string literal</h2>
+<p>We should escape it using <code>\</code> and then another <code>\</code> where the string starts again.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">multi <span class="fu">=</span> <span class="st">&quot;line1\</span>
+<span class="st">\line2\</span>
+<span class="st">\line3&quot;</span></code></pre></div>
+<h2 id="quasiquotation">Quasiquotation</h2>
+<p>The <a href="http://hackage.haskell.org/package/raw-strings-qq">raw-strings-qq</a> package provides a quasiquoter for raw string literals. In addition to supporting multi-line string, it does not recognize escape sequences. So we don’t need to add <code>\</code> as in multi-line string literals. <code>{-# LANGUAGE QuasiQuotes #-}</code> is required to use this feature.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE QuasiQuotes #-}</span>
+<span class="kw">import </span><span class="dt">Text.RawString.QQ</span>
+multi <span class="fu">=</span> [r|line1
+line2
+line3|]</code></pre></div>
+<p>I prefer quasiquotation because I use multi-line string literals for HTML/XML fragments and it is laborious to escape all special characters such as quotes.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE QuasiQuotes #-}</span>
+<span class="kw">import </span><span class="dt">Text.RawString.QQ</span>
+ 
+<span class="ot">multiline ::</span> <span class="dt">String</span>
+multiline <span class="fu">=</span> [r|&lt;HTML&gt;
+&lt;HEAD&gt;
+&lt;TITLE&gt;Auto-generated html formated source&lt;/TITLE&gt;
+&lt;META HTTP-EQUIV=&quot;Content-Type&quot; CONTENT=&quot;text/html; charset=windows-1252&quot;&gt;
+&lt;/HEAD&gt;
+&lt;BODY LINK=&quot;800080&quot; BGCOLOR=&quot;#ffffff&quot;&gt;
+&lt;P&gt; &lt;/P&gt;
+&lt;PRE&gt;|]</code></pre></div>
+<p>There are other quasi-quote packages such as <a href="http://hackage.haskell.org/package/interpolatedstring-qq">string-qq</a>, <a href="http://hackage.haskell.org/package/string-quote">string-quote</a> and <a href="http://hackage.haskell.org/package/interpolatedstring-qq">interpolatedstring-qq</a>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2014-02-06-multi-line-strings-in-haskell.html";
+    this.page.identifier = "/posts/2014-02-06-multi-line-strings-in-haskell.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2014-02-06-multi-line-strings-in-haskell.html">Read more</a>
+
 
 
         </div>

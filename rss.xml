@@ -11,23 +11,7 @@
         <item>
     <title>Write your own stream processing library Part1</title>
     <link>http://kseo.github.io//posts/2017-01-25-write-your-own-stream-processing-library-part1.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 25, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/coroutine.html">coroutine</a>, <a href="/tags/generator.html">generator</a>, <a href="/tags/iteratee.html">iteratee</a>, <a href="/tags/pipeline.html">pipeline</a>, <a href="/tags/conduit.html">conduit</a>, <a href="/tags/pipes.html">pipes</a>
-      
-  </div>
-
-<p><a href="https://hackage.haskell.org/package/pipes">pipes</a> and <a href="https://hackage.haskell.org/package/conduit">conduit</a> are two competing libraries for handling stream data processing in Haskell. Though both libraries provide excellent tutorials on the usage of the libraries, the implementation details are impenetrable to most Haskell programmers.</p>
+    <description><![CDATA[<p><a href="https://hackage.haskell.org/package/pipes">pipes</a> and <a href="https://hackage.haskell.org/package/conduit">conduit</a> are two competing libraries for handling stream data processing in Haskell. Though both libraries provide excellent tutorials on the usage of the libraries, the implementation details are impenetrable to most Haskell programmers.</p>
 <p>The best way to understand how these streaming libraries work is to write a minimalistic version by ourselves. In this post, I will show you how we can write a small streaming data library with <em>coroutine</em>. Our implementation is based on Mario Blazevic’s excellent article <a href="https://themonadreader.files.wordpress.com/2011/10/issue19.pdf">Coroutine Pipelines</a>.</p>
 <!--more-->
 <h1 id="generator">Generator</h1>
@@ -97,28 +81,7 @@ alternate g1 g2 <span class="fu">=</span> <span class="dt">Generator</span> <spa
 <p>We can see that the outputs of <code>triple 1</code> and <code>triple 2</code> are intermingled.</p>
 <pre><code>λ&gt; runGenerator $ alternate (triple 1) (triple 2)
 ([1,2,1,2,1,2],())</code></pre>
-<p>Part 2 of this post will continue the discussion with <em>Iteratees</em>.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-25-write-your-own-stream-processing-library-part1.html";
-    this.page.identifier = "/posts/2017-01-25-write-your-own-stream-processing-library-part1.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+<p>Part 2 of this post will continue the discussion with <em>Iteratees</em>.</p>]]></description>
     <pubDate>Wed, 25 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-25-write-your-own-stream-processing-library-part1.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -126,23 +89,7 @@ var disqus_config = function () {
 <item>
     <title>Generating the Docker client with servant-client</title>
     <link>http://kseo.github.io//posts/2017-01-24-generating-the-docker-client-with-servant-client.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 24, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/docker.html">docker</a>, <a href="/tags/API.html">API</a>, <a href="/tags/servant.html">servant</a>, <a href="/tags/servant-client.html">servant-client</a>
-      
-  </div>
-
-<p><a href="http://haskell-servant.readthedocs.io/en/stable/">Servant</a> provides a type-level DSL for declaring web APIs. Once we write the specification with the DSL, we can do various things including:</p>
+    <description><![CDATA[<p><a href="http://haskell-servant.readthedocs.io/en/stable/">Servant</a> provides a type-level DSL for declaring web APIs. Once we write the specification with the DSL, we can do various things including:</p>
 <ul>
 <li>Write servers (this part of servant can be considered a web framework),</li>
 <li>Obtain client functions (in Haskell),</li>
@@ -150,6 +97,7 @@ var disqus_config = function () {
 <li>Generate documentation for your web applications</li>
 </ul>
 <p>The primary use case of Servant is to write servers, but we can use <a href="https://hackage.haskell.org/package/servant-client">servant-client</a> to generate client functions for the pre-existing web servers too! In this post, I will show you how we can generate client functions for the <a href="https://docs.docker.com/engine/api/">Docket remote API</a> automatically with servant-client.</p>
+<!--more-->
 <h1 id="api-specification">API specification</h1>
 <p>To make the exposition simple, we will specify only three APIs: <code>ping</code>, <code>version</code> and <code>containerList</code>.</p>
 <p>The simplest API is <a href="https://docs.docker.com/engine/api/v1.25/#operation/SystemPing">Ping</a> which tests if the server is accessible. Its path is <code>/v1.25/_ping</code> and it returns <code>OK</code> as a plain text with status code 200. We can succinctly describe this endpoint with Servant’s type-level DSL.</p>
@@ -265,28 +213,7 @@ app host port <span class="fu">=</span> <span class="kw">do</span>
 <h1 id="swagger">Swagger</h1>
 <p>So far I manually specified the API with Servant’s DSL, but if the server has the <a href="http://swagger.io/">Swagger</a> specification we can even generate the Servant DSL from the Swagger specification. <a href="https://github.com/swagger-api/swagger-codegen">swagger-codegen</a> has the <a href="https://github.com/swagger-api/swagger-codegen/blob/master/modules/swagger-codegen/src/main/java/io/swagger/codegen/languages/HaskellServantCodegen.java">HaskellServantCodegen</a>, so we can use it! (I haven’t tried it yet.)</p>
 <h1 id="wrap-up">Wrap-up</h1>
-<p>Writing client functions for existing servers are boring and repetitive. With <em>servant-client</em>, we no longer need to write these functions. We just specify the API and Servant writes the client functions for us. Have fun with Servant!</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-24-generating-the-docker-client-with-servant-client.html";
-    this.page.identifier = "/posts/2017-01-24-generating-the-docker-client-with-servant-client.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+<p>Writing client functions for existing servers are boring and repetitive. With <em>servant-client</em>, we no longer need to write these functions. We just specify the API and Servant writes the client functions for us. Have fun with Servant!</p>]]></description>
     <pubDate>Tue, 24 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-24-generating-the-docker-client-with-servant-client.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -294,23 +221,8 @@ var disqus_config = function () {
 <item>
     <title>Custom connection manager for http-client</title>
     <link>http://kseo.github.io//posts/2017-01-23-custom-connection-manager-for-http-client.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 23, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/http-client.html">http-client</a>, <a href="/tags/Network.HTTP.Client.html">Network.HTTP.Client</a>, <a href="/tags/Manager.html">Manager</a>
-      
-  </div>
-
-<p><a href="https://www.stackage.org/haddock/lts-7.12/http-client-0.4.31.2/Network-HTTP-Client.html">http-client</a> provides the low-level API for HTTP client. In this post, I will explain how to create custom connection managers. If you want to know the basics of the library, read <a href="https://haskell-lang.org/library/http-client">Making HTTP requests</a> first.</p>
+    <description><![CDATA[<p><a href="https://www.stackage.org/haddock/lts-7.12/http-client-0.4.31.2/Network-HTTP-Client.html">http-client</a> provides the low-level API for HTTP client. In this post, I will explain how to create custom connection managers. If you want to know the basics of the library, read <a href="https://haskell-lang.org/library/http-client">Making HTTP requests</a> first.</p>
+<!--more-->
 <p>Every HTTP request is made via a <code>Manager</code>. It handles the details of creating connections to the server such as managing a connection pool. It also allows us to configure various settings and setup secure connections (HTTPS).</p>
 <p>The easiest way to create one is to use <code>newManager defaultManagerSettings</code> as follows.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.HTTP.Client</span>
@@ -355,28 +267,7 @@ main <span class="fu">=</span> <span class="kw">do</span>
   response <span class="ot">&lt;-</span> httpLbs request manager
 
   putStrLn <span class="fu">$</span> <span class="st">&quot;The status code was: &quot;</span> <span class="fu">++</span> (show <span class="fu">$</span> statusCode <span class="fu">$</span> responseStatus response)
-  print <span class="fu">$</span> responseBody response</code></pre></div>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-23-custom-connection-manager-for-http-client.html";
-    this.page.identifier = "/posts/2017-01-23-custom-connection-manager-for-http-client.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+  print <span class="fu">$</span> responseBody response</code></pre></div>]]></description>
     <pubDate>Mon, 23 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-23-custom-connection-manager-for-http-client.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -384,23 +275,8 @@ var disqus_config = function () {
 <item>
     <title>Writer monad</title>
     <link>http://kseo.github.io//posts/2017-01-21-writer-monad.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 21, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/writer%20monad.html">writer monad</a>, <a href="/tags/state%20monad.html">state monad</a>, <a href="/tags/reverse%20state%20monad.html">reverse state monad</a>
-      
-  </div>
-
-<p>The <em>Writer monad</em> represents computations which produce a stream of data in addition to the computed values. It is commonly used by code generators to emit code.</p>
+    <description><![CDATA[<p>The <em>Writer monad</em> represents computations which produce a stream of data in addition to the computed values. It is commonly used by code generators to emit code.</p>
+<!--more-->
 <p><a href="https://www.stackage.org/lts-7.12/package/transformers-0.5.2.0">transformers</a> provides both the strict and lazy versions of <code>WriterT</code> monad transformer. The definition of bind operator <code>&gt;&gt;=</code> reveals how the Writer monad works.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> (<span class="dt">Monoid</span> w, <span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">Monad</span> (<span class="dt">WriterT</span> w m) <span class="kw">where</span>
     return a <span class="fu">=</span> writer (a, mempty)
@@ -520,28 +396,7 @@ test <span class="fu">=</span> mapM_ print <span class="fu">$</span> execRState 
 <ul>
 <li><a href="https://lukepalmer.wordpress.com/2008/08/10/mindfuck-the-reverse-state-monad/">Mindfuck: The Reverse State Monad</a> shows how to compute the fibonacci number using the reverse state monad.</li>
 <li><a href="https://hackage.haskell.org/package/tardis-0.4.1.0">tardis</a> package - a combination of both a forwards and a backwards state transformer.</li>
-</ul>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-21-writer-monad.html";
-    this.page.identifier = "/posts/2017-01-21-writer-monad.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+</ul>]]></description>
     <pubDate>Sat, 21 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-21-writer-monad.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -549,24 +404,9 @@ var disqus_config = function () {
 <item>
     <title>How Servant's type-safe links work</title>
     <link>http://kseo.github.io//posts/2017-01-20-how-servant%27s-type-safe-links-work.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 20, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/servant.html">servant</a>, <a href="/tags/safe%20link.html">safe link</a>, <a href="/tags/type%20families.html">type families</a>
-      
-  </div>
-
-<p>Many Haskell web frameworks provide so called <em>type-safe links</em>. Servant is no exception and it provides one of the strongest safety check. It statically guarantees that all links are valid endpoints of the server!</p>
+    <description><![CDATA[<p>Many Haskell web frameworks provide so called <em>type-safe links</em>. Servant is no exception and it provides one of the strongest safety check. It statically guarantees that all links are valid endpoints of the server!</p>
 <p>In servant, we can create a type-safe URI using <code>safeLink</code> function. It takes both <em>the whole API</em> and <em>the API endpoint</em> we would like to point to. It signals a type error if the endpoint does not belong to the whole api.</p>
+<!--more-->
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Create a valid (by construction) relative URI with query params.</span>
 <span class="co">--</span>
 <span class="co">-- This function will only typecheck if `endpoint` is part of the API `api`</span>
@@ -649,28 +489,7 @@ postUser <span class="fu">=</span> safeLink (<span class="dt">Proxy</span><span 
     safeLink (Proxy :: Proxy Api) (Proxy :: Proxy InvalidEndpoint1)
   In an equation for ‘postUser’:
       postUser
-        = safeLink (Proxy :: Proxy Api) (Proxy :: Proxy InvalidEndpoint1)</code></pre>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-20-how-servant%27s-type-safe-links-work.html";
-    this.page.identifier = "/posts/2017-01-20-how-servant%27s-type-safe-links-work.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+        = safeLink (Proxy :: Proxy Api) (Proxy :: Proxy InvalidEndpoint1)</code></pre>]]></description>
     <pubDate>Fri, 20 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-20-how-servant%27s-type-safe-links-work.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -678,23 +497,7 @@ var disqus_config = function () {
 <item>
     <title>Fun with hint</title>
     <link>http://kseo.github.io//posts/2017-01-19-fun-with-hint.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 19, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/hint.html">hint</a>, <a href="/tags/dynamic%20evaluation.html">dynamic evaluation</a>, <a href="/tags/interpreter.html">interpreter</a>
-      
-  </div>
-
-<p>If you are a Haskell convert from Lisp, JavaScript or any other dynamic programming language, you might miss <a href="https://en.wikipedia.org/wiki/Eval">eval</a> function of those languages. <code>eval</code> lets us load code dynamically and execute it on the fly. It is commonly used to provide user-defined plugins and is a very handy tool for software extension.</p>
+    <description><![CDATA[<p>If you are a Haskell convert from Lisp, JavaScript or any other dynamic programming language, you might miss <a href="https://en.wikipedia.org/wiki/Eval">eval</a> function of those languages. <code>eval</code> lets us load code dynamically and execute it on the fly. It is commonly used to provide user-defined plugins and is a very handy tool for software extension.</p>
 <p>Dynamic evaluation is not limited to dynamic languages. Even Java supports dynamic class loading through class loaders. It seems Haskell does not support dynamic evaluation as it is a strictly defined language. But GHC allows us to compile and execute Haskell code dynamically through GHC API.</p>
 <p><a href="https://hackage.haskell.org/package/hint">hint</a> library provides a Haskell interpreter built on top of GHC API. It allows to load and execute Haskell expressions and even coerce them into values.</p>
 <p><em>hint</em> provides a bunch of monadic actions based on <code>InterpreterT</code> monad transformer. <code>runInterpreter</code> is used to execute the action.</p>
@@ -757,28 +560,7 @@ main <span class="fu">=</span> <span class="kw">do</span>
 <p>Executing this program prints</p>
 <pre><code>&quot;1&quot;
 &quot;[2,3]&quot;</code></pre>
-<p>because <code>f</code> is <code>head</code> and <code>g</code> is <code>tail</code>.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-19-fun-with-hint.html";
-    this.page.identifier = "/posts/2017-01-19-fun-with-hint.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+<p>because <code>f</code> is <code>head</code> and <code>g</code> is <code>tail</code>.</p>]]></description>
     <pubDate>Thu, 19 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-19-fun-with-hint.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -786,23 +568,7 @@ var disqus_config = function () {
 <item>
     <title>Natural transformations in Servant</title>
     <link>http://kseo.github.io//posts/2017-01-18-natural-transformations-in-servant.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 18, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/servant.html">servant</a>, <a href="/tags/natural%20transformation.html">natural transformation</a>, <a href="/tags/monad%20morphism.html">monad morphism</a>
-      
-  </div>
-
-<p>I’ve recently started using <a href="http://haskell-servant.readthedocs.io/en/stable/">servant</a> at work. Servant lets us declare web APIs at the type-level once and use those APIs to write servers, obtains client functions and generate documentation. It’s a real world example which shows the power of Haskell type system.</p>
+    <description><![CDATA[<p>I’ve recently started using <a href="http://haskell-servant.readthedocs.io/en/stable/">servant</a> at work. Servant lets us declare web APIs at the type-level once and use those APIs to write servers, obtains client functions and generate documentation. It’s a real world example which shows the power of Haskell type system.</p>
 <p>The most interesting part of Servant is its <em>extensible type-level DSL</em> for describing web APIs. However, I found another interesting application of theory into practice in <a href="https://hackage.haskell.org/package/servant-server">servant-server</a> library. It is the use of <em>natural transformation</em> to convert one handler type into another handler type.</p>
 <p>In Servant, <code>Handler</code> is a type alias for <code>ExceptT ServantErr IO</code>.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Handler</span> <span class="fu">=</span> <span class="dt">ExceptT</span> <span class="dt">ServantErr</span> <span class="dt">IO</span></code></pre></div>
@@ -856,28 +622,7 @@ server env <span class="fu">=</span>
 server env <span class="fu">=</span>
   enter (runReaderTNat env) getItemById</code></pre></div>
 <p>Servant also provides a lot of monad morphisms such as <code>hoistNat</code>, <code>embedNat</code>, <code>squashNat</code> and <code>generalizeNat</code>. Sounds familiar? These are just wrappers around <a href="https://hackage.haskell.org/package/mmorph">mmorph</a> library functions. Interested readers are referred to Gabriel Gonzalez’s article <a href="http://www.haskellforall.com/2013/03/mmorph-100-monad-morphisms.html">mmorph-1.0.0: Monad morphisms</a>.</p>
-<p>In object-oriented programming, we use <em>Adapter pattern</em> to allow the interface of an existing class to be used as another interface. In functional programming, we use <em>natural transformations</em> (or more generally, <em>functors</em>) to do so!</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-18-natural-transformations-in-servant.html";
-    this.page.identifier = "/posts/2017-01-18-natural-transformations-in-servant.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+<p>In object-oriented programming, we use <em>Adapter pattern</em> to allow the interface of an existing class to be used as another interface. In functional programming, we use <em>natural transformations</em> (or more generally, <em>functors</em>) to do so!</p>]]></description>
     <pubDate>Wed, 18 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-18-natural-transformations-in-servant.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -885,23 +630,7 @@ var disqus_config = function () {
 <item>
     <title>Type-level functions using closed type families</title>
     <link>http://kseo.github.io//posts/2017-01-16-type-level-functions-using-closed-type-families.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 16, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/dependent%20type.html">dependent type</a>, <a href="/tags/type-level.html">type-level</a>, <a href="/tags/list.html">list</a>
-      
-  </div>
-
-<p>In this post, we will see how to write basic type-level functions using <a href="https://github.com/ghc/ghc/commit/569b26526403df4d88fe2a6d64c7dade09d003ad">closed type families</a>.</p>
+    <description><![CDATA[<p>In this post, we will see how to write basic type-level functions using <a href="https://github.com/ghc/ghc/commit/569b26526403df4d88fe2a6d64c7dade09d003ad">closed type families</a>.</p>
 <p>Before we start, let’s declare a bunch of GHC language extensions required to use type-level functions.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DataKinds #-}</span>
 <span class="ot">{-# LANGUAGE TypeFamilies #-}</span>
@@ -995,28 +724,7 @@ Map MakePair [Char,Bool,Int] :: [GHC.Types.*]
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> family <span class="dt">MakePair</span> (<span class="ot">x ::</span> <span class="fu">*</span>) <span class="kw">where</span>
   <span class="dt">MakePair</span> x <span class="fu">=</span> (x, x)</code></pre></div>
 <h1 id="wrap-up">Wrap-up</h1>
-<p>So far we’ve covered only the basics of type-level datatypes and functions. Recent additions to GHC make it possible to explore the whole new world of dependent type programming in Haskell. Interested readers might want to take a look at the publications of <a href="http://cs.brynmawr.edu/~rae/">Richard A. Eisenberg</a> whose current work is to add dependent types to Haskell.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-16-type-level-functions-using-closed-type-families.html";
-    this.page.identifier = "/posts/2017-01-16-type-level-functions-using-closed-type-families.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+<p>So far we’ve covered only the basics of type-level datatypes and functions. Recent additions to GHC make it possible to explore the whole new world of dependent type programming in Haskell. Interested readers might want to take a look at the publications of <a href="http://cs.brynmawr.edu/~rae/">Richard A. Eisenberg</a> whose current work is to add dependent types to Haskell.</p>]]></description>
     <pubDate>Mon, 16 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-16-type-level-functions-using-closed-type-families.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -1024,23 +732,7 @@ var disqus_config = function () {
 <item>
     <title>Data.Proxy</title>
     <link>http://kseo.github.io//posts/2017-01-15-data-proxy.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 15, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/Proxy.html">Proxy</a>
-      
-  </div>
-
-<p><a href="https://www.stackage.org/haddock/lts-7.12/base-4.9.0.0/Data-Proxy.html">Proxy</a> is a mysterious type residing in <code>Data.Proxy</code> module. The definition of <code>Proxy</code> tells nothing about its nature.</p>
+    <description><![CDATA[<p><a href="https://www.stackage.org/haddock/lts-7.12/base-4.9.0.0/Data-Proxy.html">Proxy</a> is a mysterious type residing in <code>Data.Proxy</code> module. The definition of <code>Proxy</code> tells nothing about its nature.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | A concrete, poly-kinded proxy type</span>
 <span class="kw">data</span> <span class="dt">Proxy</span> t <span class="fu">=</span> <span class="dt">Proxy</span></code></pre></div>
 <p>The documentation of <code>Proxy</code> says two hints. It is a (1) <em>concrete</em> and (2) <em>poly-kinded</em> proxy type.</p>
@@ -1107,28 +799,7 @@ f _ <span class="fu">=</span> (show<span class="ot"> ::</span> a <span class="ot
 <span class="ot">  schema ::</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> <span class="dt">Schema</span></code></pre></div>
 <ul>
 <li>Edward Kmett’s <a href="https://www.stackage.org/lts-7.12/package/reflection-2.1.2">reflection</a> package shows an advanced usage of <code>Proxy</code>. Austin Seipp’s <a href="https://www.schoolofhaskell.com/user/thoughtpolice/using-reflection">Reflecting values to types and back</a> explains how to reify arbitrary terms into types that can be reflected back into terms.</li>
-</ul>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-15-data-proxy.html";
-    this.page.identifier = "/posts/2017-01-15-data-proxy.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+</ul>]]></description>
     <pubDate>Sun, 15 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-15-data-proxy.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
@@ -1136,23 +807,8 @@ var disqus_config = function () {
 <item>
     <title>Memoization in Haskell</title>
     <link>http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html</link>
-    <description><![CDATA[<a class="twitter-share-button"
-    href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
-
-<article>
-  <div class="info">
-      Posted on January 14, 2017
-      
-          by Kwang Yul Seo
-      
-  </div>
-  <div class="info">
-      
-      Tags: <a href="/tags/memoization.html">memoization</a>
-      
-  </div>
-
-<p><em>Memoization</em> is an optimization technique used to speed up a function by caching its previously computed results. In impure programming languages, a mutable map is used to cache computed results.</p>
+    <description><![CDATA[<p><em>Memoization</em> is an optimization technique used to speed up a function by caching its previously computed results. In impure programming languages, a mutable map is used to cache computed results.</p>
+<!--more-->
 <p>For example, <code>fib</code> function in Python</p>
 <div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="kw">def</span> fib(n):
     <span class="cf">if</span> n <span class="op">&lt;</span> <span class="dv">2</span>: <span class="cf">return</span> <span class="dv">1</span>
@@ -1201,28 +857,7 @@ fibMemo <span class="fu">=</span> fix (memoize <span class="fu">.</span> fib)</c
 <li><a href="http://conal.net/blog/posts/memoizing-polymorphic-functions-via-unmemoization">Memoizing polymorphic functions via unmemoization</a></li>
 <li><a href="http://conal.net/blog/posts/elegant-memoization-with-functional-memo-tries">Elegant memoization with functional memo tries</a></li>
 </ul>
-<p><a href="https://hackage.haskell.org/package/MemoTrie-0.6.7">MemoTrie</a> provides a basis for memoized functions over some domains, using tries.</p>
-<div id="disqus_thread"></div>
-<script>
-
-/**
- *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
- *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
-var disqus_config = function () {
-    this.page.url = "https://kseo.github.io/posts/2017-01-14-memoization-in-hasekll.html";
-    this.page.identifier = "/posts/2017-01-14-memoization-in-hasekll.html";
-};
-(function() { // DON'T EDIT BELOW THIS LINE
-    var d = document, s = d.createElement('script');
-    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
-})();
-</script>
-<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
-
-</article>
-]]></description>
+<p><a href="https://hackage.haskell.org/package/MemoTrie-0.6.7">MemoTrie</a> provides a basis for memoized functions over some domains, using tries.</p>]]></description>
     <pubDate>Sat, 14 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>

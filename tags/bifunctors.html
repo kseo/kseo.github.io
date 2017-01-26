@@ -24,13 +24,159 @@
         <div id="content">
             <h1>Posts tagged "bifunctors"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2016-12-16-datatype-generic-programming-with-bifunctors.html">Datatype-generic programming with bifunctors</a> - December 16, 2016
-        </li>
-    
+            
+<h4><a href="../posts/2016-12-16-datatype-generic-programming-with-bifunctors.html">Datatype-generic programming with bifunctors</a></h4> - December 16, 2016
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Datatype-generic programming with bifunctors</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Datatype-generic programming with bifunctors</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on December 16, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/datatype-generic.html">datatype-generic</a>, <a href="../tags/bifunctors.html">bifunctors</a>
+      
+  </div>
+
+<p>In the <em>origami</em> style of programming, higher-order recursion operators such as <em>map</em>, <em>fold</em> and <em>unfold</em> captures the structure of programs. These operators have two aspects: <em>mapping</em> and <em>accumulating</em>.</p>
+<p><a href="https://www.cs.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf">The Essence of the Iterator Pattern</a> by Jeremy Gibbons and Bruno C. d. S. Oliveira show that <em>applicative functors</em> and the corresponding <code>traverse</code> operator capture the essence of the <em>ITERATOR</em> pattern providing both mapping and accumulating. This explains why Haskell’s <code>Applicative</code> and <code>Traversable</code> work so well for many data types!</p>
+<p>But in this post, instead of reiterating the paper, we are going to review one of the earlier approach which provides recursion operators in datatype-generic way. Surprisingly, what we need is only <a href="https://hackage.haskell.org/package/bifunctors">bifunctors</a>.</p>
+<p>This post is in literate Haskell, so let’s start with a list of GHC extensions and imports:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="ot">{-# LANGUAGE DeriveFunctor #-}</span>
+<span class="ot">&gt;</span> <span class="ot">{-# LANGUAGE TemplateHaskell #-}</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Bifunctor</span>
+<span class="ot">&gt;</span> <span class="kw">import </span><span class="dt">Data.Bifunctor.TH</span></code></pre></div>
+<p><code>Data.Bifunctor.TH</code> provides a <code>TemplateHaskell</code> macro <code>deriveBifunctor</code>, which automatically derives the <code>Bifunctor</code> instance. This is possible because all sum-of-product data types induce bifunctors. Here’s our favorite list data type.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">ListF</span> a r <span class="fu">=</span> <span class="dt">Nil</span> <span class="fu">|</span> <span class="dt">Cons</span> a r <span class="kw">deriving</span> <span class="dt">Functor</span>
+<span class="ot">&gt;</span> deriveBifunctor <span class="ch">''</span><span class="dt">ListF</span></code></pre></div>
+<p><code>Fix</code> is the fixed point of a <code>Bifunctor</code>.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">newtype</span> <span class="dt">Fix</span> s a <span class="fu">=</span> <span class="dt">In</span> {<span class="ot"> out ::</span> s a (<span class="dt">Fix</span> s a) }</code></pre></div>
+<p>Then we define <code>List</code> as a fixed point of <code>ListF</code>.</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">List</span> <span class="fu">=</span> <span class="dt">Fix</span> <span class="dt">ListF</span></code></pre></div>
+<p>To map over an arbitrary data type defined by <code>Fix</code>, we should be able to define a <code>Functor</code> instance of <code>Fix s</code>. It seems like a hard problem at first, but with enough patience and time it is actually possible to define <code>fmap</code> in terms of <code>bimap</code> as follows:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">instance</span> <span class="dt">Bifunctor</span> s <span class="ot">=&gt;</span> <span class="dt">Functor</span> (<span class="dt">Fix</span> s) <span class="kw">where</span>
+<span class="ot">&gt;</span>   fmap f <span class="fu">=</span> <span class="dt">In</span> <span class="fu">.</span> bimap f (fmap f) <span class="fu">.</span> out</code></pre></div>
+<p>This looks magical, but we can comprehend the definition by inspecting the types of its components.</p>
+<ul>
+<li>out :: Fix s a -&gt; s a (Fix s a)</li>
+<li>In :: s a (Fix s a) -&gt; Fix s a</li>
+<li>fmap :: (a -&gt; b) -&gt; Fix s a -&gt; Fix s b</li>
+<li>bimap :: (a -&gt; b) -&gt; (c -&gt; d) -&gt; s a c -&gt; s b d</li>
 </ul>
+<p>The type of <code>fmap f</code> is <code>Fix s a -&gt; Fix s b</code>, so the type of <code>bimap f (fmap f)</code> is <code>s a (Fix s a) -&gt; s b (Fix s b)</code>. Now we can compose these:</p>
+<ul>
+<li>out :: Fix s a -&gt; s a (Fix s a)</li>
+<li>bimap f (fmap f) :: s a -&gt; s a (Fix s a) -&gt; s b (Fix s b)</li>
+<li>In :: s b (Fix s b) -&gt; Fix s b</li>
+</ul>
+<p>Thus,</p>
+<ul>
+<li>In . bitmap f (fmap f) . out :: Fix s a -&gt; Fix s b</li>
+</ul>
+<p><code>fold</code> and <code>unfold</code> can be defined similiarly:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; fold ::</span> <span class="dt">Bifunctor</span> s <span class="ot">=&gt;</span> (s a b <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> <span class="dt">Fix</span> s a <span class="ot">-&gt;</span> b
+<span class="ot">&gt;</span> fold f <span class="fu">=</span> f <span class="fu">.</span> bimap id (fold f) <span class="fu">.</span> out
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; unfold ::</span> <span class="dt">Bifunctor</span> s <span class="ot">=&gt;</span> (b <span class="ot">-&gt;</span> s a b) <span class="ot">-&gt;</span> b <span class="ot">-&gt;</span> <span class="dt">Fix</span> s a
+<span class="ot">&gt;</span> unfold f <span class="fu">=</span> <span class="dt">In</span> <span class="fu">.</span> bimap id (unfold f) <span class="fu">.</span> f</code></pre></div>
+<p>Here’s how we use <code>fmap</code> on <code>List</code>:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; nil ::</span> <span class="dt">List</span> a
+<span class="ot">&gt;</span> nil <span class="fu">=</span> <span class="dt">In</span> <span class="dt">Nil</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; cons ::</span> a <span class="ot">-&gt;</span> <span class="dt">List</span> a <span class="ot">-&gt;</span> <span class="dt">List</span> a
+<span class="ot">&gt;</span> cons x xs <span class="fu">=</span> <span class="dt">In</span> (<span class="dt">Cons</span> x xs)
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; l ::</span> <span class="dt">List</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> l <span class="fu">=</span> fmap (<span class="fu">+</span><span class="dv">1</span>) (cons <span class="dv">3</span> (cons <span class="dv">4</span> nil))</code></pre></div>
+<p>Tada! These recursive operators are indeed datatype-generic because the defintion of <code>fmap</code>, <code>fold</code> and <code>unfold</code> never use the specific data type we defined. They use only <code>bimap</code> which is parameterized by the shape <code>s</code> of the data. It means we can reuse these functions for other data types without reimplementing them for each type. For example, here’s a definition of <code>Tree</code>:</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt;</span> <span class="kw">data</span> <span class="dt">TreeF</span> a r <span class="fu">=</span> <span class="dt">Leaf</span> <span class="fu">|</span> <span class="dt">Branch</span> a r r <span class="kw">deriving</span> <span class="dt">Functor</span>
+<span class="ot">&gt;</span> deriveBifunctor <span class="ch">''</span><span class="dt">TreeF</span>
+<span class="ot">&gt;</span> <span class="kw">type</span> <span class="dt">Tree</span> <span class="fu">=</span> <span class="dt">Fix</span> <span class="dt">TreeF</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; leaf ::</span> <span class="dt">Tree</span> a
+<span class="ot">&gt;</span> leaf <span class="fu">=</span> <span class="dt">In</span> <span class="dt">Leaf</span>
+<span class="ot">&gt;</span> 
+<span class="ot">&gt; branch ::</span> a <span class="ot">-&gt;</span> <span class="dt">Tree</span> a <span class="ot">-&gt;</span> <span class="dt">Tree</span> a <span class="ot">-&gt;</span> <span class="dt">Tree</span> a
+<span class="ot">&gt;</span> branch x l r<span class="fu">=</span> <span class="dt">In</span> (<span class="dt">Branch</span> x l r)</code></pre></div>
+<p>To map over a tree, we can just use the same <code>fmap</code> function we defined above!</p>
+<div class="sourceCode"><pre class="sourceCode literate literatehaskell"><code class="sourceCode literatehaskell"><span class="ot">&gt; t ::</span> <span class="dt">Tree</span> <span class="dt">Int</span>
+<span class="ot">&gt;</span> t <span class="fu">=</span> fmap (<span class="fu">+</span><span class="dv">1</span>) (branch <span class="dv">3</span> leaf (branch <span class="dv">4</span> leaf leaf))</code></pre></div>
+<p>This technique of using <em>bifunctors</em> to implement datatype-generic recursive functions is mostly superseded by <code>Applicative</code> and <code>Traversable</code> in Haskell, but I think it is still a good example which shows the real power of <em>bifunctors</em>!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2016-12-16-datatype-generic-programming-with-bifunctors.html";
+    this.page.identifier = "/posts/2016-12-16-datatype-generic-programming-with-bifunctors.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2016-12-16-datatype-generic-programming-with-bifunctors.html">Read more</a>
+
 
 
         </div>

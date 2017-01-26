@@ -24,21 +24,472 @@
         <div id="content">
             <h1>Posts tagged "monad"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2017-01-12-indexed-monads.html">Indexed Monads</a> - January 12, 2017
-        </li>
-    
-        <li>
-            <a href="../posts/2016-12-23-organize-code-using-monads.html">Organize code using monads</a> - December 23, 2016
-        </li>
-    
-        <li>
-            <a href="../posts/2014-01-26-swtiching-from-monads-to-applicative-functors.html">Switching from monads to applicative functors</a> - January 26, 2014
-        </li>
-    
+            
+<h4><a href="../posts/2017-01-12-indexed-monads.html">Indexed Monads</a></h4> - January 12, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Indexed Monads</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Indexed Monads</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 12, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/indexed.html">indexed</a>, <a href="../tags/monad.html">monad</a>
+      
+  </div>
+
+<p>In this post, I am going to introduce <em>indexed monads</em>, which generalize monads with additional type parameters carrying the information about the computational effects.</p>
+<h1 id="motivation">Motivation</h1>
+<p>The State monad represents computations with a state that can be queried and updated. For example, an <code>Int</code> state is queried and updated during the computation of <code>c</code> in the following example. While the value of the state is changed from <code>0</code> to <code>1</code>, the type of the state remains the same during the entire computation.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad.State</span>
+
+test1 <span class="fu">=</span> runState c (<span class="dv">0</span><span class="ot">::</span><span class="dt">Int</span>) <span class="kw">where</span>
+         c <span class="fu">=</span> <span class="kw">do</span>
+             v <span class="ot">&lt;-</span> get
+             put (succ v)
+             return v
+<span class="co">-- (0, 1)</span></code></pre></div>
+<p>This is okay in most cases, but we sometimes want to express a computation where not only the value but also the type of the state can be changed. The vanilla State monad is not general enough to express this requirement.</p>
+<h1 id="indexed-monads">Indexed Monads</h1>
+<p>Indexed monads are a generalization of monads that index each monadic type by an initial (type)state and a final (type)state. <code>m</code> is a type constructor for three type arguments, <code>p</code>, <code>q</code> and <code>a</code>. The argument <code>a</code> is the type of values produced by the monadic computation. <code>p</code> and <code>q</code> represent the types of the state before and after the computation.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">IxMonad</span> m <span class="kw">where</span>
+<span class="ot">    ireturn ::</span> a <span class="ot">-&gt;</span> m p p a
+<span class="ot">    ibind ::</span> m p q a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> m q r b) <span class="ot">-&gt;</span> m p r b</code></pre></div>
+<p><code>ireturn</code> and <code>ibind</code> must meet the monad laws as the ordinary monads do. <code>ibind</code> is required to be associative and <code>ireturn</code> to be the left and the right unit of <code>ibind</code>.</p>
+<p>All ordinary monads can be injected into <code>IxMonad</code> with a newtype wrapper <code>MW</code>. It is a <em>phantom type</em> as the type parameters <code>p</code> and <code>q</code> are not used on the right hand-side of <code>MW</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">MW</span> m p q a <span class="fu">=</span> <span class="dt">MW</span> {<span class="ot"> unMW::</span> m a }
+
+<span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxMonad</span> (<span class="dt">MW</span> m) <span class="kw">where</span>
+    ireturn <span class="fu">=</span> <span class="dt">MW</span> <span class="fu">.</span> return
+    ibind (<span class="dt">MW</span> m) f <span class="fu">=</span> <span class="dt">MW</span> (m <span class="fu">&gt;&gt;=</span> unMW <span class="fu">.</span> f)</code></pre></div>
+<p>Here is an example of using the ordinary <code>State</code> monad wrapped with <code>MW</code>. <code>iget</code> and <code>iput</code> wraps the result with <code>MW</code> newtype wrapper.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">iget ::</span> (<span class="dt">MonadState</span> s m) <span class="ot">=&gt;</span> <span class="dt">MW</span> m s s s
+iget <span class="fu">=</span> <span class="dt">MW</span> get
+
+<span class="ot">iput ::</span> (<span class="dt">MonadState</span> s m) <span class="ot">=&gt;</span> s <span class="ot">-&gt;</span> <span class="dt">MW</span> m s s ()
+iput <span class="fu">=</span> <span class="dt">MW</span> <span class="fu">.</span> put
+
+test2 <span class="fu">=</span> runState (unMW c) (<span class="dv">0</span><span class="ot">::</span><span class="dt">Int</span>) <span class="kw">where</span>
+         c <span class="fu">=</span> iget <span class="ot">`ibind`</span> (
+               \v <span class="ot">-&gt;</span> iput (succ v) <span class="ot">`ibind`</span> (
+                 \_ <span class="ot">-&gt;</span> ireturn v))
+<span class="co">-- (0, 1)</span></code></pre></div>
+<h1 id="indexed-state-monad">Indexed State Monad</h1>
+<p><code>IxStateT</code> defines an indexed state monad where <code>si</code> and <code>so</code> represents the input and the output state type respectively. The definition of <code>IxStateT</code> is similar to that of <code>StateT</code> except that the type of the state can be changed during the computation.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">IxStateT</span> m si so v <span class="fu">=</span> <span class="dt">IxStateT</span> {<span class="ot"> runIxStateT::</span> si <span class="ot">-&gt;</span> m (so,v) }
+
+<span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxMonad</span> (<span class="dt">IxStateT</span> m) <span class="kw">where</span>
+  ireturn x <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (si,x))
+  ibind (<span class="dt">IxStateT</span> m) f <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> m si <span class="fu">&gt;&gt;=</span> (\ (sm,x) <span class="ot">-&gt;</span> runIxStateT (f x) sm))
+
+<span class="ot">vsget ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m si si si
+vsget <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (si,si))
+
+<span class="ot">vsput ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> so <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m si so ()
+vsput x <span class="fu">=</span> <span class="dt">IxStateT</span> (\si <span class="ot">-&gt;</span> return (x,()))</code></pre></div>
+<p>The following example gets an <code>Int</code> from the state and puts a <code>String</code> into the state. We can see that the type of the state is changed from <code>Int</code> to <code>String</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">test3 <span class="fu">=</span> runIxStateT c (<span class="dv">0</span><span class="ot">::</span><span class="dt">Int</span>) <span class="fu">&gt;&gt;=</span> print <span class="kw">where</span>
+         c <span class="fu">=</span> vsget <span class="ot">`ibind`</span> (
+               \v <span class="ot">-&gt;</span> vsput (show v) <span class="ot">`ibind`</span> (
+                 \_ <span class="ot">-&gt;</span> vsget <span class="ot">`ibind`</span> (
+                   \v' <span class="ot">-&gt;</span> ireturn (v,v'))))
+<span class="co">-- (&quot;0&quot;,(0,&quot;0&quot;))</span></code></pre></div>
+<h1 id="do-notation">Do notation</h1>
+<p>The <code>IxMonad</code> examples above looks ugly as we couldn’t use the do notation. Fortunately, <code>-XRebindableSyntax</code> extension allows us to overload the do-notation by providing alternative definitions that are local to the module.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE RebindableSyntax #-}</span>
+
+<span class="kw">import </span><span class="dt">Prelude</span> <span class="kw">hiding</span> ((&gt;&gt;=), (&gt;&gt;), return)
+<span class="kw">import </span><span class="dt">IxState</span>
+
+return<span class="ot"> ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m si si a
+return <span class="fu">=</span> ireturn
+
+<span class="ot">(&gt;&gt;=) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m p q a <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m q r b) <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m p r b
+(<span class="fu">&gt;&gt;=</span>) <span class="fu">=</span> ibind
+
+<span class="ot">(&gt;&gt;) ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m p q a <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m q r b <span class="ot">-&gt;</span> <span class="dt">IxStateT</span> m p r b
+v <span class="fu">&gt;&gt;</span> w <span class="fu">=</span> v <span class="fu">&gt;&gt;=</span> \_ <span class="ot">-&gt;</span> w
+
+<span class="ot">c ::</span> (<span class="dt">Monad</span> m) <span class="ot">=&gt;</span> <span class="dt">IxStateT</span> m <span class="dt">Int</span> <span class="dt">String</span> (<span class="dt">Int</span>, <span class="dt">String</span>)
+c <span class="fu">=</span> <span class="kw">do</span>
+  v <span class="ot">&lt;-</span> vsget
+  vsput (show v)
+  v' <span class="ot">&lt;-</span> vsget
+  return (v, v')</code></pre></div>
+<h1 id="other-definitions">Other definitions</h1>
+<p>There are multiple ways to define indexed monads. The one used here is from Robert Atkey’s <a href="http://bentnib.org/paramnotions-jfp.pdf">Parameterised Notions of Computation</a>.</p>
+<p>Other definitions include:</p>
+<ul>
+<li>McBride: <a href="https://personal.cis.strath.ac.uk/conor.mcbride/Kleisli.pdf">Kleisli Arrows of Outrageous Fortune</a></li>
+<li>Orchard: <a href="http://www.cl.cam.ac.uk/~dao29/ixmonad/ixmonad-fita14.pdf">Fun with indexed monads</a></li>
 </ul>
+<h1 id="references">References</h1>
+<ol style="list-style-type: decimal">
+<li>Oleg Kiselyov’s <a href="http://okmij.org/ftp/Computation/monads.html#param-monad">Parameterized `monad’</a></li>
+<li><a href="http://dev.stephendiehl.com/hask/#indexed-monads">Indexed Monad section</a> of Stephen Diehl’s What I Wish I Knew When Learning Haskell</li>
+</ol>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-12-indexed-monads.html";
+    this.page.identifier = "/posts/2017-01-12-indexed-monads.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-12-indexed-monads.html">Read more</a>
+
+<h4><a href="../posts/2016-12-23-organize-code-using-monads.html">Organize code using monads</a></h4> - December 23, 2016
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Organize code using monads</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Organize code using monads</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on December 23, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/monad.html">monad</a>, <a href="../tags/monad%20transformer.html">monad transformer</a>, <a href="../tags/lambda%20lifting.html">lambda lifting</a>
+      
+  </div>
+
+<p>Novice Haskell programmers think that monads are only for IO and stateful computations. But experienced Haskell programmers use monads to better structure their programs.</p>
+<p>In this blog post, I am going to show you how we can better organize our code using monads.</p>
+<h1 id="motivating-example-lambda-lifting">Motivating example: Lambda lifting</h1>
+<p><em>Lambda lifting</em> is a compiler transformation which eliminates all free variables from function definitions. It is an important step in a lazy functional language because it greatly simplifies evaluation on the graph reduction machine.</p>
+<p>In his <a href="https://www.microsoft.com/en-us/research/publication/a-modular-fully-lazy-lambda-lifter-in-haskell/">paper</a>, Simon Peyton Jones describes how to perform lambda lifting in a modular fashion. The lambda lifter works in three steps:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | freeVars: Annotate every node in the expression with its free variables.</span>
+<span class="ot">freeVars ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> <span class="dt">AnnExpr</span> <span class="dt">Name</span> (<span class="dt">Set</span> <span class="dt">Name</span>)
+
+<span class="co">-- | Abstract the free variables from each lambda abstraction, replacing the lambda abstraction with the application of the new abstraction.</span>
+<span class="ot">abstract ::</span> <span class="dt">AnnExpr</span> <span class="dt">Name</span> (<span class="dt">Set</span> <span class="dt">Name</span>) <span class="ot">-&gt;</span> <span class="dt">Expression</span>
+
+<span class="co">-- | Give a unique name to each supercombinator and collect all the supercombinator definitions.</span>
+<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]</code></pre></div>
+<p><code>lambdaLift</code> is the composition of these three functions.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">lambdaLift ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
+lambdaLift <span class="fu">=</span> collectSCs <span class="fu">.</span> abstract <span class="fu">.</span> freeVars</code></pre></div>
+<p>I am not going to explain the details of these steps in this post. Interested readers are referred to SPJ’s <a href="https://www.microsoft.com/en-us/research/publication/a-modular-fully-lazy-lambda-lifter-in-haskell/">paper</a> and <a href="https://research.microsoft.com/en-us/um/people/simonpj/papers/slpj-book-1987/">book</a>.</p>
+<p>Instead, let’s dive into the last step and see how <code>collectSCs</code> is actually implemented.</p>
+<h1 id="collecting-supercombinators">Collecting supercombinators</h1>
+<p><code>collectSCs</code> is defined in terms of a helper function named <code>collecSC'</code> which returns both the collection of supercombinators it has found and the transformed expression. It also carries around a <em>name supply</em> as an argument and returns the depleted supply as a result because it needs to generate fresh names for supercombinators.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Gives a unique name to each supercombinator, collects all the</span>
+<span class="co">-- supercombinator definitions into a single list, and introduce the</span>
+<span class="co">-- $main supercombinator definition.</span>
+<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
+collectSCs e <span class="fu">=</span> (<span class="st">&quot;$main&quot;</span>, [], e') <span class="fu">:</span> scs
+  <span class="kw">where</span>
+  (_, scs, e') <span class="fu">=</span> collectSCs' initialNameSupply e
+
+<span class="ot">collectSCs' ::</span> <span class="dt">NameSupply</span> <span class="ot">-&gt;</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> (<span class="dt">NameSupply</span>, [<span class="dt">SCDefn</span>], <span class="dt">Expression</span>)
+collectSCs' ns (<span class="dt">EConst</span> k) <span class="fu">=</span> (ns, [], <span class="dt">EConst</span> k)
+collectSCs' ns (<span class="dt">EVar</span> v) <span class="fu">=</span> (ns, [], <span class="dt">EVar</span> v)
+collectSCs' ns (<span class="dt">EAp</span> e1 e2) <span class="fu">=</span>
+  (ns2, scs1 <span class="fu">++</span> scs2, <span class="dt">EAp</span> e1' e2')
+  <span class="kw">where</span>
+  (ns1, scs1, e1') <span class="fu">=</span> collectSCs' ns e1
+  (ns2, scs2, e2') <span class="fu">=</span> collectSCs' ns1 e2
+collectSCs' ns (<span class="dt">ELam</span> args body) <span class="fu">=</span>
+  (ns2, (name, args, body') <span class="fu">:</span> bodySCs, <span class="dt">EConst</span> (<span class="dt">CFun</span> name))
+  <span class="kw">where</span>
+  (ns1, bodySCs, body') <span class="fu">=</span> collectSCs' ns body
+  (ns2, name) <span class="fu">=</span> newName ns1 <span class="st">&quot;SC&quot;</span>
+collectSCs' ns (<span class="dt">ELet</span> isRec defns body) <span class="fu">=</span>
+  (ns2, scs, <span class="dt">ELet</span> isRec defns' body')
+  <span class="kw">where</span>
+  (ns1, bodySCs, body') <span class="fu">=</span> collectSCs' ns body
+  ((ns2, scs), defns') <span class="fu">=</span> mapAccumL collectSCs'' (ns1, bodySCs) defns
+
+  collectSCs'' (ns, scs) (name, rhs) <span class="fu">=</span>
+    ((ns1, scs <span class="fu">++</span> scs'), (name, rhs'))
+    <span class="kw">where</span>
+    (ns1, scs', rhs') <span class="fu">=</span> collectSCs' ns rhs</code></pre></div>
+<p>The code is rather complex compared to what it actually does. The only place where interest things happen is lambda abstractions. It replaces lambda abstractions by names and return supercombinators.</p>
+<p>The code is complex because it violates the most important software engineering principle: <em>separation of concerns</em>. <code>collectSCs</code> contains at least three orthogonal concerns:</p>
+<ol style="list-style-type: decimal">
+<li>Generation of fresh names</li>
+<li>Accumulation of supercombinatros</li>
+<li>Transformation of expressions</li>
+</ol>
+<h1 id="organize-code-using-monads">Organize code using monads</h1>
+<p>Monads are great tools to separate concerns. For example, <code>Reader</code> monad helps us get rid of an extra argument used to pass a context. <code>Writer</code> monad frees us from the agony of returning the accumulated results in every function.</p>
+<p>So let’s separate our concerns in <code>collectSCs</code>.</p>
+<ol style="list-style-type: decimal">
+<li><code>Supply</code> monad for fresh name generation (it’s a <code>State</code> monad in disguise)</li>
+<li><code>Writer</code> monad for accumulation of supercombinators</li>
+</ol>
+<p>Because we need to compose two different monads, we use the monad transformer <code>SupplyT</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Collector</span> a <span class="fu">=</span> <span class="dt">SupplyT</span> (<span class="dt">Writer</span> [<span class="dt">SCDefn</span>]) a
+
+<span class="ot">collectSCs ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> [<span class="dt">SCDefn</span>]
+collectSCs e <span class="fu">=</span> (<span class="st">&quot;$main&quot;</span>, [], e') <span class="fu">:</span> scs
+  <span class="kw">where</span>
+  (e', scs) <span class="fu">=</span> runWriter <span class="fu">$</span> evalSupplyT <span class="dv">0</span> (collectSCs' e)
+
+<span class="ot">collectSCs' ::</span> <span class="dt">Expression</span> <span class="ot">-&gt;</span> <span class="dt">Collector</span> <span class="dt">Expression</span>
+collectSCs' (<span class="dt">EConst</span> k) <span class="fu">=</span> return <span class="fu">$</span> <span class="dt">EConst</span> k
+collectSCs' (<span class="dt">EVar</span> v) <span class="fu">=</span> return <span class="fu">$</span> <span class="dt">EVar</span> v
+collectSCs' (<span class="dt">EAp</span> e1 e2) <span class="fu">=</span> <span class="kw">do</span>
+  e1' <span class="ot">&lt;-</span> collectSCs' e1
+  e2' <span class="ot">&lt;-</span> collectSCs' e2
+  return <span class="fu">$</span> <span class="dt">EAp</span> e1' e2'
+collectSCs' (<span class="dt">ELam</span> args body) <span class="fu">=</span> <span class="kw">do</span>
+  name <span class="ot">&lt;-</span> freshName
+  body' <span class="ot">&lt;-</span> collectSCs' body
+  collect (name, args, body')
+  return <span class="fu">$</span> <span class="dt">EConst</span> (<span class="dt">CFun</span> name)
+collectSCs' (<span class="dt">ELet</span> isRec defns body) <span class="fu">=</span> <span class="kw">do</span>
+  body' <span class="ot">&lt;-</span> collectSCs' body
+  defns' <span class="ot">&lt;-</span> traverse (\(name, defn) <span class="ot">-&gt;</span> (name,) <span class="fu">&lt;$&gt;</span> collectSCs' defn) defns
+  return <span class="fu">$</span> <span class="dt">ELet</span> isRec defns' body'
+
+<span class="ot">collect ::</span> <span class="dt">SCDefn</span> <span class="ot">-&gt;</span> <span class="dt">Collector</span> ()
+collect defn <span class="fu">=</span> tell [defn]</code></pre></div>
+<p>We can see that the resulting code is much more readable by removing all the clutters that not not essential to the core logic.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2016-12-23-organize-code-using-monads.html";
+    this.page.identifier = "/posts/2016-12-23-organize-code-using-monads.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2016-12-23-organize-code-using-monads.html">Read more</a>
+
+<h4><a href="../posts/2014-01-26-swtiching-from-monads-to-applicative-functors.html">Switching from monads to applicative functors</a></h4> - January 26, 2014
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Switching from monads to applicative functors</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Switching from monads to applicative functors</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 26, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/monad.html">monad</a>, <a href="../tags/applicative%20functor.html">applicative functor</a>
+      
+  </div>
+
+<p>Many applications of monads actually do not require monads but only applicative functors. Monads allow us to run actions depending on the results of earlier actions, but not all applications of monads need this extended functionality.</p>
+<p>It is better to use applicative functors where possible because there are some advantages of applicative functors. <a href="http://www.haskell.org/haskellwiki/Applicative_functor#Some_advantages_of_applicative_functors">Applicative functor on the Haskell Wiki</a> mentions two:</p>
+<ul>
+<li><p>Code that uses only on the <code>Applicative</code> interface are more general than ones uses the <code>Monad</code> interface, because there are more applicative functors than monads. The <code>ZipList</code> is an applicative functor on lists, where <code>liftA2</code> is implemented by <code>zipWith</code>. It is a typical example of an applicative functor that is not a monad.</p></li>
+<li><p>Programming with <code>Applicative</code> has a more applicative/functional feel. Especially for newbies, it may encourage functional style even when programming with effects. <code>Monad</code> programming with do notation encourages a more sequential &amp; imperative style.</p></li>
+</ul>
+<p>There is another advantage. Applicative functors do not need special transformers because they can be combined in a generic way.</p>
+<p>But there is a problem. It is usually not easy to decide if we need monads or applicative functors up front. You ambitiously start with applicative functors and find later that you actually needed monads. Sad!</p>
+<p>Here is my tip. I start with monads but use only <code>return</code>, <code>ap</code>, <code>liftM</code>, <code>liftM2</code>, … instead of <code>do</code>, <code>&gt;&gt;=</code>. The most common pattern is</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">do</span> x <span class="ot">&lt;-</span> fx
+   y <span class="ot">&lt;-</span> fy
+   return (g x y)</code></pre></div>
+<p>This can be rewritten as <code>liftM2 g fx fy</code>. Once you are sure that you need only those monad methods, you can mechanically switch from monads to applicative functors using the following translation table:</p>
+<ul>
+<li><code>import Control.Monad</code> -&gt; <code>import Control.Applicative</code></li>
+<li><code>return</code> -&gt; <code>pure</code></li>
+<li><code>ap</code> -&gt; -&gt; <code>(&lt;*&gt;)</code></li>
+<li><code>liftM</code> -&gt; <code>liftA</code> or <code>(&lt;$&gt;)</code></li>
+<li><code>liftM2</code> -&gt; <code>liftA2</code></li>
+<li><code>(Monad m =&gt;)</code> -&gt; <code>(Applicative f =&gt;)</code></li>
+</ul>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2014-01-26-swtiching-from-monads-to-applicative-functors.html";
+    this.page.identifier = "/posts/2014-01-26-swtiching-from-monads-to-applicative-functors.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2014-01-26-swtiching-from-monads-to-applicative-functors.html">Read more</a>
+
 
 
         </div>

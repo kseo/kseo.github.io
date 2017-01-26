@@ -24,17 +24,201 @@
         <div id="content">
             <h1>Posts tagged "type inference"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2017-01-02-hindley-milner-inference-with-constraints.html">Hindley-Milner type inference with constraints</a> - January  2, 2017
-        </li>
-    
-        <li>
-            <a href="../posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html">Type inference algorithms of Haskell-like languages</a> - December 31, 2016
-        </li>
-    
+            
+<h4><a href="../posts/2017-01-02-hindley-milner-inference-with-constraints.html">Hindley-Milner type inference with constraints</a></h4> - January  2, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Hindley-Milner type inference with constraints</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Hindley-Milner type inference with constraints</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January  2, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/type%20inference.html">type inference</a>, <a href="../tags/Hindley-Milner.html">Hindley-Milner</a>, <a href="../tags/constraints.html">constraints</a>
+      
+  </div>
+
+<p>Algorithm W is the best known algorithm for implementing Hindley-Milner type inference. But it is a bit complicated as it intermingles two separate processes: constraint generation and solving.</p>
+<p>There is an alternative approach based on <em>constraints generation</em>. In this approach, constraints are collected by bottom-up traversal, and then solved independently. Heeren’s <a href="http://soft.vub.ac.be/~cfscholl/Capita-Selecta-2015/papers/2002%20Heeren.pdf">Generalizing Hindley-Milner Type Inference Algorithms</a> paper describes the algorithm in details.</p>
+<p>Here’s <a href="https://github.com/kseo/poly_constraints">my implementation</a> of Heeren’s algorithm. I forked Stephen Diehls’s <a href="https://github.com/sdiehl/write-you-a-haskell/tree/master/chapter7/poly_constraints">Poly</a> and modified <a href="https://github.com/kseo/poly_constraints/blob/master/src/Infer.hs">the type checker</a> to use the Heeren’s algorithm.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-02-hindley-milner-inference-with-constraints.html";
+    this.page.identifier = "/posts/2017-01-02-hindley-milner-inference-with-constraints.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-02-hindley-milner-inference-with-constraints.html">Read more</a>
+
+<h4><a href="../posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html">Type inference algorithms of Haskell-like languages</a></h4> - December 31, 2016
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Type inference algorithms of Haskell-like languages</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Type inference algorithms of Haskell-like languages</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on December 31, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/type%20inference.html">type inference</a>, <a href="../tags/type%20system.html">type system</a>, <a href="../tags/Haskell.html">Haskell</a>
+      
+  </div>
+
+<p>I collected papers on the type inference algorithms used by Haskell-like languages.</p>
+<h1 id="haskell">Haskell</h1>
+<p>Haskell supports advanced type system features such as GADTs, type classes and type families. The current type checker implemented by GHC is described in <a href="https://www.microsoft.com/en-us/research/publication/outsideinx-modular-type-inference-with-local-assumptions/">OutsideIn(X): Modular type inference with local assumptions</a>.</p>
+<h1 id="purescript">PureScript</h1>
+<p>The type checker of PureScript is inspired by the following papers. It supports type classes, row polymorphism, higher kinded polymorphism (rank N types). There are no soundness proofs yet.</p>
+<ul>
+<li><a href="https://people.mpi-sws.org/~neelk/bidir.pdf">Complete and Easy Bidirectional Typechecking for Higher-Rank Polymorphism</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/publication/hmf-simple-type-inference-for-first-class-polymorphism/">HMF: Simple Type Inference for First-Class Polymorphism</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/publication/koka-programming-with-row-polymorphic-effect-types/">Koka: Programming with Row-polymorphic Effect Types</a></li>
 </ul>
+<h1 id="elm">Elm</h1>
+<p>Elm’s type checker is an implementation of Pottier and Rem’s <a href="http://gallium.inria.fr/~fpottier/publis/emlti-final.pdf">The Essence of ML Type Inference</a> with two extensions:</p>
+<ul>
+<li>A limited set of built-in type classes (i.e. number, appendable, comparable)</li>
+<li>Records based on <a href="https://www.microsoft.com/en-us/research/publication/extensible-records-with-scoped-labels/">Extensible records with scoped labels</a></li>
+</ul>
+<p>There is no support for type classes or higher kinded polymorphism yet.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html";
+    this.page.identifier = "/posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2016-12-31-type-inference-algorithms-of-haskell-like-languages.html">Read more</a>
+
 
 
         </div>

@@ -24,13 +24,107 @@
         <div id="content">
             <h1>Posts tagged "string literal"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2014-01-24-using-string-literal-for-symbols.html">Using string literal for symbols</a> - January 24, 2014
-        </li>
-    
-</ul>
+            
+<h4><a href="../posts/2014-01-24-using-string-literal-for-symbols.html">Using string literal for symbols</a></h4> - January 24, 2014
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Using string literal for symbols</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Using string literal for symbols</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 24, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/string%20literal.html">string literal</a>
+      
+  </div>
+
+<p>In writing a compiler or an interpreter, it is common to define a symbol or identifier type which is distinct from <code>String</code> to make it more type-safe.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> <span class="dt">Symbol</span> <span class="fu">=</span> <span class="dt">Symbol</span> <span class="dt">String</span></code></pre></div>
+<p>Now <code>String</code> and <code>Symbol</code> are distinct types and we can’t accidentally mix two. But it also means that we have to use <code>Symbol</code> constructor whenever we need to create a symbol from a string literal.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="dt">Symbol</span> <span class="st">&quot;main&quot;</span></code></pre></div>
+<p>You can avoid this labor using the GHC extension, <a href="https://kseo.github.io/posts/2014-01-15-overloaded-string-literals.html">OverloadedStrings</a>. By making <code>Symbol</code> an instance of <code>IsString</code>, GHC automatically coerces a string literal into a symbol.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">import </span><span class="dt">Data.String</span>
+
+<span class="kw">instance</span> <span class="dt">IsString</span> <span class="dt">Symbol</span> <span class="kw">where</span>
+    fromString <span class="fu">=</span> <span class="dt">Symbol</span> <span class="fu">.</span> fromString
+
+<span class="ot">s ::</span> <span class="dt">Symbol</span>
+s <span class="fu">=</span> <span class="st">&quot;hello&quot;</span></code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2014-01-24-using-string-literal-for-symbols.html";
+    this.page.identifier = "/posts/2014-01-24-using-string-literal-for-symbols.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2014-01-24-using-string-literal-for-symbols.html">Read more</a>
+
 
 
         </div>

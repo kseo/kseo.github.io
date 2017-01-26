@@ -24,13 +24,165 @@
         <div id="content">
             <h1>Posts tagged "pipeline"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2017-01-25-write-your-own-stream-processing-library-part1.html">Write your own stream processing library Part1</a> - January 25, 2017
-        </li>
-    
+            
+<h4><a href="../posts/2017-01-25-write-your-own-stream-processing-library-part1.html">Write your own stream processing library Part1</a></h4> - January 25, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Write your own stream processing library Part1</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Write your own stream processing library Part1</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 25, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/coroutine.html">coroutine</a>, <a href="../tags/generator.html">generator</a>, <a href="../tags/iteratee.html">iteratee</a>, <a href="../tags/pipeline.html">pipeline</a>, <a href="../tags/conduit.html">conduit</a>, <a href="../tags/pipes.html">pipes</a>
+      
+  </div>
+
+<p><a href="https://hackage.haskell.org/package/pipes">pipes</a> and <a href="https://hackage.haskell.org/package/conduit">conduit</a> are two competing libraries for handling stream data processing in Haskell. Though both libraries provide excellent tutorials on the usage of the libraries, the implementation details are impenetrable to most Haskell programmers.</p>
+<p>The best way to understand how these streaming libraries work is to write a minimalistic version by ourselves. In this post, I will show you how we can write a small streaming data library with <em>coroutine</em>. Our implementation is based on Mario Blazevic’s excellent article <a href="https://themonadreader.files.wordpress.com/2011/10/issue19.pdf">Coroutine Pipelines</a>.</p>
+<!--more-->
+<h1 id="generator">Generator</h1>
+<p><code>Generator</code> is a monad transformer which allows the base monad to pause its computation and yield a value. This corresponds to <code>Producer</code> of pipes or <code>Source</code> of conduit.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE LambdaCase #-}</span>
+
+<span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="kw">import </span><span class="dt">Control.Monad.Trans.Class</span>
+
+<span class="kw">newtype</span> <span class="dt">Generator</span> a m x <span class="fu">=</span>
+  <span class="dt">Generator</span> {<span class="ot"> bounceGen ::</span> m (<span class="dt">Either</span> (a, <span class="dt">Generator</span> a m x) x) }</code></pre></div>
+<p><code>Generator a m x</code> represents a computation which yields values of type <code>a</code> on top of the base monad <code>m</code> and returns a value of type <code>x</code>.</p>
+<p><code>Either</code> indicates that <code>Generator</code> has two cases:</p>
+<ul>
+<li><code>(a, Generator a m x)</code>: A pair of a yielded value and a suspension to be resumed.</li>
+<li><code>x</code>: A return value <code>x</code>.</li>
 </ul>
+<p>The enclosing <code>m</code> allows us to perform monadic actions while running the generator.</p>
+<p>The definition of <code>Monad</code> instance for <code>Generator</code> is as follows:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Monad</span> (<span class="dt">Generator</span> a m) <span class="kw">where</span>
+  return  <span class="fu">=</span> <span class="dt">Generator</span> <span class="fu">.</span> return <span class="fu">.</span> <span class="dt">Right</span>
+  t <span class="fu">&gt;&gt;=</span> f <span class="fu">=</span> <span class="dt">Generator</span> <span class="fu">$</span> bounceGen t
+                      <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span> <span class="dt">Left</span> (a, cont) <span class="ot">-&gt;</span> return <span class="fu">$</span> <span class="dt">Left</span> (a, cont <span class="fu">&gt;&gt;=</span> f)
+                                <span class="dt">Right</span> x <span class="ot">-&gt;</span> bounceGen (f x)
+
+<span class="kw">instance</span> <span class="dt">MonadTrans</span> (<span class="dt">Generator</span> a) <span class="kw">where</span>
+  lift <span class="fu">=</span> <span class="dt">Generator</span> <span class="fu">.</span> liftM <span class="dt">Right</span>
+
+<span class="ot">yield ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Generator</span> a m ()
+yield a <span class="fu">=</span> <span class="dt">Generator</span> (return <span class="fu">$</span> <span class="dt">Left</span> (a, return ()))</code></pre></div>
+<p><code>&gt;&gt;=</code> operator has two cases to consider. If <code>t</code> is a suspension (<code>Left</code> case), it yields <code>a</code> and combines the remaining computation <code>cont</code> with <code>f</code>. If <code>t</code> is a value <code>x</code> (<code>Right</code> case), it continues the computation by passing the value to <code>f</code>. Once we define <code>&gt;&gt;=</code> this way, the definition of <code>yield</code> is straightforward. It yields a value and does nothing more.</p>
+<p>To run a <code>Generator</code>, we need <code>runGenerator</code> function which collects the yielded values while executing the generator. <code>run'</code> uses a <a href="https://wiki.haskell.org/Difference_list">difference list</a> to collect yielded values and converts it to the normal list by applying <code>[]</code> at the end.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">runGenerator ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Generator</span> a m x <span class="ot">-&gt;</span> m ([a], x)
+runGenerator <span class="fu">=</span> run' id <span class="kw">where</span>
+  run' f g <span class="fu">=</span> bounceGen g
+             <span class="fu">&gt;&gt;=</span> \<span class="kw">case</span> <span class="dt">Left</span> (a, cont) <span class="ot">-&gt;</span> run' (f<span class="fu">.</span>(a<span class="fu">:</span>)) cont
+                       <span class="dt">Right</span> x <span class="ot">-&gt;</span> return (f [], x)</code></pre></div>
+<p>Now we are ready to create generators. <code>triple</code> is a generator which yields the given value three times.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">triple ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">Generator</span> a m ()
+triple x <span class="fu">=</span> <span class="kw">do</span>
+    yield x
+    yield x
+    yield x</code></pre></div>
+<p>Running <code>triple 3</code> returns <code>([3, 3, 3], ())</code> as expected.</p>
+<pre><code>λ&gt; runGenerator $ triple 3
+([3,3,3],())</code></pre>
+<p>When the base monad is <code>IO</code>, we can interleave IO actions. For example, <code>loop</code> yields the line input from the stdin until an empty string is read.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">loop ::</span> <span class="dt">Generator</span> <span class="dt">String</span> <span class="dt">IO</span> ()
+loop <span class="fu">=</span> <span class="kw">do</span>
+    str <span class="ot">&lt;-</span> lift getLine
+    when (str <span class="fu">/=</span> <span class="st">&quot;&quot;</span>) <span class="fu">$</span> <span class="kw">do</span>
+      yield str
+      loop</code></pre></div>
+<pre><code>λ&gt; runGenerator loop
+Hello
+world!
+
+([&quot;Hello&quot;,&quot;world!&quot;],())</code></pre>
+<p>It is even possible to mix two generators by alternating each generator.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">alternate ::</span> <span class="dt">Monad</span> m <span class="ot">=&gt;</span> <span class="dt">Generator</span> a m () <span class="ot">-&gt;</span> <span class="dt">Generator</span> a m () <span class="ot">-&gt;</span> <span class="dt">Generator</span> a m ()
+alternate g1 g2 <span class="fu">=</span> <span class="dt">Generator</span> <span class="fu">$</span> liftM2 go (bounceGen g1) (bounceGen g2)
+  <span class="kw">where</span>
+    go (<span class="dt">Left</span> (a, cont)) (<span class="dt">Left</span> (b, cont')) <span class="fu">=</span> <span class="dt">Left</span>  (a, <span class="dt">Generator</span> <span class="fu">$</span> return <span class="fu">$</span> <span class="dt">Left</span> (b, alternate cont cont'))
+    go (<span class="dt">Left</span> (a, cont)) (<span class="dt">Right</span> _)         <span class="fu">=</span> <span class="dt">Left</span>  (a, cont)
+    go (<span class="dt">Right</span> _)        (<span class="dt">Left</span> (b, cont))  <span class="fu">=</span> <span class="dt">Left</span>  (b, cont)
+    go (<span class="dt">Right</span> _)        (<span class="dt">Right</span> _)         <span class="fu">=</span> <span class="dt">Right</span> ()</code></pre></div>
+<p>We can see that the outputs of <code>triple 1</code> and <code>triple 2</code> are intermingled.</p>
+<pre><code>λ&gt; runGenerator $ alternate (triple 1) (triple 2)
+([1,2,1,2,1,2],())</code></pre>
+<p>Part 2 of this post will continue the discussion with <em>Iteratees</em>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-25-write-your-own-stream-processing-library-part1.html";
+    this.page.identifier = "/posts/2017-01-25-write-your-own-stream-processing-library-part1.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-25-write-your-own-stream-processing-library-part1.html">Read more</a>
+
 
 
         </div>

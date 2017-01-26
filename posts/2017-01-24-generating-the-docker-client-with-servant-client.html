@@ -47,6 +47,7 @@
 <li>Generate documentation for your web applications</li>
 </ul>
 <p>The primary use case of Servant is to write servers, but we can use <a href="https://hackage.haskell.org/package/servant-client">servant-client</a> to generate client functions for the pre-existing web servers too! In this post, I will show you how we can generate client functions for the <a href="https://docs.docker.com/engine/api/">Docket remote API</a> automatically with servant-client.</p>
+<!--more-->
 <h1 id="api-specification">API specification</h1>
 <p>To make the exposition simple, we will specify only three APIs: <code>ping</code>, <code>version</code> and <code>containerList</code>.</p>
 <p>The simplest API is <a href="https://docs.docker.com/engine/api/v1.25/#operation/SystemPing">Ping</a> which tests if the server is accessible. Its path is <code>/v1.25/_ping</code> and it returns <code>OK</code> as a plain text with status code 200. We can succinctly describe this endpoint with Servant’s type-level DSL.</p>

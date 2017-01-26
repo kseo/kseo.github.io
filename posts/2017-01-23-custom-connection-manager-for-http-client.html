@@ -40,6 +40,7 @@
   </div>
 
 <p><a href="https://www.stackage.org/haddock/lts-7.12/http-client-0.4.31.2/Network-HTTP-Client.html">http-client</a> provides the low-level API for HTTP client. In this post, I will explain how to create custom connection managers. If you want to know the basics of the library, read <a href="https://haskell-lang.org/library/http-client">Making HTTP requests</a> first.</p>
+<!--more-->
 <p>Every HTTP request is made via a <code>Manager</code>. It handles the details of creating connections to the server such as managing a connection pool. It also allows us to configure various settings and setup secure connections (HTTPS).</p>
 <p>The easiest way to create one is to use <code>newManager defaultManagerSettings</code> as follows.</p>
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Network.HTTP.Client</span>

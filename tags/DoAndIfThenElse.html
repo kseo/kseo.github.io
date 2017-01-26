@@ -24,13 +24,133 @@
         <div id="content">
             <h1>Posts tagged "DoAndIfThenElse"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2014-01-13-DoAndIfThenElse-language-extension.html">DoAndIfThenElse language extension</a> - January 13, 2014
-        </li>
-    
-</ul>
+            
+<h4><a href="../posts/2014-01-13-DoAndIfThenElse-language-extension.html">DoAndIfThenElse language extension</a></h4> - January 13, 2014
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - DoAndIfThenElse language extension</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>DoAndIfThenElse language extension</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 13, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/DoAndIfThenElse.html">DoAndIfThenElse</a>, <a href="../tags/language%20extension.html">language extension</a>
+      
+  </div>
+
+<p>Have you ever encountered “Unexpected semi-colons in conditional” errors while building your project with Cabal and wondered why? This blog post explains about this puzzling error.</p>
+<p>Here is a simple program which prints the given command line arguments.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">System.Environment</span>
+ 
+main <span class="fu">=</span> <span class="kw">do</span>
+    args <span class="ot">&lt;-</span> getArgs
+    <span class="kw">if</span> length args <span class="fu">&lt;</span> <span class="dv">1</span> <span class="kw">then</span>
+        putStrLn <span class="st">&quot;Usage: DoAndIfThenElse [args]&quot;</span>
+    <span class="kw">else</span>
+        putStrLn <span class="fu">$</span> concat args</code></pre></div>
+<p>You can build this Haskell program with <code>ghc –make</code>:</p>
+<pre><code>ghc --make DoAndIfThenElse.hs
+[1 of 1] Compiling Main             ( DoAndIfThenElse.hs, DoAndIfThenElse.o )
+Linking DoAndIfThenElse ...</code></pre>
+<p>Okay. Then let’s create a Cabal build script and build this program with Cabal.</p>
+<pre><code>name:            DoAndIfThenElse
+version:         0.0.1
+cabal-version:   &gt;= 1.8
+build-type:      Simple
+ 
+executable DoAndIfThenElse
+  hs-source-dirs:    src
+  main-is:           DoAndIfThenElse.hs
+  build-depends:     base</code></pre>
+<p>The source code is exactly the same, but now GHC suddenly complains about the unexpected semi-colons we never inserted anyway.</p>
+<pre><code>src/DoAndIfThenElse.hs:5:8:
+    Unexpected semi-colons in conditional:
+        if length args &lt; 1 then putStrLn
+                                  &quot;Usage: DoAndIfThenElse [args]&quot;; else putStrLn $ concat args
+    Perhaps you meant to use -XDoAndIfThenElse?</code></pre>
+<p>You can fix this problem by adding <code>DoAndIfThenElse</code> language pragma at the beginning:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DoAndIfThenElse #-}</span></code></pre></div>
+<p>Or you can fix it by changing the indentation of <em>then</em> and <em>else</em> of <em>if</em> expression.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">if</span> length args <span class="fu">&lt;</span> <span class="dv">1</span>
+    <span class="kw">then</span> putStrLn <span class="st">&quot;Usage: DoAndIfThenElse [args]&quot;</span>
+    <span class="kw">else</span> putStrLn <span class="fu">$</span> concat args</code></pre></div>
+<p>So the problem is on the indentation. You have to keep <em>then</em> and <em>else</em> at deeper indentation levels than the <em>if</em> block they belong.</p>
+<p><code>ghc –make</code> is okay because GHC automatically turns on the syntax extension <code>DoAndIfThenElse</code>. However, Cabal is more picky, so you have to turn it on manually either at the top of your code files, or in your Cabal files.</p>
+<p>There is also a StackOverflow question on this issue, <a href="http://stackoverflow.com/questions/10076318/unexpected-semi-colons-in-conditional">Unexpected semi-colons in conditional</a>.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2014-01-13-DoAndIfThenElse-language-extension.html";
+    this.page.identifier = "/posts/2014-01-13-DoAndIfThenElse-language-extension.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2014-01-13-DoAndIfThenElse-language-extension.html">Read more</a>
+
 
 
         </div>

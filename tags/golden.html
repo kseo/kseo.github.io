@@ -24,13 +24,157 @@
         <div id="content">
             <h1>Posts tagged "golden"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2016-12-15-golden-tests-are-tasty.html">Golden tests are tasty</a> - December 15, 2016
-        </li>
-    
+            
+<h4><a href="../posts/2016-12-15-golden-tests-are-tasty.html">Golden tests are tasty</a></h4> - December 15, 2016
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Golden tests are tasty</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Golden tests are tasty</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on December 15, 2016
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/tasty.html">tasty</a>, <a href="../tags/golden.html">golden</a>, <a href="../tags/test.html">test</a>
+      
+  </div>
+
+<p>Haskell programmers love property based testing thanks to glorious <a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a> library. Once we specify the program behavior in terms of properties, <em>QuickCheck</em> generates random test cases and checks if the given properties hold for these test cases. Once it finds a failing test case, it automatically shrinks the test case to the minimal value which still violates the property.</p>
+<p>However, we, Haskell programmers, often forget that there are other test methodologies. In this post, I am going to introduce <em>gold testing</em> provided by <a href="https://hackage.haskell.org/package/tasty-golden">tasty-golden</a> package.</p>
+<p>The idea is simple. A golden test is just an <code>IO</code> action that writes its result to a file. To pass the test, this output file should be identical to the corresponding <em>golden</em> file, which contains the correct result for the test.</p>
+<h1 id="a-cast-study-untyped-lambda-calculus">A cast study: untyped lambda calculus</h1>
+<p>We have an <a href="https://github.com/kseo/untyped">untyped lambda calculus implementation</a>. It provides <code>run</code> function which evaluates the given lambda calculus script to a <code>String</code>.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">run ::</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">Either</span> <span class="dt">String</span> <span class="dt">String</span></code></pre></div>
+<p>For testing, we would like to check if this function works correctly for various input scripts. To enumerate a few test scenarios:</p>
+<ul>
+<li><code>\x.x</code> evaluates to itself because there is no redex in the term.</li>
+<li><code>(\x.x)(\x.x)</code> evaluates to <code>(\x.x)</code> by substitution.</li>
+<li><code>\x.y</code> throws an error because <code>y</code> is an unbound variable.</li>
 </ul>
+<p>Of course, we can manually create a test case for each scenario, but this is boring and repetitive. Instead of writing test cases in Haskell, let’s create a script file and its expected output file for each input:</p>
+<ul>
+<li><p>t1.lc</p>
+<pre><code>\x.x</code></pre></li>
+<li><p>t1.golden</p>
+<pre><code>\x.x</code></pre></li>
+<li><p>t2.lc</p>
+<pre><code>(\x.x)(\x.x)</code></pre></li>
+<li><p>t2.golden</p>
+<pre><code>(\x.x)</code></pre></li>
+<li><p>t3.lc</p>
+<pre><code>(\x.y)</code></pre></li>
+<li><p>t3.golden</p>
+<pre><code>&quot;untyped lambda-calculus&quot; (line 2, column 1):
+unexpected end of input
+The variable y has not been bound</code></pre></li>
+</ul>
+<p>Once we have these files ready, what golden tests do is to read each script file and evaluates the script, and compares the output with the expected output contained in the expected file. If the actual output and the expected output are different, the test fails. We call the expected output file as the <em>golden file</em>.</p>
+<p>For convenience, tasty-golden generates the golden files if they are not available. So you don’t need to create golden files initially. You also can regenerate the golden files using the <code>--accept</code> flag. This is useful when you know that your change is valid and want to rebase all the golden files accordingly.</p>
+<h1 id="implementation">Implementation</h1>
+<p>Here’s the actual code which performs golden tests as described above. <code>listTestFiles</code> enumerates all the script files under <code>test/tests</code> directory and <code>mkGoldenTest</code> creates a golden test from the script file using <code>goldenVsString</code> function provided by tasty-golden.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Language.LambdaCalculus</span>
+
+<span class="kw">import qualified</span> <span class="dt">Data.ByteString.Lazy.Char8</span> <span class="kw">as</span> <span class="dt">BS</span>
+<span class="kw">import </span><span class="dt">System.FilePath</span>
+<span class="kw">import </span><span class="dt">System.FilePath.Glob</span>
+
+<span class="kw">import </span><span class="dt">Test.Tasty</span>
+<span class="kw">import </span><span class="dt">Test.Tasty.Golden</span> <span class="kw">as</span> <span class="dt">G</span>
+
+<span class="ot">main ::</span> <span class="dt">IO</span> ()
+main <span class="fu">=</span> <span class="kw">do</span>
+  paths <span class="ot">&lt;-</span> listTestFiles
+  goldens <span class="ot">&lt;-</span> mapM mkGoldenTest paths
+  defaultMain (testGroup <span class="st">&quot;Tests&quot;</span> goldens)
+
+<span class="ot">listTestFiles ::</span> <span class="dt">IO</span> [FilePath]
+listTestFiles <span class="fu">=</span> globDir1 pat <span class="st">&quot;test/tests&quot;</span>
+  <span class="kw">where</span> pat <span class="fu">=</span> compile <span class="st">&quot;*.lc&quot;</span>
+
+<span class="ot">mkGoldenTest ::</span> FilePath <span class="ot">-&gt;</span> <span class="dt">IO</span> <span class="dt">TestTree</span>
+mkGoldenTest path <span class="fu">=</span> <span class="kw">do</span>
+  <span class="kw">let</span> testName <span class="fu">=</span> takeBaseName path
+  <span class="kw">let</span> goldenPath <span class="fu">=</span> replaceExtension path <span class="st">&quot;.golden&quot;</span>
+  return (goldenVsString testName goldenPath action)
+  <span class="kw">where</span>
+<span class="ot">    action ::</span> <span class="dt">IO</span> <span class="dt">BS.ByteString</span>
+    action <span class="fu">=</span> <span class="kw">do</span>
+      script <span class="ot">&lt;-</span> readFile path
+      <span class="kw">let</span> actual <span class="fu">=</span> either id id (run script)
+      return (BS.pack actual)</code></pre></div>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2016-12-15-golden-tests-are-tasty.html";
+    this.page.identifier = "/posts/2016-12-15-golden-tests-are-tasty.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2016-12-15-golden-tests-are-tasty.html">Read more</a>
+
 
 
         </div>

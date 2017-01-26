@@ -24,13 +24,126 @@
         <div id="content">
             <h1>Posts tagged "lazy evaluation"</h1>
 
-            <ul>
-    
-        <li>
-            <a href="../posts/2014-01-15-the-power-of-lazy-evaluation.html">The power of lazy evaluation</a> - January 15, 2014
-        </li>
-    
+            
+<h4><a href="../posts/2014-01-15-the-power-of-lazy-evaluation.html">The power of lazy evaluation</a></h4> - January 15, 2014
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - The power of lazy evaluation</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>The power of lazy evaluation</h1>
+
+            <a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 15, 2014
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/Haskell.html">Haskell</a>, <a href="../tags/lazy%20evaluation.html">lazy evaluation</a>, <a href="../tags/backtracking.html">backtracking</a>, <a href="../tags/exception%20handling.html">exception handling</a>
+      
+  </div>
+
+<p><a href="https://rkrishnan.org/files/wadler-1985.pdf">How to replace failure by a list of successes</a> is a classic paper which shows the power of lazy evaluation with respect to exception handling, backtracking and pattern matching. It says we don’t need special language constructs because these features can be emulated only with lazy evaluation.</p>
+<p>The idea is simple. Each term that may raise an exception of backtrack is replaced by a term that returns a list of values; <code>[]</code> for failure and a singleton list for success.</p>
+<ul>
+<li>(failure) -&gt; []</li>
+<li>(success) -&gt; [v]</li>
 </ul>
+<p>A term that might return many values through backtracking is replaced by a term that returns a list of those values.</p>
+<ul>
+<li>(backtracking) -&gt; [v1, v2, …]</li>
+</ul>
+<p>There are two ways of combining terms that may raise exceptions or backtrack.</p>
+<blockquote>
+<p>“or” combination is a way of combining two terms so that evaluation of the resulting term succeeds whenever evaluation of the first term <em>or</em> the second term succeeds.</p>
+</blockquote>
+<p>“or” combination can be implemented with list append, <code>(++)</code>.</p>
+<blockquote>
+<p>“and” combination is a way of combining two terms so that evaluation of the resulting term succeeds whenever evaluation of the first term <em>and</em> the second term succeeds.</p>
+</blockquote>
+<p>“and” combination can be implemented with cartesian product.</p>
+<p>Let’s look at an example. <code>assoc</code> is a function that looks up entries in an association list. Given a list of pairs <code>xys</code> and a value <code>x</code>, the call <code>assoc xys x</code> returns <code>y</code> such that the pair <code>(x, y)</code> is in the list <code>xys</code>. If there is no such <code>y</code>, the call should raise an exception. <code>assoc</code> can be written in Haskell using list comprehension:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">assoc xys x <span class="fu">=</span> [y <span class="fu">|</span> (x', y) <span class="ot">&lt;-</span> xys, x' <span class="fu">==</span> x]</code></pre></div>
+<p>Here are the results of some experiments on assoc.</p>
+<ul>
+<li>assoc [(“a”, 1), (“a”, 3)] “a” = [1,3]</li>
+<li>assoc [(“a”, 1), (“b”, 2)] “b” = [2]</li>
+<li>assoc [(“a”, 1), (“b”, 2)] “c” = [0]</li>
+</ul>
+<p>“Or” combinator <code>(assoc xys1 x) ? (assoic xys2 x)</code> can be written</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">assoc xys1 x <span class="fu">++</span> assoc xys2 x</code></pre></div>
+<p>and “and” combinator <code>(assoc xys x) + (assoic xys2 x)</code> can be written</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">[y1 <span class="fu">+</span> y2 <span class="fu">|</span> [y1 <span class="ot">&lt;-</span> assoic xys1 x, y2 <span class="ot">&lt;-</span> assoc xys2 x]</code></pre></div>
+<p>Backtracking usually requires special language features such as coroutines or generators because evaluation of an expression needs to be <em>suspended</em> after it has returned one value, and then may be <em>resumed</em> later if more values are needed. Lazy evaluation provides this property without any additional language features. That is, evaluation of a list is already performed only when more elements are needed.</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2014-01-15-the-power-of-lazy-evaluation.html";
+    this.page.identifier = "/posts/2014-01-15-the-power-of-lazy-evaluation.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2014-01-15-the-power-of-lazy-evaluation.html">Read more</a>
+
 
 
         </div>

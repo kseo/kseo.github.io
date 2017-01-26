@@ -41,6 +41,7 @@
 
 <p>Many Haskell web frameworks provide so called <em>type-safe links</em>. Servant is no exception and it provides one of the strongest safety check. It statically guarantees that all links are valid endpoints of the server!</p>
 <p>In servant, we can create a type-safe URI using <code>safeLink</code> function. It takes both <em>the whole API</em> and <em>the API endpoint</em> we would like to point to. It signals a type error if the endpoint does not belong to the whole api.</p>
+<!--more-->
 <div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | Create a valid (by construction) relative URI with query params.</span>
 <span class="co">--</span>
 <span class="co">-- This function will only typecheck if `endpoint` is part of the API `api`</span>
