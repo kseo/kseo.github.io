@@ -8,8 +8,88 @@
         <name>Kwang Yul Seo</name>
         <email>kwangyul.seo@gmail.com</email>
     </author>
-    <updated>2017-01-25T00:00:00Z</updated>
+    <updated>2017-01-27T00:00:00Z</updated>
     <entry>
+    <title>How I learned Haskell</title>
+    <link href="http://kseo.github.io//posts/2017-01-27-how-i-learned-haskell.html" />
+    <id>http://kseo.github.io//posts/2017-01-27-how-i-learned-haskell.html</id>
+    <published>2017-01-27T00:00:00Z</published>
+    <updated>2017-01-27T00:00:00Z</updated>
+    <summary type="html"><![CDATA[<p>Happy new lunar year! Today I would like to share my experience of learning Haskell. It’s been a really long journey but a really wonderful one.</p>
+<!--more-->
+<h1 id="first-encounter">First Encounter</h1>
+<p>Back in 2000, I was an undergraduate student majoring in computer science. At the time, I was into system programming and enjoyed learning low-level implementation details of operating systems and system applications. My primary language was C and programmed all assignments in C. I was proud that I understand how my code is compiled and executed on the machine.</p>
+<p>One day my friend told me about <em>Haskell</em>. I wasn’t interested in functional programming, but I was curious because he was so enthusiastically persuaded me to learn Haskell like an evangelist. I ended up reading two books on Haskell.</p>
+<ul>
+<li><a href="http://www.haskellcraft.com/craft3e/Home.html">Haskell: the Craft of Functional Programming</a></li>
+<li><a href="http://www.cs.yale.edu/homes/hudak/SOE/">The Haskell School of Expression</a></li>
+</ul>
+<p>Both books were really nice and I learned I can program in an entirely different way. However, I wasn’t sure if Haskell can solve the real-world problems I wanted to solve. So my interest in Haskell stopped there.</p>
+<h1 id="dark-age">Dark age</h1>
+<p>My first job was to port and optimize Java Virtual Machine for embedded systems. My company licensed Sun’s CDC JVM and I was responsible for maintaining it.</p>
+<p>It was still 2002 and Linux was still luxury for embedded systems. RTOSes such as pSOS and VxWorks were popular on STBs and I ported JVM to these OSes. These RTOSes don’t have distinctions between kernel and user space and an application is linked statically with the kernel and runs as a single (kernel) process application on the device.</p>
+<p>The implication is profound. I had no safety guarantee provided by modern operating systems. A bug in an application can corrupt the kernel data and could crash the entire system. Moreover, there were dozens of threads competing for shared resources, race conditions and dead locks were a common place. Debugging was a nightmare. It took hours or even days to find and fix a small trivial bug.</p>
+<p>The situation was much better when debugging an application written in Java. Thanks to the safety guarantee of Java, certain types of bugs were impossible. A Java program can’t corrupt memory and crash the system. Dead locks could be reported systematically by the JVM. It was relatively fun to fix a bug in Java applications.</p>
+<h1 id="types">Types</h1>
+<p>After years of experience in embedded systems, I gradually became more interested in a systematic way to prevent bugs. Thus I started to learn programming language and type theory. The best computer science book I’ve ever read is Benjamin C. Pierce’s <a href="https://www.cis.upenn.edu/~bcpierce/tapl/">Types and Programming Languages</a>. Thanks to this excellent book, I finally understood what types are! If universities had used this book as a undergraduate PL textbook, much confusions and misunderstandings about dynamic vs static typing among the people would have disappeared.</p>
+<h1 id="stuck-again">Stuck again</h1>
+<p>By fully understanding the merits of type systems, I started to learn Haskell with a different perspective. I read <a href="https://www.haskell.org/tutorial/index.html">A Gentle Introduction To Haskell</a> and many tutorials on monads. It wasn’t very hard to understand examples of monads such as <em>Reader</em>, <em>Writer</em>, <em>State</em>, <em>List</em> and <em>Maybe</em>. But I couldn’t figure out how they are related. I managed to write simple applications in Haskell, but wasn’t confident that I could use Haskell productively because I couldn’t fully understand one of the core ideas of Haskell.</p>
+<h1 id="the-challenges-of-multi-core-programming">The Challenges of Multi-core Programming</h1>
+<p>In the meantime, I changed my career and founded a tech start-up in 2008. I built mobile web browsers for the embedded systems. I created a port of <a href="https://webkit.org/">WebKit</a> and hacked various components of WebKit to speed up the performance. The primary means for optimization was to leverage the multi-core CPU and GPU.</p>
+<p>WebKit performs lots of tasks concurrently but it is mostly single-threaded. Loading a page does not benefit much from having a multi-core CPU. So I offloaded some tasks to separate threads but I only gained marginal performance benefits in exchange for largely increased complexity. I learned a lesson that I must pay very high costs of complexity to get small benefits of performance boost. Considering the already complex nature of WebKit, I ended up abandoning most of performance optimizations to keep complexity under control.</p>
+<p><a href="https://www.amazon.com/gp/product/0123705916?ie=UTF8&amp;tag=nirshavitshom-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0123705916">The Art of Multiprocessor Programming</a> is good resource to learn the multi-core programming, but it was really an <em>art</em> which is hard to master. Only small number of world-class experts can do such optimizations.</p>
+<p>While struggling to squeeze performance out of WebKit, I learned Haskell again to get some insights on parallel programming because Haskell was the only programming language which natively supports <em>STM(Software Transaction Memory)</em>. Simon Marlow’s <a href="http://chimera.labs.oreilly.com/books/1230000000929/index.html">Parallel and Concurrent Programming in Haskell</a> helped me understand how Haskell supports parallel and concurrent programming. Though I learned many valuable lessons from the book, I also felt that the lazy nature of Haskell does not really go well with parallel programming. There is no silver bullet.</p>
+<h1 id="reunion">Reunion</h1>
+<p>I spent more than 10 years of my career on embedded systems and increasingly got frustrated with the fragile tools. So I decided my mind to teach myself Haskell again and use it. This time I started to read classic papers on functional programming and Haskell.</p>
+<p>Philip Wadler’s <a href="http://homepages.inf.ed.ac.uk/wadler/papers/marktoberdorf/baastad.pdf">Monads for functional programming</a> clicked my mind and I finally became enlightened. The paper is really well written, but I don’t think I could understand <em>Monad</em> because I read the paper. Years of trials and errors was necessary to understand an abstract concept like monad. This is the most exciting moment in my long journey to Haskell and I got addicted.</p>
+<p>Once I understood how I can learn abstractions, the rest was easy. Now I don’t get discouraged when I don’t understand abstractions at first glance. It takes time and practice to understand abstract things. I also realized that monad is just the beginning. There exist many Haskell idioms that require other abstract concepts such as <em>applicative functor</em>, <em>arrow</em>, <em>profunctor</em> and so on.</p>
+<p>Here’s the list of papers I found most enlightening when learning Haskell. I also recommend reading any paper with “Functional Pearl” attached to it.</p>
+<ul>
+<li><a href="http://www.cs.nott.ac.uk/~pszgmh/fold.pdf">A tutorial on the universality and expressiveness of fold</a></li>
+<li><a href="http://www.cs.nott.ac.uk/~pszgmh/pearl.pdf">Monadic Parsing in Haskell</a></li>
+<li><a href="http://haskell.cs.yale.edu/wp-content/uploads/2011/02/POPL96-Modular-interpreters.pdf">Monad Transformers and Modular Interpreters</a></li>
+<li><a href="http://www.cs.ru.nl/~W.Swierstra/Publications/DataTypesALaCarte.pdf">Data types a la carte</a></li>
+<li><a href="https://www.cs.ox.ac.uk/jeremy.gibbons/publications/iterator.pdf">The Essence of the Iterator Pattern</a></li>
+<li><a href="https://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf">The Zipper</a></li>
+</ul>
+<h1 id="back-to-real-world">Back to Real-World</h1>
+<p>I was confident that Haskell is really a good programming language and I was looking for opportunities to use Haskell in production. Bryan O’Sullivan, Don Stewart, and John Goerzen’s <a href="http://book.realworldhaskell.org/">Real World Haskell</a> was a good reference in this direction. It showed how I can use Haskell to do my daily jobs such as networking, system programming, databases and web programming.</p>
+<p>Finally, I started to read real-world Haskell code available on the hackage and realized that the <em>Haskell I know</em> is different from the <em>Haskell that is actually used</em>. Real world Haskell uses lots of GHC extensions which makes me feel it is an entirely different language. A typical Haskell module starts with:</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE CPP                        #-}</span>
+<span class="ot">{-# LANGUAGE FlexibleContexts           #-}</span>
+<span class="ot">{-# LANGUAGE ConstraintKinds            #-}</span>
+<span class="ot">{-# LANGUAGE FlexibleInstances          #-}</span>
+<span class="ot">{-# LANGUAGE FunctionalDependencies     #-}</span>
+<span class="ot">{-# LANGUAGE OverloadedStrings          #-}</span>
+<span class="ot">{-# LANGUAGE QuasiQuotes                #-}</span>
+<span class="ot">{-# LANGUAGE RecordWildCards            #-}</span>
+<span class="ot">{-# LANGUAGE TupleSections              #-}</span>
+<span class="ot">{-# LANGUAGE TypeFamilies               #-}</span>
+<span class="ot">{-# LANGUAGE RankNTypes                 #-}</span>
+<span class="ot">{-# LANGUAGE DeriveDataTypeable         #-}</span></code></pre></div>
+<p>It seems sticking to Haskell 98 or 2000 does not have much practical sense because many Haskell packages already use many GHC extensions. So I learned them too. <a href="https://ocharles.org.uk/blog/posts/2014-12-01-24-days-of-ghc-extensions.html">24 Days of GHC Extensions</a> was really good materials on this topic.</p>
+<p>I like the approach of <a href="http://www.yesodweb.com/book/haskell">Yesod Web Framework Book</a> which explains the GHC extensions used in the library before explaining how to use the library. This is often the first step to learn a new library for many Haskell programmers. For example, you can’t use <a href="http://haskell-servant.readthedocs.io/en/stable/">Servant</a> unless you understand <em>DataKinds</em> and <em>TypeOperators</em>. So I encourage Haskell library authors to write more about the GHC extensions they use.</p>
+<p>I also found that some packages are essential to use Haskell in practice.</p>
+<ul>
+<li><code>String</code> type has problems. You need either <a href="https://hackage.haskell.org/package/text">text</a> or <a href="https://hackage.haskell.org/package/bytestring">bytestring</a> for efficient string data processing.</li>
+<li>Lazy IO looks nice, but does not work well in practice. To process streaming data properly you need either <a href="https://hackage.haskell.org/package/pipes-4.3.2/docs/Pipes-Tutorial.html">pipes</a> or <a href="https://github.com/snoyberg/conduit#readme">conduit</a>.</li>
+<li>You will need a custom monad or monad transformer for your application sooner or later. <a href="https://hackage.haskell.org/package/mtl">mtl</a> or <a href="https://hackage.haskell.org/package/transformers">transformers</a> is required.</li>
+<li>JSON is a really universal data exchange format these days and <a href="https://hackage.haskell.org/package/aeson-1.1.0.0/docs/Data-Aeson.html">aeson</a> will help you.</li>
+<li><a href="https://hackage.haskell.org/package/QuickCheck">QuickCheck</a> is a bonus you get from using Haskell!</li>
+</ul>
+<h1 id="haskell-in-production">Haskell in production</h1>
+<p>I founded a small Haskell shop this year and started to use Haskell in production. I realized that using Haskell in production is, surprisingly, easier than learning Haskell. It took me more than 10 years to learn Haskell, but I feel confident that I can use Haskell in production only after a few months of experiments.</p>
+<p>There is one thing I would like to emphasize. Using Haskell does not mean that you must understand all the dependencies you use. Haskell programmers tend to care much about the implementation details of their dependencies because Haskell makes it so easy to understand the meaning of program with types and equational reasoning. But in my opinion, this is a blessed curse.</p>
+<p>That’s not how civilization works. You can driver a car without understanding how engines work. Python or JavaScript programmers do not care about the implementation details of their dependencies because it is simply impossible. Haskell is no exception. Time and money is limited. Don’t spend too much time understanding things. Spend more time on building. Be practical.</p>
+<p>Fortunately, some library authors provide a high-level overview of their library. <a href="https://www.andres-loeh.de/Servant/servant-wgp.pdf">Type-level Web APIs with Servant</a> is a great example. It explains the core concepts and implementation techniques of the library without involving accidental complexities of implementation details. I would love to see more papers like this.</p>
+<h1 id="tools-and-libraries">Tools and Libraries</h1>
+<p><a href="https://www.stackage.org/">Stackage</a> and the <a href="https://docs.haskellstack.org/en/stable/README/">Stack</a> are indispensable tools to use Haskell in production. All the hard works of <a href="https://www.fpcomplete.com/">FP Complete</a> gave me confidence that Haskell is production-ready. The Haskell ecosystem is not small anymore. There are multiple competing web frameworks such as <a href="http://www.yesodweb.com/">Yesod</a>, <a href="https://hackage.haskell.org/package/scotty">Scotty</a>, <a href="http://snapframework.com/">Snap</a>, <a href="http://www.happstack.com/page/view-page-slug/1/happstack">Happstack</a> and <a href="http://haskell-servant.readthedocs.io/en/stable/">Servant</a>. Qualities of these packages are all good.</p>
+<p>If you write web servers in Haskell, all the packages you need such as web servers, web frameworks, logging packages, database drivers are already available. I use <em>Servant</em>, <a href="https://hackage.haskell.org/package/persistent">persistent</a> and <a href="https://hackage.haskell.org/package/esqueleto">esqueleto</a> for my server. So far, everything works fine.</p>
+<h1 id="haskell-community">Haskell Community</h1>
+<p>Haskell community is relatively small compared to other major languages, but I am often surprised by the quality of feedbacks I get from the community. Haskell is a great language, but the community is even greater. That’s the biggest reason why I love programming in Haskell.</p>
+<p>My journey to Haskell is still going on.</p>]]></summary>
+</entry>
+<entry>
     <title>Write your own stream processing library Part1</title>
     <link href="http://kseo.github.io//posts/2017-01-25-write-your-own-stream-processing-library-part1.html" />
     <id>http://kseo.github.io//posts/2017-01-25-write-your-own-stream-processing-library-part1.html</id>
@@ -804,64 +884,6 @@ f _ <span class="fu">=</span> (show<span class="ot"> ::</span> a <span class="ot
 <ul>
 <li>Edward Kmett’s <a href="https://www.stackage.org/lts-7.12/package/reflection-2.1.2">reflection</a> package shows an advanced usage of <code>Proxy</code>. Austin Seipp’s <a href="https://www.schoolofhaskell.com/user/thoughtpolice/using-reflection">Reflecting values to types and back</a> explains how to reify arbitrary terms into types that can be reflected back into terms.</li>
 </ul>]]></summary>
-</entry>
-<entry>
-    <title>Memoization in Haskell</title>
-    <link href="http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html" />
-    <id>http://kseo.github.io//posts/2017-01-14-memoization-in-hasekll.html</id>
-    <published>2017-01-14T00:00:00Z</published>
-    <updated>2017-01-14T00:00:00Z</updated>
-    <summary type="html"><![CDATA[<p><em>Memoization</em> is an optimization technique used to speed up a function by caching its previously computed results. In impure programming languages, a mutable map is used to cache computed results.</p>
-<!--more-->
-<p>For example, <code>fib</code> function in Python</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="kw">def</span> fib(n):
-    <span class="cf">if</span> n <span class="op">&lt;</span> <span class="dv">2</span>: <span class="cf">return</span> <span class="dv">1</span>
-    <span class="cf">return</span> fib(n<span class="dv">-1</span>) <span class="op">+</span> fib(n<span class="dv">-2</span>)</code></pre></div>
-<p>can be speed up by memoization:</p>
-<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">fib_memo <span class="op">=</span> {}
-<span class="kw">def</span> fib(n):
-    <span class="cf">if</span> n <span class="op">&lt;</span> <span class="dv">2</span>: <span class="cf">return</span> <span class="dv">1</span>
-    <span class="cf">if</span> <span class="kw">not</span> fib_memo.has_key(n):
-        fib_memo[n] <span class="op">=</span> fib(n<span class="dv">-1</span>) <span class="op">+</span> fib(n<span class="dv">-2</span>)
-    <span class="cf">return</span> fib_memo[n]</code></pre></div>
-<p><code>fib_memo</code> dictionary caches the previous computed results, so <code>fib(n)</code> does not need to repeat the same calculation again for the same <code>n</code>.</p>
-<p>This implementation technique of memoization is used widely in many programming languages, but it can’t be applied directly to Haskell because Haskell is pure and we don’t want to introduce impurity just to memoize a function. Fortunately, it is possible to memoize a function without side effects thanks to Haskell’s nature of <em>lazy evaluation</em>.</p>
-<p>The following <code>memoize</code> function takes a function of type <code>Int -&gt; a</code> and returns a memoized version of the same function. The trick is to turn a function into a value because, in Haskell, <em>functions</em> are not memoized but <em>values</em> are. <code>memoize</code> converts a function <code>f :: Int -&gt; a</code> into an infinite list <code>[a]</code> whose <code>n</code>th element contains the value of <code>f n</code>. Thus each element of the list is evaluated when it is first accessed and cached automatically by the Haskell runtime thanks to lazy evaluation.</p>
-<pre><code>memoize :: (Int -&gt; a) -&gt; (Int -&gt; a)
-memoize f = (map f [0 ..] !!)</code></pre>
-<p>Let’s define a memoized version of <code>fib</code> using <code>memoize</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">fib ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>
-fib <span class="dv">0</span> <span class="fu">=</span> <span class="dv">0</span>
-fib <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span>
-fib n <span class="fu">=</span> fib (n <span class="fu">-</span> <span class="dv">1</span>) <span class="fu">+</span> fib (n <span class="fu">-</span> <span class="dv">2</span>)
-
-fibMemo <span class="fu">=</span> memoize fib</code></pre></div>
-<p>Does <code>fibMemo</code> work properly? Sadly no, because <code>fib</code> is a recursive function which calls itself. When we call <code>fibMemo 10</code> twice, the second call is returned immediately because the first result is cached. However, intermediate <code>fib</code> calls used to evaluate <code>fib 10</code> are not cached at all because the body of <code>fib</code> calls itself directly without using <code>fibMemo</code>.</p>
-<p>We can fix this issue by factoring out recursion from <code>fib</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Data.Function</span> (fix)
-
-<span class="ot">fib ::</span> (<span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>) <span class="ot">-&gt;</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>
-fib f <span class="dv">0</span> <span class="fu">=</span> <span class="dv">0</span>
-fib f <span class="dv">1</span> <span class="fu">=</span> <span class="dv">1</span>
-fib f n <span class="fu">=</span> f (n <span class="fu">-</span> <span class="dv">1</span>) <span class="fu">+</span> f (n <span class="fu">-</span> <span class="dv">2</span>)
-
-<span class="ot">fibMemo ::</span> <span class="dt">Int</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span>
-fibMemo <span class="fu">=</span> fix (memoize <span class="fu">.</span> fib)</code></pre></div>
-<p>Now every call to <code>fib</code> is memoized because <code>memoize . fib</code> is used every time <code>fib</code> recursively calls itself.</p>
-<p>So far, I explained how to memoize a function whose domain is <code>Int</code>. Of course, we can generalize this technique so that an arbitrary function can be memoized. The basic idea is the same. A function is converted into a large data structure which contains the same information so that memoization is performed by lazy evaluation.</p>
-<p>Interested readers are referred to</p>
-<ul>
-<li>Section 3 of <a href="https://wiki.haskell.org/Simonpj/Talk:FunWithTypeFuns">Fun with type functions</a> explains the type-directed memoization technique using type families.</li>
-<li>Ralf Hinze’s <a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.43.3272&amp;rep=rep1&amp;type=pdf">Memo funtions, polytypially!</a></li>
-</ul>
-<p>Conal Elliott’s articles on memoization:</p>
-<ul>
-<li><a href="http://conal.net/blog/posts/memoizing-polymorphic-functions-part-one">Memoizing polymorphic functions – part one</a></li>
-<li><a href="http://conal.net/blog/posts/memoizing-polymorphic-functions-part-two">Memoizing polymorphic functions – part two</a></li>
-<li><a href="http://conal.net/blog/posts/memoizing-polymorphic-functions-via-unmemoization">Memoizing polymorphic functions via unmemoization</a></li>
-<li><a href="http://conal.net/blog/posts/elegant-memoization-with-functional-memo-tries">Elegant memoization with functional memo tries</a></li>
-</ul>
-<p><a href="https://hackage.haskell.org/package/MemoTrie-0.6.7">MemoTrie</a> provides a basis for memoized functions over some domains, using tries.</p>]]></summary>
 </entry>
 
 </feed>
