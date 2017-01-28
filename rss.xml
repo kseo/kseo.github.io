@@ -7,8 +7,45 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Fri, 27 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Sat, 28 Jan 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Build your Haskell project continuously</title>
+    <link>http://kseo.github.io//posts/2017-01-28-build-your-haskell-project-continuously.html</link>
+    <description><![CDATA[<p>Today I am going to introduce handy tools which help you build your Haskell project continuously so that you can see the list of errors and warnings quickly as you program.</p>
+<!--more-->
+<h1 id="stack">Stack</h1>
+<p><code>stack build</code> command has <code>--file-watch</code> option. When turned on, <em>stack</em> watches for changes in local files and automatically rebuild.</p>
+<pre><code>stack build --file-watch</code></pre>
+<p>Use <code>--fast</code> option if you want fast build which turns off optimizations (<code>-O0</code>). Also use <code>--pedantic</code> flag if you want to fix all warnings(<code>-Wall</code> and <code>-Werror</code>).</p>
+<pre><code>stack build --file-watch --fast --pedantic</code></pre>
+<h1 id="ghcid">ghcid</h1>
+<p>Neil Mitchell’s <a href="https://github.com/ndmitchell/ghcid">ghcid</a> provides a similar functionality in a different way. It runs <em>GHCi</em> as a daemon and runs <code>:reload</code> whenever your source code changes and prints the output to the console.</p>
+<p><code>ghcid</code> executes <code>stack ghci</code> by default if you have <code>stack.yaml</code> file and <code>.stack-work</code> directory.</p>
+<pre><code>ghcid</code></pre>
+<p>If you would like to give a custom command, use <code>--command</code> option.</p>
+<pre><code>ghcid &quot;--command=ghci Main.hs&quot;</code></pre>
+<p><code>ghcid</code> is much faster than <code>stack build</code> because it uses <em>GHCi</em>.</p>
+<h1 id="steel-overseer">Steel Overseer</h1>
+<p>If you want to run arbitrary commands when arbitrary files change, use <a href="https://github.com/schell/steeloverseer">Steel Overseer</a> instead. You can specify the pattern and commands in <code>.sosrc</code> file using YAML syntax. The following example has two rules.</p>
+<ul>
+<li>Watch <code>*.hs</code> files under <code>System</code> directory and run <code>stack build</code>.</li>
+<li>Watch <code>*.hs</code> files under <code>test</code> directory and run <code>stack test</code>.</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">-</span> <span class="fu">pattern:</span> src/(.*)\.hs
+  <span class="fu">commands:</span>
+  <span class="kw">-</span> stack build
+<span class="kw">-</span> <span class="fu">pattern:</span> test/(.*)\.hs
+  <span class="fu">commands:</span>
+  <span class="kw">-</span> stack test</code></pre></div>
+<p><code>sos</code> command watches the specified files and runs the corresponding commands.</p>
+<pre><code>sos</code></pre>
+<h1 id="wrap-up">Wrap-up</h1>
+<p>These small tools greatly increase your productivity. Please choose one and enjoy instant feedbacks!</p>]]></description>
+    <pubDate>Sat, 28 Jan 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-01-28-build-your-haskell-project-continuously.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>How I learned Haskell</title>
     <link>http://kseo.github.io//posts/2017-01-27-how-i-learned-haskell.html</link>
     <description><![CDATA[<p>Happy new lunar year! Today I would like to share my experience of learning Haskell. It’s been a really long journey but a really wonderful one.</p>
@@ -807,81 +844,6 @@ Map MakePair [Char,Bool,Int] :: [GHC.Types.*]
 <p>So far we’ve covered only the basics of type-level datatypes and functions. Recent additions to GHC make it possible to explore the whole new world of dependent type programming in Haskell. Interested readers might want to take a look at the publications of <a href="http://cs.brynmawr.edu/~rae/">Richard A. Eisenberg</a> whose current work is to add dependent types to Haskell.</p>]]></description>
     <pubDate>Mon, 16 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-16-type-level-functions-using-closed-type-families.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Data.Proxy</title>
-    <link>http://kseo.github.io//posts/2017-01-15-data-proxy.html</link>
-    <description><![CDATA[<p><a href="https://www.stackage.org/haddock/lts-7.12/base-4.9.0.0/Data-Proxy.html">Proxy</a> is a mysterious type residing in <code>Data.Proxy</code> module. The definition of <code>Proxy</code> tells nothing about its nature.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- | A concrete, poly-kinded proxy type</span>
-<span class="kw">data</span> <span class="dt">Proxy</span> t <span class="fu">=</span> <span class="dt">Proxy</span></code></pre></div>
-<p>The documentation of <code>Proxy</code> says two hints. It is a (1) <em>concrete</em> and (2) <em>poly-kinded</em> proxy type.</p>
-<h1 id="poly-kinded">Poly-kinded</h1>
-<p>The kind of <code>Proxy</code> is <code>forall k. k -&gt; *</code>.</p>
-<pre><code>λ&gt; :k Proxy
-Proxy :: k -&gt; *</code></pre>
-<p>Here <code>k</code> is <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/glasgow_exts.html#ghc-flag--XPolyKinds">poly-kinded</a> so we can pass types of any kind to <code>Proxy</code>.</p>
-<ul>
-<li><code>Proxy Char</code> where <code>k</code> is <code>*</code>.</li>
-<li><code>Proxy (,)</code> where <code>k</code> is <code>* -&gt; *</code></li>
-<li><code>Proxy Show</code> where <code>k</code> is <code>* -&gt; Constraint</code></li>
-<li><code>Proxy Monad</code> where <code>k</code> is <code>(* -&gt; *) -&gt; Constraint</code></li>
-</ul>
-<h1 id="concrete-value">Concrete value</h1>
-<p>In Haskell, we can create a value of any type we want by annotating <code>undefined</code> with the type.</p>
-<pre><code>λ&gt; let p = undefined :: Int</code></pre>
-<p>However, we can’t use this trick if the kind of the type is not <code>*</code>, For example, we can’t annotate <code>undefined</code> with type <code>(,)</code> because its kind is <code>* -&gt; * -&gt; *</code>.</p>
-<pre><code>λ&gt; let q = undefined :: (,)
-
-&lt;interactive&gt;:4:22: error:
-    • Expecting two more arguments to ‘(,)’
-      Expected a type, but ‘(,)’ has kind ‘* -&gt; * -&gt; *’
-    • In an expression type signature: (,)
-      In the expression: undefined :: (,)
-      In an equation for ‘q’: q = undefined :: (,)</code></pre>
-<p><code>Proxy</code> lets us to overcome this limitation. We can create a proxy value representing the type by annotating <code>Proxy</code> data constructor.</p>
-<pre><code>λ&gt; import Data.Proxy
-λ&gt; let p = Proxy :: Proxy (,)
-λ&gt; :t p
-p :: Proxy (,)</code></pre>
-<p>We can think of <code>Proxy :: Proxy (,)</code> as a reified value of the type <code>(,)</code>.</p>
-<h1 id="type-application">Type Application</h1>
-<p>The read/show problem below is ill-typed because of ambiguity.</p>
-<pre><code>f :: String -&gt; String
-f s = show (read s)</code></pre>
-<p>We can fix this issue by explicitly passing the type as a value argument. As you can see the wild card pattern <code>_</code>, the value is not used anywhere in the definition of <code>f</code>. Only its type is used.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">f ::</span> forall proxy a<span class="fu">.</span> (<span class="dt">Read</span> a, <span class="dt">Show</span> a) <span class="ot">=&gt;</span> proxy a <span class="ot">-&gt;</span> <span class="dt">String</span> <span class="ot">-&gt;</span> <span class="dt">String</span>
-f _ <span class="fu">=</span> (show<span class="ot"> ::</span> a <span class="ot">-&gt;</span> <span class="dt">String</span>) <span class="fu">.</span> read</code></pre></div>
-<pre><code>λ&gt; f (Proxy :: Proxy Int) &quot;3&quot;
-&quot;3&quot;</code></pre>
-<p>As a side note, <a href="https://kseo.github.io/posts/2017-01-08-visible-type-application-ghc8.html">TypeApplications</a> extension introduced in GHC 8 provides an alternative way to fix this.</p>
-<h1 id="typeable">Typeable</h1>
-<p>Another application of <code>Proxy</code> is <code>Typeable</code>. Before kind polymorphism was introduced in GHC, there was a lot of code duplication in the way <code>Typeable</code> is implemented because <code>t</code> can represent only a specific kind.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Typeable</span> (<span class="ot">t ::</span> <span class="fu">*</span>) <span class="kw">where</span>
-<span class="ot">  typeOf ::</span> t <span class="ot">-&gt;</span> <span class="dt">TypeRep</span>
-
-<span class="kw">class</span> <span class="dt">Typeable1</span> (<span class="ot">t ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span>) <span class="kw">where</span>
-<span class="ot">  typeOf1 ::</span> t a <span class="ot">-&gt;</span> <span class="dt">TypeRep</span>
-
-<span class="kw">class</span> <span class="dt">Typeable2</span> (<span class="ot">t ::</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span> <span class="ot">-&gt;</span> <span class="fu">*</span>) <span class="kw">where</span>
-<span class="ot">  typeOf2 ::</span> t a b <span class="ot">-&gt;</span> <span class="dt">TypeRep</span></code></pre></div>
-<p><code>Proxy</code> allows us to merge all these classes into one:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Typeable</span> t <span class="kw">where</span>
-<span class="ot">  typeOf ::</span> <span class="dt">Proxy</span> t <span class="ot">-&gt;</span> <span class="dt">TypeRep</span>
-
-<span class="kw">instance</span> <span class="dt">Typeable</span> <span class="dt">Int</span>  <span class="kw">where</span> typeOf _ <span class="fu">=</span> <span class="dt">TypeRep</span>
-<span class="kw">instance</span> <span class="dt">Typeable</span> []   <span class="kw">where</span> typeOf _ <span class="fu">=</span> <span class="dt">TypeRep</span></code></pre></div>
-<h1 id="other-use-cases-of-proxy">Other use cases of Proxy</h1>
-<ul>
-<li><a href="https://www.stackage.org/lts-7.12/package/json-schema-0.7.4.1">json-schema</a> uses <code>Proxy</code> to obtain the JSON representation for the given type.</li>
-</ul>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">JSONSchema</span> a <span class="kw">where</span>
-<span class="ot">  schema ::</span> <span class="dt">Proxy</span> a <span class="ot">-&gt;</span> <span class="dt">Schema</span></code></pre></div>
-<ul>
-<li>Edward Kmett’s <a href="https://www.stackage.org/lts-7.12/package/reflection-2.1.2">reflection</a> package shows an advanced usage of <code>Proxy</code>. Austin Seipp’s <a href="https://www.schoolofhaskell.com/user/thoughtpolice/using-reflection">Reflecting values to types and back</a> explains how to reify arbitrary terms into types that can be reflected back into terms.</li>
-</ul>]]></description>
-    <pubDate>Sun, 15 Jan 2017 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2017-01-15-data-proxy.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 

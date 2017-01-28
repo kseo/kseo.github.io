@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Build your Haskell project continuously</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Build your Haskell project continuously</h1>
+<a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 28, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/build.html">build</a>, <a href="../tags/stack.html">stack</a>, <a href="../tags/ghcid.html">ghcid</a>, <a href="../tags/steeloverseer.html">steeloverseer</a>
+      
+  </div>
+
+<p>Today I am going to introduce handy tools which help you build your Haskell project continuously so that you can see the list of errors and warnings quickly as you program.</p>
+<!--more-->
+<h1 id="stack">Stack</h1>
+<p><code>stack build</code> command has <code>--file-watch</code> option. When turned on, <em>stack</em> watches for changes in local files and automatically rebuild.</p>
+<pre><code>stack build --file-watch</code></pre>
+<p>Use <code>--fast</code> option if you want fast build which turns off optimizations (<code>-O0</code>). Also use <code>--pedantic</code> flag if you want to fix all warnings(<code>-Wall</code> and <code>-Werror</code>).</p>
+<pre><code>stack build --file-watch --fast --pedantic</code></pre>
+<h1 id="ghcid">ghcid</h1>
+<p>Neil Mitchell’s <a href="https://github.com/ndmitchell/ghcid">ghcid</a> provides a similar functionality in a different way. It runs <em>GHCi</em> as a daemon and runs <code>:reload</code> whenever your source code changes and prints the output to the console.</p>
+<p><code>ghcid</code> executes <code>stack ghci</code> by default if you have <code>stack.yaml</code> file and <code>.stack-work</code> directory.</p>
+<pre><code>ghcid</code></pre>
+<p>If you would like to give a custom command, use <code>--command</code> option.</p>
+<pre><code>ghcid &quot;--command=ghci Main.hs&quot;</code></pre>
+<p><code>ghcid</code> is much faster than <code>stack build</code> because it uses <em>GHCi</em>.</p>
+<h1 id="steel-overseer">Steel Overseer</h1>
+<p>If you want to run arbitrary commands when arbitrary files change, use <a href="https://github.com/schell/steeloverseer">Steel Overseer</a> instead. You can specify the pattern and commands in <code>.sosrc</code> file using YAML syntax. The following example has two rules.</p>
+<ul>
+<li>Watch <code>*.hs</code> files under <code>System</code> directory and run <code>stack build</code>.</li>
+<li>Watch <code>*.hs</code> files under <code>test</code> directory and run <code>stack test</code>.</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">-</span> <span class="fu">pattern:</span> src/(.*)\.hs
+  <span class="fu">commands:</span>
+  <span class="kw">-</span> stack build
+<span class="kw">-</span> <span class="fu">pattern:</span> test/(.*)\.hs
+  <span class="fu">commands:</span>
+  <span class="kw">-</span> stack test</code></pre></div>
+<p><code>sos</code> command watches the specified files and runs the corresponding commands.</p>
+<pre><code>sos</code></pre>
+<h1 id="wrap-up">Wrap-up</h1>
+<p>These small tools greatly increase your productivity. Please choose one and enjoy instant feedbacks!</p>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-28-build-your-haskell-project-continuously.html";
+    this.page.identifier = "/posts/2017-01-28-build-your-haskell-project-continuously.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
