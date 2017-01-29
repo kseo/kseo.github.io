@@ -41,8 +41,8 @@
 <p>Happy lunar new year! Today I would like to share my experience of learning Haskell. It’s been a really long journey but a really wonderful one.</p>
 <!--more-->
 <h1 id="first-encounter">First Encounter</h1>
-<p>Back in 2000, I was an undergraduate student majoring in computer science. At the time, I was into system programming and enjoyed learning low-level implementation details of operating systems and system applications. My primary language was C and programmed all assignments in C. I was proud that I understood how my code is compiled and executed on the machine.</p>
-<p>One day my friend told me about <em>Haskell</em>. I wasn’t interested in functional programming, but I was curious because he enthusiastically persuaded me to learn Haskell. I ended up reading two books on Haskell.</p>
+<p>Back in 2000, I was an undergraduate student majoring in computer science. At the time, I was into system programming and enjoyed learning low-level implementation details of operating systems and system applications. My primary language was C and programmed all programming assignments in C. I was proud that I understood how my code was compiled and executed on the machine.</p>
+<p>One day my friend told me about <em>Haskell</em>. I wasn’t interested in functional programming at the time, but I became curious because he enthusiastically persuaded me to learn Haskell. I ended up reading two books on Haskell.</p>
 <ul>
 <li><a href="http://www.haskellcraft.com/craft3e/Home.html">Haskell: the Craft of Functional Programming</a></li>
 <li><a href="http://www.cs.yale.edu/homes/hudak/SOE/">The Haskell School of Expression</a></li>
@@ -50,7 +50,7 @@
 <p>Both books were really nice and I learned I could program in an entirely different way. However, I wasn’t sure if Haskell could solve the real-world problems I wanted to solve. So my interest in Haskell stopped there.</p>
 <h1 id="dark-age">Dark age</h1>
 <p>My first job was to port and optimize Java Virtual Machine for embedded systems. My company licensed Sun’s CDC JVM and I was responsible for maintaining it.</p>
-<p>It was 2002 and Linux was still luxury for embedded systems. RTOSes such as pSOS and VxWorks were popular on STBs and I ported JVM to these OSes. These RTOSes don’t have distinctions between kernel and user space and an application is linked statically with the kernel and runs as a single (kernel) process application on the device.</p>
+<p>It was 2002 and Linux was still luxury for embedded systems. RTOSes such as pSOS and VxWorks were popular on STBs and I ported JVM to these OSes. These RTOSes didn’t have distinctions between kernel and user space and an application was linked statically with the kernel and ran as a single (kernel) process application on the device.</p>
 <p>The implication was profound. I had no safety guarantee provided by modern operating systems. A bug in an application could corrupt the kernel data and crash the entire system. Moreover, there were dozens of threads competing for shared resources, race conditions and dead locks were a common place. Debugging was a nightmare. It took hours or even days to find and fix a small trivial bug.</p>
 <p>The situation was much better when debugging an application written in Java. Thanks to the safety guarantee of Java, certain types of bugs were impossible. A Java program can’t corrupt memory and crash the system. Dead locks are reported systematically by the JVM. It was relatively fun to fix a bug in Java applications.</p>
 <h1 id="types">Types</h1>
