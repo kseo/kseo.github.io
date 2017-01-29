@@ -46,7 +46,7 @@
 <p>Use <code>--fast</code> option if you want fast build which turns off optimizations (<code>-O0</code>). Also use <code>--pedantic</code> flag if you want to fix all warnings(<code>-Wall</code> and <code>-Werror</code>).</p>
 <pre><code>stack build --file-watch --fast --pedantic</code></pre>
 <h1 id="ghcid">ghcid</h1>
-<p>Neil Mitchell’s <a href="https://github.com/ndmitchell/ghcid">ghcid</a> provides a similar functionality in a different way. It runs <em>GHCi</em> as a daemon and runs <code>:reload</code> whenever your source code changes and prints the output to the console.</p>
+<p>Neil Mitchell’s <a href="https://github.com/ndmitchell/ghcid">ghcid</a> provides a similar functionality in a different way. It runs <em>GHCi</em> as a daemon and runs <code>:reload</code> whenever your source code changes.</p>
 <p><code>ghcid</code> executes <code>stack ghci</code> by default if you have <code>stack.yaml</code> file and <code>.stack-work</code> directory.</p>
 <pre><code>ghcid</code></pre>
 <p>If you would like to give a custom command, use <code>--command</code> option.</p>
