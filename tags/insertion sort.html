@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Posts tagged "insertion sort"</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            
+<h4><a href="../posts/2017-01-30-type-level-insertion-sort.html">Type-level insertion sort</a></h4> - January 30, 2017
+<article>
+
+    <?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta name="keywords" content="Haskell, functional programming, category theory, type theory">
+        <title>Kwang's Haskell Blog - Type-level insertion sort</title>
+        <link rel="stylesheet" type="text/css" href="../css/default.css" />
+        <link rel="stylesheet" type="text/css" href="../css/syntax.css" />
+    </head>
+    <body>
+        <div id="header">
+            <div id="logo">
+                <a href="../">Kwang's Haskell Blog</a>
+            </div>
+            <div id="navigation">
+                <a href="../">Home</a>
+                <a href="../about.html">About</a>
+                <a href="../contact.html">Contact</a>
+                <a href="../archive.html">Archive</a>
+            </div>
+        </div>
+
+        <div id="content">
+            <h1>Type-level insertion sort</h1>
+<a class="twitter-share-button" href="https://twitter.com/intent/tweet?via=kwangyulseo">Tweet</a>
+
+<article>
+  <div class="info">
+      Posted on January 30, 2017
+      
+          by Kwang Yul Seo
+      
+  </div>
+  <div class="info">
+      
+      Tags: <a href="../tags/insertion%20sort.html">insertion sort</a>, <a href="../tags/type-level.html">type-level</a>, <a href="../tags/closed%20type%20families.html">closed type families</a>
+      
+  </div>
+
+<p><em>Multi-parameter type classes</em> and <em>functional dependencies</em> made type-level programming possible. Back in 2000, Thomas Hallgren showed <a href="http://www.cse.chalmers.se/~hallgren/Papers/wm01.html">an implementation of insertion sort</a> as an example of static computation using functional dependencies. The code has a strong resemblance to logic programming which looks bizarre to most functional programmers. In this post, I will show you a more “functional-style” implementation of insertion sort using <em>closed type families</em>.</p>
+<!--more-->
+<h1 id="term-level-insertion-sort">Term-level insertion sort</h1>
+<p>Here’s an implementation of insertion sort we all know.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell">sort<span class="ot"> ::</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> [a] <span class="ot">-&gt;</span> [a]
+sort [] <span class="fu">=</span> []
+sort (x <span class="fu">:</span> xs) <span class="fu">=</span> insert x (sort xs)
+
+<span class="ot">insert ::</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> a <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [a]
+insert x [] <span class="fu">=</span> x <span class="fu">:</span> []
+insert x (y <span class="fu">:</span> ys) <span class="fu">=</span> insert' (compare x y) x y ys
+
+<span class="ot">insert' ::</span> (<span class="dt">Ord</span> a) <span class="ot">=&gt;</span> <span class="dt">Ordering</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [a]
+insert' <span class="dt">LT</span>  x y ys <span class="fu">=</span> x <span class="fu">:</span> (y <span class="fu">:</span> ys)
+insert' _   x y ys <span class="fu">=</span> y <span class="fu">:</span> insert x ys
+
+l <span class="fu">=</span> [<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">7</span>, <span class="dv">9</span>, <span class="dv">5</span>]</code></pre></div>
+<p><code>sort l</code> sorts the given list.</p>
+<pre><code>λ&gt; sort l
+[1,2,3,4,5,7,9]</code></pre>
+<p>To implement insertion sort in type-level, we must be able to define</p>
+<ol style="list-style-type: decimal">
+<li>naturals, booleans and lists</li>
+<li>functions</li>
+</ol>
+<p>in type-level. For the basics of type-level programming, readers are referred to <a href="https://kseo.github.io/posts/2017-01-16-type-level-functions-using-closed-type-families.html">Type-level functions using closed type families</a>.</p>
+<h1 id="insertion-sort">Insertion sort</h1>
+<p>Here’s an implementation of type-level insertion sort. One can see the strong similarity with the term-level insertion sort.</p>
+<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DataKinds #-}</span>
+<span class="ot">{-# LANGUAGE TypeFamilies #-}</span>
+<span class="ot">{-# LANGUAGE TypeOperators #-}</span>
+<span class="ot">{-# LANGUAGE UndecidableInstances #-}</span>
+
+<span class="kw">type</span> family <span class="dt">Sort</span> xs <span class="kw">where</span>
+  <span class="dt">Sort</span> <span class="ch">'[] = '</span>[]
+  <span class="dt">Sort</span> (x <span class="ch">': xs) = Insert x (Sort xs)</span>
+
+<span class="kw">type</span> family <span class="dt">Insert</span> x xs <span class="kw">where</span>
+  <span class="dt">Insert</span> x <span class="ch">'[] = x '</span><span class="fu">:</span> <span class="ch">'[]</span>
+  <span class="dt">Insert</span> x (y <span class="ch">': ys) = Insert'</span> (<span class="dt">CmpNat</span> x y) x y ys
+
+<span class="kw">type</span> family <span class="dt">Insert'</span> b x y ys <span class="kw">where</span>
+  <span class="dt">Insert'</span> <span class="ch">'LT  x y ys = x '</span><span class="fu">:</span> (y <span class="ch">': ys)</span>
+  <span class="dt">Insert'</span> _    x y ys <span class="fu">=</span> y <span class="ch">': Insert x ys</span>
+
+<span class="kw">type</span> <span class="dt">L</span> <span class="fu">=</span> [<span class="dv">1</span>, <span class="dv">3</span>, <span class="dv">2</span>, <span class="dv">4</span>, <span class="dv">7</span>, <span class="dv">9</span>, <span class="dv">5</span>]</code></pre></div>
+<p>In this simple scenario, converting a term-level function into a type-level function is almost mechanical. Just a few rules suffice.</p>
+<ul>
+<li>sort -&gt; type family Sort</li>
+<li>[] -&gt; ’[]</li>
+<li>(x : xs) -&gt; (x ’: xs)</li>
+<li>compare -&gt; CmpNat</li>
+</ul>
+<p>We can evaluate <code>Sort L</code> using GHCi’s <code>kind!</code> command.</p>
+<pre><code>λ&gt; :kind! Sort L
+Sort L :: [Nat]
+= '[1, 2, 3, 4, 5, 7, 9]</code></pre>
+<div id="disqus_thread"></div>
+<script>
+
+/**
+ *  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+ *  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables */
+var disqus_config = function () {
+    this.page.url = "https://kseo.github.io/posts/2017-01-30-type-level-insertion-sort.html";
+    this.page.identifier = "/posts/2017-01-30-type-level-insertion-sort.html";
+};
+(function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = '//kwangs-haskell-blog.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+
+</article>
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
+
+
+</article>
+<a href="../posts/2017-01-30-type-level-insertion-sort.html">Read more</a>
+
+
+
+        </div>
+        <div id="footer">
+            <a href="../rss.xml">RSS</a> |
+            <a href="../atom.xml">ATOM</a> |
+            <a href="https://twitter.com/kwangyulseo" class="twitter-follow-button" data-show-count="false">Follow @kwangyulseo</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
+        </div>
+        <script>
+          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+          ga('create', 'UA-61779656-7', 'auto');
+          ga('send', 'pageview');
+        </script>
+    </body>
+</html>
