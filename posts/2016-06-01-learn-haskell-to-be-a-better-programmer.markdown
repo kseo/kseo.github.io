@@ -14,7 +14,7 @@ code is written using these abstract non-sense.
 
 Of course, it is still possible to write IO code and use `Maybe`, `Either` and
 `List` types without understanding Monad. But then why do you want to learn
-Haskell anyway? If you avoid learning these concpets, you can't learn much from
+Haskell anyway? If you avoid learning these concepts, you can't learn much from
 Haskell. It would be much beneficial to learn other more practical languages.
 
 Before explaining why you should learn Haskell, let's ask a question. What's the
@@ -42,15 +42,15 @@ which solves the new problem, the productivity of a programmer will be
 dramatically increased.
 
 The changes of programming paradigm in the history can be explained as our
-continous endeavor to enhance the composability. For example, the shift from
+continuous endeavor to enhance the composability. For example, the shift from
 assembly programming with goto to structure programming emphasizing subroutine
-and loop was necessary as the problem size increases. We desparately needed a
+and loop was necessary as the problem size increases. We desperately needed a
 better way to compose programs.
 
 But as the complexity of problem drastically increased again in 80-90s, we
 needed a new programming paradigm called object-oriented programming. Classes
 and objects, encapsulation and information hiding were another endeavor to
-imporve the composability of programs.
+improve the composability of programs.
 
 Now in 2010s, functional programming is gaining attention. The complexity of
 problems we have today is enormous and we need new tools and concepts to cope
@@ -58,7 +58,7 @@ with ever increasing complexity. Classes are not enough. We need more
 composability.
 
 Haskell provides new tools and concepts which can help organize code better.
-Concepts like Functor, Applicative Functor, Monad, Arrow and Lense all provide
+Concepts like Functor, Applicative Functor, Monad, Arrow and Lens all provide
 new means to compose programs. See Gabriel Gonzalez's [The category design
 pattern][category].
 
