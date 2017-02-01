@@ -7,8 +7,31 @@
         <description><![CDATA[Kwang Yul Seo's Haskell Blog]]></description>
         <atom:link href="http://kseo.github.io//rss.xml" rel="self"
                    type="application/rss+xml" />
-        <lastBuildDate>Mon, 30 Jan 2017 00:00:00 UT</lastBuildDate>
+        <lastBuildDate>Wed, 01 Feb 2017 00:00:00 UT</lastBuildDate>
         <item>
+    <title>Simple benchmarking with GHCi</title>
+    <link>http://kseo.github.io//posts/2017-02-01-simple-benchmarking-with-ghci.html</link>
+    <description><![CDATA[<p>GHCi has a lesser known option <a href="https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/ghci.html#ghci-cmd-:set%20+s">:set +s</a>. When turned on, GHCi displays some stats for each expression evaluated.</p>
+<!--more-->
+<p>Let’s experiment with the option.</p>
+<pre><code>λ&gt; :set +s</code></pre>
+<p><code>:set +s</code> displays the elapsed time and number of bytes allocated after evaluation each expression.</p>
+<pre><code>λ&gt; fibs = 0 : scanl (+) 1 fibs
+(0.00 secs, 0 bytes)</code></pre>
+<p>The number of bytes allocated is zero for <code>fibs</code> because no GC has occurred.</p>
+<blockquote>
+<p>NOTE: the allocation figure is only accurate to the size of the storage manager’s allocation area, because it is calculated at every GC. Hence, you might see values of zero if no GC has occurred.</p>
+</blockquote>
+<pre><code>λ&gt; fibs !! 100
+354224848179261915075
+(0.01 secs, 110,440 bytes)</code></pre>
+<p>We can see that <code>fibs !! 100</code> took 0.01 seconds and allocated 110,440 bytes of memory.</p>
+<p>This is a quick-and-dirty way to get a feel for the performance of a function. If you need a serious benchmark, please use <a href="http://www.serpentine.com/criterion/tutorial.html">criterion</a> instead.</p>]]></description>
+    <pubDate>Wed, 01 Feb 2017 00:00:00 UT</pubDate>
+    <guid>http://kseo.github.io//posts/2017-02-01-simple-benchmarking-with-ghci.html</guid>
+    <dc:creator>Kwang Yul Seo</dc:creator>
+</item>
+<item>
     <title>Type-level insertion sort</title>
     <link>http://kseo.github.io//posts/2017-01-30-type-level-insertion-sort.html</link>
     <description><![CDATA[<p><em>Multi-parameter type classes</em> and <em>functional dependencies</em> made type-level programming possible. Back in 2000, Thomas Hallgren showed <a href="http://www.cse.chalmers.se/~hallgren/Papers/wm01.html">an implementation of insertion sort</a> as an example of static computation using functional dependencies. The code has a strong resemblance to logic programming which looks bizarre to most functional programmers. In this post, I will show you a more “functional-style” implementation of insertion sort using <em>closed type families</em>.</p>
@@ -742,68 +765,6 @@ main <span class="fu">=</span> <span class="kw">do</span>
 <p>because <code>f</code> is <code>head</code> and <code>g</code> is <code>tail</code>.</p>]]></description>
     <pubDate>Thu, 19 Jan 2017 00:00:00 UT</pubDate>
     <guid>http://kseo.github.io//posts/2017-01-19-fun-with-hint.html</guid>
-    <dc:creator>Kwang Yul Seo</dc:creator>
-</item>
-<item>
-    <title>Natural transformations in Servant</title>
-    <link>http://kseo.github.io//posts/2017-01-18-natural-transformations-in-servant.html</link>
-    <description><![CDATA[<p>I’ve recently started using <a href="http://haskell-servant.readthedocs.io/en/stable/">servant</a> at work. Servant lets us declare web APIs at the type-level once and use those APIs to write servers, obtains client functions and generate documentation. It’s a real world example which shows the power of Haskell type system.</p>
-<p>The most interesting part of Servant is its <em>extensible type-level DSL</em> for describing web APIs. However, I found another interesting application of theory into practice in <a href="https://hackage.haskell.org/package/servant-server">servant-server</a> library. It is the use of <em>natural transformation</em> to convert one handler type into another handler type.</p>
-<p>In Servant, <code>Handler</code> is a type alias for <code>ExceptT ServantErr IO</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">Handler</span> <span class="fu">=</span> <span class="dt">ExceptT</span> <span class="dt">ServantErr</span> <span class="dt">IO</span></code></pre></div>
-<p>Thus <code>Handler</code> monad allows us to do:</p>
-<ul>
-<li>Perform IO operations such as database query through the base monad <code>IO</code>.</li>
-<li>Throw a <code>ServantErr</code> if something went wrong.</li>
-</ul>
-<p>Here’s an example of a Servant handler.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">type</span> <span class="dt">ItemApi</span> <span class="fu">=</span>
-    <span class="st">&quot;item&quot;</span> <span class="fu">:&gt;</span> <span class="dt">Capture</span> <span class="st">&quot;itemId&quot;</span> <span class="dt">Integer</span> <span class="fu">:&gt;</span> <span class="dt">Get</span> <span class="ch">&#39;[JSON] Item</span>
-
-<span class="ot">queryItemFirst ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">Item</span>)
-queryItemFirst itemId <span class="fu">=</span> <span class="fu">...</span>
-
-<span class="ot">getItemById ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">Handler</span> <span class="dt">Item</span>
-getItemById itemId <span class="fu">=</span> <span class="kw">do</span>
-  mItem <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> queryItemFirst itemId
-  <span class="kw">case</span> mItem <span class="kw">of</span>
-    <span class="dt">Just</span> item <span class="ot">-&gt;</span> return item
-    <span class="dt">Nothing</span>   <span class="ot">-&gt;</span> throwError err404</code></pre></div>
-<p>So far so good, but what if <code>queryItemFirst</code> needs a database connection to retrieve the item? Ideally, we would like to create a custom monad for our application such as</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">AppEnv</span> <span class="fu">=</span> <span class="dt">AppEnv</span> {<span class="ot"> db ::</span> <span class="dt">ConnectionPool</span> }
-<span class="kw">type</span> <span class="dt">MyHandler</span> <span class="fu">=</span> <span class="dt">ReaderT</span> <span class="dt">AppEnv</span> (<span class="dt">ExceptT</span> <span class="dt">ServantErr</span> <span class="dt">IO</span>)
-
-<span class="ot">queryItemFirst ::</span> <span class="dt">ConnectionPool</span> <span class="ot">-&gt;</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> (<span class="dt">Maybe</span> <span class="dt">Item</span>)
-queryItemFirst cp itemId <span class="fu">=</span> <span class="fu">...</span>
-
-<span class="ot">getItemById ::</span> <span class="dt">Integer</span> <span class="ot">-&gt;</span> <span class="dt">MyHandler</span> <span class="dt">Item</span>
-getItemById itemId <span class="fu">=</span> <span class="kw">do</span>
-  cp <span class="ot">&lt;-</span> db <span class="fu">&lt;$&gt;</span> ask
-  mItem <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> queryItemFirst cp itemId
-  <span class="kw">case</span> mItem <span class="kw">of</span>
-    <span class="dt">Just</span> item <span class="ot">-&gt;</span> return item
-    <span class="dt">Nothing</span>   <span class="ot">-&gt;</span> throwError err404</code></pre></div>
-<p>Unfortunately, this does not work because <a href="https://www.stackage.org/haddock/lts-7.12/servant-server-0.8.1/Servant-Server.html#v:serve">serve</a> wants <code>Handler</code> type. We need a way to transform <code>MyHandler</code> into <code>Handler</code> so that Servant can happily serve our handlers. Because both <code>MyHandler</code> and <code>Handler</code> are monads, we need a monad morphism. Or more generally, we need a <em>natural transformation</em> from <code>MyHandler</code> to <code>Handler</code>.</p>
-<p>Servant provides a newtype wrapper <code>Nat</code> which represents a natural transformation from <code>m a</code> to <code>n a</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">newtype</span> m <span class="fu">:~&gt;</span> n <span class="fu">=</span> <span class="dt">Nat</span> {<span class="ot"> unNat ::</span> forall a<span class="fu">.</span> m a <span class="ot">-&gt;</span> n a}</code></pre></div>
-<p>So what we want is <code>MyHandler :~&gt; Handler</code>.</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">myHandlerToHandler ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">MyHandler</span> <span class="fu">:~&gt;</span> <span class="dt">Handler</span>
-myHandlerToHandler env <span class="fu">=</span> <span class="dt">Nat</span> myHandlerToHandler&#39;
-  <span class="kw">where</span>
-<span class="ot">  myHandlerToHandler&#39; ::</span> <span class="dt">MyHandler</span> a <span class="ot">-&gt;</span> <span class="dt">Handler</span> a
-  myHandlerToHandler&#39; h <span class="fu">=</span> runReaderT h env</code></pre></div>
-<p>Okay, now we can get a natural transformation <code>MyHandler :~&gt; Handler</code> by applying an <code>AppEnv</code> to <code>myHandlerToHandler</code>. How can I tell the Servant to use this natural transformation to serve our handlers? That’s what <a href="https://www.stackage.org/haddock/lts-7.12/servant-server-0.8.1/Servant-Server.html#v:enter">enter</a> does!</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">server ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">ItemApi</span>
-server env <span class="fu">=</span>
-  enter (myHandlerToHandler env) getItemById</code></pre></div>
-<p>Wrapping <code>Handler</code> with <code>ReaderT</code> is a common idiom, so Servant provides a convenient function <code>runReaderTNat</code> which is exactly the same to <code>myHandlerToHandler</code>. So we can rewrite <code>server</code> as follows:</p>
-<div class="sourceCode"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">server ::</span> <span class="dt">AppEnv</span> <span class="ot">-&gt;</span> <span class="dt">Server</span> <span class="dt">ItemApi</span>
-server env <span class="fu">=</span>
-  enter (runReaderTNat env) getItemById</code></pre></div>
-<p>Servant also provides a lot of monad morphisms such as <code>hoistNat</code>, <code>embedNat</code>, <code>squashNat</code> and <code>generalizeNat</code>. Sounds familiar? These are just wrappers around <a href="https://hackage.haskell.org/package/mmorph">mmorph</a> library functions. Interested readers are referred to Gabriel Gonzalez’s article <a href="http://www.haskellforall.com/2013/03/mmorph-100-monad-morphisms.html">mmorph-1.0.0: Monad morphisms</a>.</p>
-<p>In object-oriented programming, we use <em>Adapter pattern</em> to allow the interface of an existing class to be used as another interface. In functional programming, we use <em>natural transformations</em> (or more generally, <em>functors</em>) to do so!</p>]]></description>
-    <pubDate>Wed, 18 Jan 2017 00:00:00 UT</pubDate>
-    <guid>http://kseo.github.io//posts/2017-01-18-natural-transformations-in-servant.html</guid>
     <dc:creator>Kwang Yul Seo</dc:creator>
 </item>
 
