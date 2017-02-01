@@ -19,7 +19,7 @@
 <!--more-->
 <p>Let’s experiment with the option.</p>
 <pre><code>λ&gt; :set +s</code></pre>
-<p><code>:set +s</code> displays the elapsed time and number of bytes allocated after evaluation each expression.</p>
+<p><code>:set +s</code> displays the elapsed time and number of bytes allocated after evaluating each expression.</p>
 <pre><code>λ&gt; fibs = 0 : scanl (+) 1 fibs
 (0.00 secs, 0 bytes)</code></pre>
 <p>The number of bytes allocated is zero for <code>fibs</code> because no GC has occurred.</p>
