@@ -1,6 +1,6 @@
 ---
 title: Type-level functions using closed type families
-tags: dependent type, type-level, list
+tags: dependent type, type-level, closed type families
 author: Kwang Yul Seo
 ---
 In this post, we will see how to write basic type-level functions using [closed type families][closed].
